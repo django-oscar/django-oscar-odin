@@ -3,9 +3,25 @@ name = "oscar-odin"
 version = "0.1.0"
 description = "Odin Resources and mappings to Oscar models"
 authors = ["Tim Savage <tim@savage.company>"]
-license = "BSD"
+license = "BSD-3-Clause"
 readme = "README.md"
 packages = [{include = "oscar_odin"}]
+repository = "https://github.com/django-oscar/oscar-odin"
+keywords = ["data-structure", "validation", "data-mapping"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: BSD License",
+    "Operating System :: Linux",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+    "Programming Language :: Python",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.1",
+    "Programming Language :: Python :: Implementation :: CPython",
+]
 
 [tool.poetry.dependencies]
 python = "^3.8"
@@ -15,3 +31,23 @@ django-oscar = "^3.2"
 [build-system]
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
+
+[tool.isort]
+profile = "black"
+
+[tool.ruff]
+select = [
+    "E",  # pycodestyle errors
+    "W",  # pycodestyle warnings
+    "F",  # pyflakes
+    "C",  # flake8-comprehensions
+    "B",  # flake8-bugbear
+]
+ignore = [
+    "E501",  # line too long, handled by black
+    "B008",  # do not perform function calls in argument defaults
+    "C901",  # too complex
+]
+
+# Assume Python 3.8.
+target-version = "py38"
