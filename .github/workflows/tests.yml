@@ -2,7 +2,7 @@ name: Run Tests
 
 on:
   push:
-    branches: [ devel, feature/*, bugfix/*, release/* ]
+    branches: [ develop, feature/*, bugfix/*, release/* ]
 
 jobs:
   test:
