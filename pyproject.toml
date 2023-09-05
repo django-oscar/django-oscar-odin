@@ -1,0 +1,17 @@
+[tool.poetry]
+name = "oscar-odin"
+version = "0.1.0"
+description = "Odin Resources and mappings to Oscar models"
+authors = ["Tim Savage <tim@savage.company>"]
+license = "BSD"
+readme = "README.md"
+packages = [{include = "oscar_odin"}]
+
+[tool.poetry.dependencies]
+python = "^3.8"
+odin = "^2.8.1"
+django-oscar = "^3.2"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
