@@ -7,4 +7,3 @@ class OscarResource(odin.AnnotatedResource, abstract=True):
 
     class Meta:
         namespace = "oscar"
-

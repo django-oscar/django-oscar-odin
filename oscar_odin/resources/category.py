@@ -1,8 +1,9 @@
 """Resources for Oscar categories."""
 from datetime import datetime
-from typing import Optional, List
+from typing import List, Optional
 
 import odin
+
 from ._base import OscarResource
 
 
