@@ -2,7 +2,6 @@ name: Run Tests
 
 on:
   push:
-    branches: [ develop, feature/*, bugfix/*, release/* ]
 
 jobs:
   test:
@@ -34,4 +33,6 @@ jobs:
 
     - name: Test with Django test runner
       run: |
-        poetry run ./runtests.py
+        poetry run coverage run --branch -- ./runtests.py
+        poetry run coverage xml --include="oscar_odin/*" -o dist/coverage.xml 
+        poetry run coverage report --include="oscar_odin/*"
