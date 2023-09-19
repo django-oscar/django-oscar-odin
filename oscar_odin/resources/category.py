@@ -1,9 +1,11 @@
 """Resources for Oscar categories."""
 from datetime import datetime
+from decimal import Decimal
 from typing import List, Optional
 
 import odin
 
+from ..fields import DecimalField
 from ._base import OscarResource
 
 
@@ -31,7 +33,30 @@ class Image(OscarCategory):
             " image for a product"
         ),
     )
-    date_created: datetime  # Optional in the case of creation?
+    date_created: datetime
+
+
+class Category(OscarCategory):
+    """A category within Django Oscar."""
+
+    name: str
+    slug: str
+    description: str
+    meta_title: Optional[str]
+    meta_description: Optional[str]
+    image: Optional[str]
+    is_public: bool
+    ancestors_are_public: bool
+
+
+class ProductClass(OscarCategory):
+    """A product class within Django Oscar."""
+
+    name: str
+    slug: str
+    requires_shipping: bool
+    track_stock: bool
+    options: List[str]
 
 
 class Product(OscarCategory):
@@ -47,10 +72,14 @@ class Product(OscarCategory):
     rating: Optional[float]
     is_discountable: bool
 
-    # product_class: ProductClass
+    # Price information
+    price: Decimal = DecimalField()
+    currency: str
+    availability: int
+
+    product_class: ProductClass
     # attributes: List[ProductAttribute]
-    # product_options: List[Option]
-    # categories: List[Category]
+    categories: List[Category]
 
     date_created: datetime
     date_updated: datetime
