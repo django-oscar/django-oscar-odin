@@ -1,6 +1,6 @@
 """Mappings between odin and django-oscar models."""
 from decimal import Decimal
-from typing import Iterable, List, Optional, Tuple, Type, Union
+from typing import Iterable, List, Optional, Tuple, Union
 
 import odin
 from django.contrib.auth.models import AbstractUser
@@ -11,16 +11,21 @@ from oscar.apps.partner.strategy import Default as DefaultStrategy
 from oscar.core.loading import get_class, get_model
 
 from .. import resources
+from ._common import map_queryset
+
+__all__ = (
+    "ProductImageToResource",
+    "CategoryToResource",
+    "ProductClassToResource",
+    "ProductToResource",
+    "product_to_resource",
+    "product_queryset_to_resource",
+)
 
 ProductImageModel = get_model("catalogue", "ProductImage")
 CategoryModel = get_model("catalogue", "Category")
 ProductClassModel = get_model("catalogue", "ProductClass")
 ProductModel = get_model("catalogue", "Product")
-
-
-def map_queryset(mapping: Type[odin.Mapping], queryset: QuerySet, *, context) -> list:
-    """Map a queryset to a resource."""
-    return list(mapping.apply(queryset.all(), context=context))
 
 
 class ProductImageToResource(odin.Mapping):
@@ -78,7 +83,7 @@ class ProductToResource(odin.Mapping):
         """Map meta title field."""
         return self.source.get_meta_title()
 
-    @odin.assign_field
+    @odin.assign_field(to_list=True)
     def images(self) -> List[resources.category.Image]:
         """Map related image."""
         items = self.source.get_all_images()
@@ -99,10 +104,12 @@ class ProductToResource(odin.Mapping):
     @odin.assign_field(to_field=("price", "currency", "availability"))
     def map_stock_price(self) -> Tuple[Decimal, str, int]:
         """Resolve stock price using strategy and decompose into price/currency/availability."""
-        strategy: DefaultStrategy = self.context["strategy"]
+        stock_strategy: DefaultStrategy = self.context["stock_strategy"]
 
         # Switch here based on if this is a parent or child product
-        price, availability, stock_record = strategy.fetch_for_product(self.source)
+        price, availability, stock_record = stock_strategy.fetch_for_product(
+            self.source
+        )
 
         if availability.is_available_to_buy:
             return price.excl_tax, price.currency, availability.num_available
@@ -130,6 +137,30 @@ def product_to_resource(
     :param kwargs: Additional keyword arguments to pass to the strategy selector.
     """
     selector_type = get_class("partner.strategy", "Selector")
-    strategy = selector_type().strategy(request=request, user=user, **kwargs)
+    stock_strategy = selector_type().strategy(request=request, user=user, **kwargs)
 
-    return ProductToResource.apply(product, context={"strategy": strategy})
+    return ProductToResource.apply(product, context={"stock_strategy": stock_strategy})
+
+
+def product_queryset_to_resource(
+    queryset: QuerySet,
+    request: Optional[HttpRequest] = None,
+    user: Optional[AbstractUser] = None,
+    **kwargs
+) -> Iterable[resources.category.Product]:
+    """Map a queryset of product models to a list of resources.
+
+    The request and user are optional, but if provided they are supplied to the
+    partner strategy selector.
+
+    :param queryset: A queryset of product models.
+    :param request: The current HTTP request
+    :param user: The current user
+    :param kwargs: Additional keyword arguments to pass to the strategy selector.
+    """
+
+    query_set = queryset.prefetch_related(
+        "images", "product_class", "product_class__options"
+    )
+
+    return product_to_resource(query_set, request, user, **kwargs)
