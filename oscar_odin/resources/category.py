@@ -1,7 +1,8 @@
 """Resources for Oscar categories."""
+import enum
 from datetime import datetime
 from decimal import Decimal
-from typing import List, Optional
+from typing import Any, Dict, List, Optional
 
 import odin
 
@@ -59,16 +60,25 @@ class ProductClass(OscarCategory):
     options: List[str]
 
 
+class Structure(str, enum.Enum):
+    """Structure of product."""
+
+    STANDALONE = "standalone"
+    PARENT = "parent"
+    CHILD = "child"
+
+
 class Product(OscarCategory):
     """A standalone product within Django Oscar."""
 
     id: int
     upc: Optional[str]
+    structure: Structure
     title: str
     slug: str
     description: str = odin.Options(empty=True)
     meta_title: Optional[str]
-    images: List[Image]
+    images: List[Image] = odin.Options(empty=True)
     rating: Optional[float]
     is_discountable: bool
 
@@ -78,8 +88,11 @@ class Product(OscarCategory):
     availability: int
 
     product_class: ProductClass
-    # attributes: List[ProductAttribute]
+    attributes: Dict[str, Any]
     categories: List[Category]
+    children: Optional[List["Product"]] = odin.ListOf.delayed(
+        lambda: Product, null=True
+    )
 
     date_created: datetime
     date_updated: datetime
