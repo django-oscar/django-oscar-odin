@@ -108,11 +108,37 @@ class ProductToResource(odin.Mapping):
         item = self.source.get_product_class()
         return ProductClassToResource.apply(item, context=self.context)
 
+    @staticmethod
+    def _attribute_value_to_native_type(item):
+        """Handle ProductAttributeValue to native type conversion."""
+        obj_type = item.attribute.type
+        if obj_type == item.attribute.OPTION:
+            return item.value.option
+
+        elif obj_type == item.attribute.MULTI_OPTION:
+            return item.value.values_list("option", flat=True)
+
+        elif obj_type == item.attribute.FILE:
+            return item.value.url
+
+        elif obj_type == item.attribute.IMAGE:
+            return item.value.url
+
+        elif obj_type == item.attribute.ENTITY:
+            if hasattr(item.value, "json"):
+                return item.value.json()
+            else:
+                return f"{repr(item.value)} has no json method, can not convert to json"
+
+        # return the value as stored on ProductAttributeValue in the correct type
+        return item.value
+
     @odin.assign_field
     def attributes(self) -> Dict[str, Any]:
         """Map attributes."""
+        attribute_value_to_native_type = self._attribute_value_to_native_type
         return {
-            item.attribute.code: item.value_as_text
+            item.attribute.code: attribute_value_to_native_type(item)
             for item in self.source.get_attribute_values()
         }
 
@@ -176,7 +202,7 @@ def product_to_resource(
     request: Optional[HttpRequest] = None,
     user: Optional[AbstractUser] = None,
     include_children: bool = False,
-    **kwargs
+    **kwargs,
 ) -> Union[resources.category.Product, Iterable[resources.category.Product]]:
     """Map a product model to a resource.
 
@@ -202,7 +228,7 @@ def product_queryset_to_resources(
     request: Optional[HttpRequest] = None,
     user: Optional[AbstractUser] = None,
     include_children: bool = False,
-    **kwargs
+    **kwargs,
 ) -> Iterable[resources.category.Product]:
     """Map a queryset of product models to a list of resources.
 
