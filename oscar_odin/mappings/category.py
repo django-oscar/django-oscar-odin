@@ -1,6 +1,6 @@
 """Mappings between odin and django-oscar models."""
 from decimal import Decimal
-from typing import Iterable, List, Optional, Tuple, Union
+from typing import Any, Dict, Iterable, List, Optional, Tuple, Union
 
 import odin
 from django.contrib.auth.models import AbstractUser
@@ -11,6 +11,7 @@ from oscar.apps.partner.strategy import Default as DefaultStrategy
 from oscar.core.loading import get_class, get_model
 
 from .. import resources
+from ..resources.category import Structure
 from ._common import map_queryset
 
 __all__ = (
@@ -19,8 +20,9 @@ __all__ = (
     "ProductClassToResource",
     "ProductToResource",
     "product_to_resource",
-    "product_queryset_to_resource",
+    "product_queryset_to_resources",
 )
+
 
 ProductImageModel = get_model("catalogue", "ProductImage")
 CategoryModel = get_model("catalogue", "Category")
@@ -73,6 +75,11 @@ class ProductToResource(odin.Mapping):
     from_obj = ProductModel
     to_obj = resources.category.Product
 
+    @odin.map_field
+    def structure(self, value: str) -> Structure:
+        """Map structure to enum."""
+        return Structure(value)
+
     @odin.assign_field
     def title(self) -> str:
         """Map title field."""
@@ -101,6 +108,27 @@ class ProductToResource(odin.Mapping):
         item = self.source.get_product_class()
         return ProductClassToResource.apply(item, context=self.context)
 
+    @odin.assign_field
+    def attributes(self) -> Dict[str, Any]:
+        """Map attributes."""
+        return {
+            item.attribute.code: item.value_as_text
+            for item in self.source.get_attribute_values()
+        }
+
+    @odin.assign_field
+    def children(self) -> Tuple[Optional[List[resources.category.Product]]]:
+        """Children of parent products."""
+
+        if self.context.get("include_children", False) and self.source.is_parent:
+            # Return a tuple as an optional list causes problems.
+            return (
+                map_queryset(
+                    ProductToResource, self.source.children, context=self.context
+                ),
+            )
+        return (None,)
+
     @odin.assign_field(to_field=("price", "currency", "availability"))
     def map_stock_price(self) -> Tuple[Decimal, str, int]:
         """Resolve stock price using strategy and decompose into price/currency/availability."""
@@ -118,10 +146,36 @@ class ProductToResource(odin.Mapping):
             return Decimal(0), "", 0
 
 
+def product_to_resource_with_strategy(
+    product: Union[ProductModel, Iterable[ProductModel]],
+    stock_strategy: DefaultStrategy,
+    include_children: bool = False,
+):
+    """Map a product model to a resource.
+
+    This method will except either a single product or an iterable of product
+    models (eg a QuerySet), and will return the corresponding resource(s).
+    The request and user are optional, but if provided they are supplied to the
+    partner strategy selector.
+
+    :param product: A single product model or iterable of product models (eg a QuerySet).
+    :param stock_strategy: The current HTTP request
+    :param include_children: Include children of parent products.
+    """
+    return ProductToResource.apply(
+        product,
+        context={
+            "stock_strategy": stock_strategy,
+            "include_children": include_children,
+        },
+    )
+
+
 def product_to_resource(
     product: Union[ProductModel, Iterable[ProductModel]],
     request: Optional[HttpRequest] = None,
     user: Optional[AbstractUser] = None,
+    include_children: bool = False,
     **kwargs
 ) -> Union[resources.category.Product, Iterable[resources.category.Product]]:
     """Map a product model to a resource.
@@ -134,18 +188,20 @@ def product_to_resource(
     :param product: A single product model or iterable of product models (eg a QuerySet).
     :param request: The current HTTP request
     :param user: The current user
+    :param include_children: Include children of parent products.
     :param kwargs: Additional keyword arguments to pass to the strategy selector.
     """
     selector_type = get_class("partner.strategy", "Selector")
     stock_strategy = selector_type().strategy(request=request, user=user, **kwargs)
 
-    return ProductToResource.apply(product, context={"stock_strategy": stock_strategy})
+    return product_to_resource_with_strategy(product, stock_strategy, include_children)
 
 
-def product_queryset_to_resource(
+def product_queryset_to_resources(
     queryset: QuerySet,
     request: Optional[HttpRequest] = None,
     user: Optional[AbstractUser] = None,
+    include_children: bool = False,
     **kwargs
 ) -> Iterable[resources.category.Product]:
     """Map a queryset of product models to a list of resources.
@@ -156,6 +212,7 @@ def product_queryset_to_resource(
     :param queryset: A queryset of product models.
     :param request: The current HTTP request
     :param user: The current user
+    :param include_children: Include children of parent products.
     :param kwargs: Additional keyword arguments to pass to the strategy selector.
     """
 
@@ -163,4 +220,6 @@ def product_queryset_to_resource(
         "images", "product_class", "product_class__options"
     )
 
-    return product_to_resource(query_set, request, user, **kwargs)
+    return product_to_resource(
+        query_set, request, user, include_children=include_children, **kwargs
+    )
