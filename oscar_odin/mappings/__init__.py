@@ -1,5 +1,5 @@
 """Mappings between Oscar models and resources."""
 
-from . import category
+from . import catalogue
 
-__all__ = ["category"]
+__all__ = ("catalogue",)
