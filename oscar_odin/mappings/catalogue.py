@@ -11,7 +11,7 @@ from oscar.apps.partner.strategy import Default as DefaultStrategy
 from oscar.core.loading import get_class, get_model
 
 from .. import resources
-from ..resources.category import Structure
+from ..resources.catalogue import Structure
 from ._common import map_queryset
 
 __all__ = (
@@ -34,7 +34,7 @@ class ProductImageToResource(odin.Mapping):
     """Map from an image model to a resource."""
 
     from_obj = ProductImageModel
-    to_obj = resources.category.Image
+    to_obj = resources.catalogue.Image
 
     @odin.map_field
     def original(self, value: ImageFieldFile) -> str:
@@ -44,10 +44,10 @@ class ProductImageToResource(odin.Mapping):
 
 
 class CategoryToResource(odin.Mapping):
-    """Map from a category model to a resource."""
+    """Map from a catalogue model to a resource."""
 
     from_obj = CategoryModel
-    to_obj = resources.category.Category
+    to_obj = resources.catalogue.Category
 
     @odin.assign_field
     def meta_title(self) -> str:
@@ -66,14 +66,14 @@ class ProductClassToResource(odin.Mapping):
     """Map from a product class model to a resource."""
 
     from_obj = ProductClassModel
-    to_obj = resources.category.ProductClass
+    to_obj = resources.catalogue.ProductClass
 
 
 class ProductToResource(odin.Mapping):
     """Map from a product model to a resource."""
 
     from_obj = ProductModel
-    to_obj = resources.category.Product
+    to_obj = resources.catalogue.Product
 
     @odin.map_field
     def structure(self, value: str) -> Structure:
@@ -91,7 +91,7 @@ class ProductToResource(odin.Mapping):
         return self.source.get_meta_title()
 
     @odin.assign_field(to_list=True)
-    def images(self) -> List[resources.category.Image]:
+    def images(self) -> List[resources.catalogue.Image]:
         """Map related image."""
         items = self.source.get_all_images()
         return map_queryset(ProductImageToResource, items, context=self.context)
@@ -143,7 +143,7 @@ class ProductToResource(odin.Mapping):
         }
 
     @odin.assign_field
-    def children(self) -> Tuple[Optional[List[resources.category.Product]]]:
+    def children(self) -> Tuple[Optional[List[resources.catalogue.Product]]]:
         """Children of parent products."""
 
         if self.context.get("include_children", False) and self.source.is_parent:
@@ -203,7 +203,7 @@ def product_to_resource(
     user: Optional[AbstractUser] = None,
     include_children: bool = False,
     **kwargs,
-) -> Union[resources.category.Product, Iterable[resources.category.Product]]:
+) -> Union[resources.catalogue.Product, Iterable[resources.catalogue.Product]]:
     """Map a product model to a resource.
 
     This method will except either a single product or an iterable of product
@@ -229,7 +229,7 @@ def product_queryset_to_resources(
     user: Optional[AbstractUser] = None,
     include_children: bool = False,
     **kwargs,
-) -> Iterable[resources.category.Product]:
+) -> Iterable[resources.catalogue.Product]:
     """Map a queryset of product models to a list of resources.
 
     The request and user are optional, but if provided they are supplied to the
