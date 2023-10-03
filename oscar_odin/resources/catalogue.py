@@ -11,7 +11,7 @@ from ._base import OscarResource
 
 
 class OscarCatalogue(OscarResource, abstract=True):
-    """Base resource for Oscar categories."""
+    """Base resource for Oscar catalogue application."""
 
     class Meta:
         namespace = "oscar.catalogue"
@@ -69,7 +69,7 @@ class Structure(str, enum.Enum):
 
 
 class Product(OscarCatalogue):
-    """A standalone product within Django Oscar."""
+    """A product within Django Oscar."""
 
     id: int
     upc: Optional[str]

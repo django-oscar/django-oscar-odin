@@ -3,4 +3,4 @@
 from . import catalogue
 from ._base import OscarResource
 
-__all__ = ["OscarResource", "catalogue"]
+__all__ = ["OscarResource", "catalogue", "order"]
