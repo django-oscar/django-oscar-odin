@@ -4,14 +4,19 @@ from datetime import datetime
 from decimal import Decimal
 from typing import Any, Dict, List, Optional
 
+from oscar.core.loading import get_model
+
 import odin
 
 from ..fields import DecimalField
 from ._base import OscarResource
 
+PartnerModel = get_model("partner", "Partner")
+ProductClassModel = get_model("catalogue", "ProductClass")
+
 
 class OscarCatalogue(OscarResource, abstract=True):
-    """Base resource for Oscar categories."""
+    """Base resource for Oscar catalogue application."""
 
     class Meta:
         namespace = "oscar.catalogue"
@@ -25,7 +30,8 @@ class Image(OscarCatalogue):
         verbose_name_plural = "Product images"
 
     id: int
-    original: str  # Image field (URL?)
+    code: str
+    original: Any
     caption: str = odin.Options(empty=True)
     display_order: int = odin.Options(
         default=0,
@@ -40,6 +46,8 @@ class Image(OscarCatalogue):
 class Category(OscarCatalogue):
     """A category within Django Oscar."""
 
+    id: int
+    code: str
     name: str
     slug: str
     description: str
@@ -48,6 +56,8 @@ class Category(OscarCatalogue):
     image: Optional[str]
     is_public: bool
     ancestors_are_public: bool
+    depth: int
+    path: str
 
 
 class ProductClass(OscarCatalogue):
@@ -57,7 +67,6 @@ class ProductClass(OscarCatalogue):
     slug: str
     requires_shipping: bool
     track_stock: bool
-    options: List[str]
 
 
 class Structure(str, enum.Enum):
@@ -68,31 +77,49 @@ class Structure(str, enum.Enum):
     CHILD = "child"
 
 
+class StockRecord(OscarCatalogue):
+    id: int
+    partner_sku: str
+    num_in_stock: int
+    num_allocated: int
+    price: Decimal = DecimalField()
+    currency: str
+
+
+class ProductAttributeValue(OscarCatalogue):
+    code: str
+    value: Any
+
+
+class ParentProduct(OscarCatalogue):
+    upc: str
+
+
 class Product(OscarCatalogue):
-    """A standalone product within Django Oscar."""
+    """A product within Django Oscar."""
 
     id: int
     upc: Optional[str]
     structure: Structure
     title: str
     slug: str
-    description: str = odin.Options(empty=True)
+    description: str = ""
     meta_title: Optional[str]
     images: List[Image] = odin.Options(empty=True)
     rating: Optional[float]
-    is_discountable: bool
+    is_discountable: bool = True
+    is_public: bool = True
+    parent: Optional[ParentProduct]
 
     # Price information
     price: Decimal = DecimalField()
     currency: str
-    availability: int
+    availability: Optional[int]
+    partner: Optional[Any]
 
-    product_class: ProductClass
+    product_class: Optional[ProductClass] = None
     attributes: Dict[str, Any]
     categories: List[Category]
-    children: Optional[List["Product"]] = odin.ListOf.delayed(
-        lambda: Product, null=True
-    )
 
     date_created: datetime
     date_updated: datetime

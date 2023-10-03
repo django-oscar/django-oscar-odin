@@ -1,6 +1,6 @@
 """Resources for Oscar Odin."""
 
-from . import catalogue
+from . import address, auth, catalogue, order
 from ._base import OscarResource
 
-__all__ = ["OscarResource", "catalogue"]
+__all__ = ["OscarResource", "address", "catalogue", "order", "auth"]

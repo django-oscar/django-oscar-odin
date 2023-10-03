@@ -46,18 +46,18 @@ class TestDecimalField(SimpleTestCase):
 
         actual = field.prepare(Decimal("1.2359"))
 
-        self.assertEqual("1.2359", actual)
+        self.assertEqual("1.24", actual)
 
     def test_prepare__where_value_is_rounded_to_default(self):
         field = DecimalField()
 
         actual = field.prepare(Decimal("3.121597"))
 
-        self.assertEqual("3.1216", actual)
+        self.assertEqual("3.12", actual)
 
     def test_prepare__where_value_is_rounded_to_specific_number_of_places(self):
-        field = DecimalField(places=2)
+        field = DecimalField(places=4)
 
         actual = field.prepare(Decimal("6.62607015"))
 
-        self.assertEqual("6.63", actual)
+        self.assertEqual("6.6261", actual)
