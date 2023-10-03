@@ -44,7 +44,7 @@ class ProductImageToResource(odin.Mapping):
 
 
 class CategoryToResource(odin.Mapping):
-    """Map from a catalogue model to a resource."""
+    """Map from a category model to a resource."""
 
     from_obj = CategoryModel
     to_obj = resources.catalogue.Category

@@ -10,14 +10,14 @@ from ..fields import DecimalField
 from ._base import OscarResource
 
 
-class OscarCategory(OscarResource, abstract=True):
+class OscarCatalogue(OscarResource, abstract=True):
     """Base resource for Oscar categories."""
 
     class Meta:
-        namespace = "oscar.category"
+        namespace = "oscar.catalogue"
 
 
-class Image(OscarCategory):
+class Image(OscarCatalogue):
     """An image for a product."""
 
     class Meta:
@@ -37,7 +37,7 @@ class Image(OscarCategory):
     date_created: datetime
 
 
-class Category(OscarCategory):
+class Category(OscarCatalogue):
     """A category within Django Oscar."""
 
     name: str
@@ -50,7 +50,7 @@ class Category(OscarCategory):
     ancestors_are_public: bool
 
 
-class ProductClass(OscarCategory):
+class ProductClass(OscarCatalogue):
     """A product class within Django Oscar."""
 
     name: str
@@ -68,7 +68,7 @@ class Structure(str, enum.Enum):
     CHILD = "child"
 
 
-class Product(OscarCategory):
+class Product(OscarCatalogue):
     """A standalone product within Django Oscar."""
 
     id: int
