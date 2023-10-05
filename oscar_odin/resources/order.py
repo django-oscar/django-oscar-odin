@@ -7,6 +7,7 @@ import odin
 
 from ..fields import DecimalField
 from ._base import OscarResource
+from .address import BillingAddress, ShippingAddress
 
 
 class OscarOrder(OscarResource, abstract=True):
@@ -14,14 +15,6 @@ class OscarOrder(OscarResource, abstract=True):
 
     class Meta:
         namespace = "oscar.order"
-
-
-class BillingAddress(OscarOrder):
-    """Address for billing."""
-
-
-class ShippingAddress(OscarOrder):
-    """Address for shipping."""
 
 
 class Line(OscarOrder):
