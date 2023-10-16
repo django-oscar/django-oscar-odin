@@ -1,7 +1,7 @@
 """Resources for Oscar categories."""
 from datetime import datetime
 from decimal import Decimal
-from typing import List
+from typing import List, Optional
 
 import odin
 
@@ -20,24 +20,44 @@ class OscarOrder(OscarResource, abstract=True):
 class Line(OscarOrder):
     """A line within an order."""
 
-    # partner_id: int
-    partner_name: str
+    partner_id: Optional[int]
+    partner_name: str = odin.Options(empty=True)
     partner_sku: str
-    partner_line_reference: str
-    partner_line_notes: str
+    partner_line_reference: str = odin.Options(
+        empty=True,
+        verbose_name="Partner reference",
+    )
+    partner_line_notes: str = odin.Options(
+        empty=True,
+        verbose_name="Partner notes",
+    )
     # stockrecord_id: int
     # product_id: int
     title: str
-    upc: str
-    quantity: int
-    line_price_incl_tax: Decimal = DecimalField()
-    line_price_excl_tax: Decimal = DecimalField()
-    line_price_before_discounts_incl_tax: Decimal = DecimalField()
-    line_price_before_discounts_excl_tax: Decimal = DecimalField()
-    unit_price_incl_tax: Decimal = DecimalField()
-    unit_price_excl_tax: Decimal = DecimalField()
-    tax_code: str
-    status: str
+    upc: Optional[str]
+    quantity: int = 1
+    line_price_incl_tax: Decimal = DecimalField(
+        verbose_name="Price (inc. tax)",
+    )
+    line_price_excl_tax: Decimal = DecimalField(
+        verbose_name="Price (excl. tax)",
+    )
+    line_price_before_discounts_incl_tax: Decimal = DecimalField(
+        verbose_name="Price before discounts (inc. tax)"
+    )
+    line_price_before_discounts_excl_tax: Decimal = DecimalField(
+        verbose_name="Price before discounts (excl. tax)"
+    )
+    unit_price_incl_tax: Decimal = DecimalField(
+        verbose_name="Unit Price (inc. tax)",
+    )
+    unit_price_excl_tax: Decimal = DecimalField(
+        verbose_name="Unit Price (excl. tax)",
+    )
+    tax_code: Optional[str] = odin.Options(
+        verbose_name="VAT rate code",
+    )
+    status: str = odin.Options(empty=True)
 
 
 class Order(OscarOrder):
@@ -46,23 +66,37 @@ class Order(OscarOrder):
     class Meta:
         verbose_name = "Order"
 
-    number: str = odin.Options(verbose_name="Order number")
-    site_id: int = odin.Options(
-        verbose_name="Site ID", doc_text="Site that the order was made through."
+    number: str = odin.Options(
+        key=True,
+        verbose_name="Order number",
+    )
+    site_id: Optional[int] = odin.Options(
+        verbose_name="Site ID",
+        doc_text="Site that the order was made through.",
     )
     # basket:
     # user
-    billing_address: BillingAddress
+    billing_address: Optional[BillingAddress]
     currency: str
-    total_incl_tax: Decimal = DecimalField()
-    total_excl_tax: Decimal = DecimalField()
-    shipping_incl_tax: Decimal = DecimalField()
-    shipping_excl_tax: Decimal = DecimalField()
-    shipping_tax_code: str
-    shipping_address: ShippingAddress
-    shipping_method: str
-    shipping_code: str
+    total_incl_tax: Decimal = DecimalField(
+        verbose_name="Order total (inc. tax)",
+    )
+    total_excl_tax: Decimal = DecimalField(
+        verbose_name="Order total (excl. tax)",
+    )
+    shipping_incl_tax: Decimal = DecimalField(
+        verbose_name="Shipping charge (inc. tax)",
+    )
+    shipping_excl_tax: Decimal = DecimalField(
+        verbose_name="hipping charge (excl. tax)",
+    )
+    shipping_tax_code: Optional[str] = odin.Options(
+        verbose_name="Shipping VAT rate code"
+    )
+    shipping_address: Optional[ShippingAddress]
+    shipping_method: str = odin.Options(empty=True)
+    shipping_code: str = odin.Options(empty=True)
     lines: List[Line]
-    status: str
-    guest_email: str
+    status: str = odin.Options(empty=True)
+    guest_email: str = odin.Options(empty=True)
     date_placed: datetime
