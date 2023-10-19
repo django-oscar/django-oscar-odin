@@ -1,7 +1,8 @@
 """Resources for Oscar categories."""
 from datetime import datetime
 from decimal import Decimal
-from typing import List, Optional
+from enum import Enum
+from typing import Any, Dict, List, Optional
 
 import odin
 
@@ -15,6 +16,31 @@ class OscarOrder(OscarResource, abstract=True):
 
     class Meta:
         namespace = "oscar.order"
+
+
+class LinePrice(OscarOrder):
+    """For tracking the prices paid for each unit within a line.
+
+    This is necessary as offers can lead to units within a line
+    having different prices.  For example, one product may be sold at
+    50% off as it's part of an offer while the remainder are full price."""
+
+    quantity: int
+    price_incl_tax: Decimal = DecimalField(
+        verbose_name="Price (inc. tax)",
+    )
+    price_excl_tax: Decimal = DecimalField(
+        verbose_name="Price (inc. tax)",
+    )
+    shipping_incl_tax: Decimal = DecimalField(
+        verbose_name="Shipping (inc. tax)",
+    )
+    shipping_excl_tax: Decimal = DecimalField(
+        verbose_name="Shipping (inc. tax)",
+    )
+    tax_code: Optional[str] = odin.Options(
+        verbose_name="VAT rate code",
+    )
 
 
 class Line(OscarOrder):
@@ -31,33 +57,126 @@ class Line(OscarOrder):
         empty=True,
         verbose_name="Partner notes",
     )
-    # stockrecord_id: int
-    # product_id: int
+    stock_record_id: int
+    product_id: int  # (expand this to full product resource)
     title: str
     upc: Optional[str]
     quantity: int = 1
-    line_price_incl_tax: Decimal = DecimalField(
-        verbose_name="Price (inc. tax)",
-    )
-    line_price_excl_tax: Decimal = DecimalField(
-        verbose_name="Price (excl. tax)",
-    )
-    line_price_before_discounts_incl_tax: Decimal = DecimalField(
+    attributes: Dict[str, Any]
+    prices: List[LinePrice]
+
+    # Price information before discounts are applied
+    price_before_discounts_incl_tax: Decimal = DecimalField(
         verbose_name="Price before discounts (inc. tax)"
     )
-    line_price_before_discounts_excl_tax: Decimal = DecimalField(
+    price_before_discounts_excl_tax: Decimal = DecimalField(
         verbose_name="Price before discounts (excl. tax)"
     )
+
+    # Normal site price for item (without discounts)
     unit_price_incl_tax: Decimal = DecimalField(
         verbose_name="Unit Price (inc. tax)",
     )
     unit_price_excl_tax: Decimal = DecimalField(
         verbose_name="Unit Price (excl. tax)",
     )
+
     tax_code: Optional[str] = odin.Options(
         verbose_name="VAT rate code",
     )
+
     status: str = odin.Options(empty=True)
+
+
+class PaymentEvent(OscarOrder):
+    """A payment event for an order.
+
+    For example:
+
+    * All lines have been paid for
+    * 2 lines have been refunded
+    """
+
+    amount: Decimal = DecimalField()
+    reference: str = odin.Options(empty=True)
+    # lines: List[Line]  # How to do this to prevent circular references
+    event_type: str
+    # shipping_event
+
+
+class ShippingEvent(OscarOrder):
+    """An event is something which happens to a group of lines such as
+    1 item being dispatched.
+    """
+
+    # lines: List[Line]
+    event_type: str
+    notes: str = odin.Options(empty=True)
+    date_created: datetime
+
+
+class DiscountCategory(str, Enum):
+    """Category of discount."""
+
+    BASKET = "Basket"
+    SHIPPING = "Shipping"
+    DEFERRED = "Deferred"
+
+
+class Discount(OscarOrder):
+    """A discount against an order."""
+
+    category: DiscountCategory
+    offer_id: Optional[int]
+    offer_name: Optional[str]
+    voucher_id: Optional[int]
+    voucher_code: Optional[str]
+    frequency: Optional[int]
+    amount: Decimal = DecimalField()
+    message: str = odin.Options(empty=True)
+
+
+class Surcharge(OscarOrder):
+    """A surcharge against an order."""
+
+    name: str
+    code: str
+    incl_tax: Decimal = DecimalField(
+        verbose_name="Surcharge (inc. tax)",
+    )
+    excl_tax: Decimal = DecimalField(
+        verbose_name="Surcharge (inc. tax)",
+    )
+    tax_code: Optional[str] = odin.Options(
+        verbose_name="VAT rate code",
+    )
+
+
+class NoteType(str, Enum):
+    """Type of order note."""
+
+    INFO = "Info"
+    WARNING = "Warning"
+    ERROR = "Error"
+    SYSTEM = "System"
+
+
+class Note(OscarOrder):
+    """A note against an order."""
+
+    # user_id: int
+    note_type: Optional[NoteType]
+    message: str
+    date_created: datetime
+    date_updated: datetime
+
+
+class StatusChange(OscarOrder):
+    """A status change for an order."""
+
+    old_status: str = odin.Options(empty=True)
+    new_status: str = odin.Options(empty=True)
+    date_created: datetime
 
 
 class Order(OscarOrder):
@@ -74,8 +193,9 @@ class Order(OscarOrder):
         verbose_name="Site ID",
         doc_text="Site that the order was made through.",
     )
-    # basket:
-    # user
+    basket_id: int
+    user_id: int
+    email: str = odin.Options(empty=True)  # Map off the order property on model
     billing_address: Optional[BillingAddress]
     currency: str
     total_incl_tax: Decimal = DecimalField(
@@ -98,5 +218,10 @@ class Order(OscarOrder):
     shipping_code: str = odin.Options(empty=True)
     lines: List[Line]
     status: str = odin.Options(empty=True)
-    guest_email: str = odin.Options(empty=True)
     date_placed: datetime
+
+    notes: List[Note]
+    status_change: List[StatusChange]
+    discounts: List[Discount]
+    payment_events: List[PaymentEvent]
+    shipping_events: List[ShippingEvent]
