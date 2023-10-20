@@ -1,0 +1,27 @@
+[
+{
+    "model": "partner.partner",
+    "pk": 1,
+    "fields": {
+        "code": "sheep",
+        "name": "sheep",
+        "users": []
+    }
+},
+{
+    "model": "partner.stockrecord",
+    "pk": 1,
+    "fields": {
+        "product": 210,
+        "partner": 1,
+        "partner_sku": "blkshp1",
+        "price_currency": "GBP",
+        "price": "10.00",
+        "num_in_stock": 10,
+        "num_allocated": 4,
+        "low_stock_threshold": null,
+        "date_created": "2023-10-20T12:19:36.365Z",
+        "date_updated": "2023-10-20T12:19:36.365Z"
+    }
+}
+]
