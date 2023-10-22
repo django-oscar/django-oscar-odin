@@ -221,7 +221,8 @@ class Order(OscarOrder):
     date_placed: datetime
 
     notes: List[Note]
-    status_change: List[StatusChange]
+    status_changes: List[StatusChange]
     discounts: List[Discount]
+    surcharges: List[Surcharge]
     payment_events: List[PaymentEvent]
     shipping_events: List[ShippingEvent]
