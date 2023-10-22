@@ -1,0 +1,68 @@
+[
+{
+    "model": "offer.conditionaloffer",
+    "pk": 1,
+    "fields": {
+        "name": "50% discount on sheep",
+        "slug": "50-discount-on-sheep",
+        "description": "<p>For each sheep you choose, you get 50% on the next one</p>",
+        "offer_type": "Site",
+        "exclusive": false,
+        "status": "Open",
+        "condition": 1,
+        "benefit": 1,
+        "priority": 0,
+        "start_datetime": "2023-01-29T13:30:00Z",
+        "end_datetime": null,
+        "max_global_applications": null,
+        "max_user_applications": null,
+        "max_basket_applications": null,
+        "max_discount": null,
+        "total_discount": "5.00",
+        "num_applications": 1,
+        "num_orders": 1,
+        "redirect_url": "",
+        "date_created": "2023-10-20T12:23:41.058Z",
+        "combinations": []
+    }
+},
+{
+    "model": "offer.benefit",
+    "pk": 1,
+    "fields": {
+        "range": 1,
+        "type": "Percentage",
+        "value": "50.00",
+        "max_affected_items": 1,
+        "proxy_class": ""
+    }
+},
+{
+    "model": "offer.condition",
+    "pk": 1,
+    "fields": {
+        "range": 1,
+        "type": "Count",
+        "value": "2.00",
+        "proxy_class": ""
+    }
+},
+{
+    "model": "offer.range",
+    "pk": 1,
+    "fields": {
+        "name": "Sheep",
+        "slug": "sheep",
+        "description": "<p>All sheep</p>",
+        "is_public": true,
+        "includes_all_products": false,
+        "proxy_class": "",
+        "date_created": "2023-10-20T12:22:31.059Z",
+        "excluded_products": [],
+        "classes": [
+            3
+        ],
+        "included_categories": []
+    }
+}
+]
