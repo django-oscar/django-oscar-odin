@@ -1,0 +1,175 @@
+[
+{
+    "model": "order.order",
+    "pk": 1,
+    "fields": {
+        "number": "100001",
+        "site": [
+            "example.com"
+        ],
+        "basket": null,
+        "user": [
+            "timsavage"
+        ],
+        "billing_address": null,
+        "currency": "GBP",
+        "total_incl_tax": "35.00",
+        "total_excl_tax": "35.00",
+        "shipping_incl_tax": "0.00",
+        "shipping_excl_tax": "0.00",
+        "shipping_tax_code": null,
+        "shipping_address": 1,
+        "shipping_method": "Free shipping",
+        "shipping_code": "free-shipping",
+        "status": "Pending",
+        "guest_email": "",
+        "date_placed": "2023-10-20T12:30:10.933Z"
+    }
+},
+{
+    "model": "order.shippingaddress",
+    "pk": 1,
+    "fields": {
+        "title": "",
+        "first_name": "Burt",
+        "last_name": "Brankenbutter",
+        "line1": "Helmholz road",
+        "line2": "",
+        "line3": "",
+        "line4": "Welsum",
+        "state": "",
+        "postcode": "8196KZ",
+        "country": "NL",
+        "search_text": "Burt Brankenbutter Helmholz road Welsum 8196KZ Netherlands",
+        "phone_number": "",
+        "notes": ""
+    }
+},
+{
+    "model": "order.line",
+    "pk": 1,
+    "fields": {
+        "order": 1,
+        "partner": 1,
+        "partner_name": "sheep",
+        "partner_sku": "blkshp1",
+        "partner_line_reference": "",
+        "partner_line_notes": "",
+        "stockrecord": 1,
+        "product": 210,
+        "title": "Black sheep",
+        "upc": "blkshp",
+        "quantity": 2,
+        "line_price_incl_tax": "15.00",
+        "line_price_excl_tax": "15.00",
+        "line_price_before_discounts_incl_tax": "20.00",
+        "line_price_before_discounts_excl_tax": "20.00",
+        "unit_price_incl_tax": "10.00",
+        "unit_price_excl_tax": "10.00",
+        "tax_code": null,
+        "status": "Pending"
+    }
+},
+{
+    "model": "order.line",
+    "pk": 2,
+    "fields": {
+        "order": 1,
+        "partner": 1,
+        "partner_name": "sheep",
+        "partner_sku": "blkshp1",
+        "partner_line_reference": "",
+        "partner_line_notes": "",
+        "stockrecord": 1,
+        "product": 210,
+        "title": "Black sheep",
+        "upc": "blkshp",
+        "quantity": 2,
+        "line_price_incl_tax": "20.00",
+        "line_price_excl_tax": "20.00",
+        "line_price_before_discounts_incl_tax": "20.00",
+        "line_price_before_discounts_excl_tax": "20.00",
+        "unit_price_incl_tax": "10.00",
+        "unit_price_excl_tax": "10.00",
+        "tax_code": null,
+        "status": "Pending"
+    }
+},
+{
+    "model": "order.lineprice",
+    "pk": 1,
+    "fields": {
+        "order": 1,
+        "line": 1,
+        "quantity": 1,
+        "price_incl_tax": "5.00",
+        "price_excl_tax": "5.00",
+        "shipping_incl_tax": "0.00",
+        "shipping_excl_tax": "0.00",
+        "tax_code": null
+    }
+},
+{
+    "model": "order.lineprice",
+    "pk": 2,
+    "fields": {
+        "order": 1,
+        "line": 1,
+        "quantity": 1,
+        "price_incl_tax": "10.00",
+        "price_excl_tax": "10.00",
+        "shipping_incl_tax": "0.00",
+        "shipping_excl_tax": "0.00",
+        "tax_code": null
+    }
+},
+{
+    "model": "order.lineprice",
+    "pk": 3,
+    "fields": {
+        "order": 1,
+        "line": 2,
+        "quantity": 2,
+        "price_incl_tax": "10.00",
+        "price_excl_tax": "10.00",
+        "shipping_incl_tax": "0.00",
+        "shipping_excl_tax": "0.00",
+        "tax_code": null
+    }
+},
+{
+    "model": "order.lineattribute",
+    "pk": 1,
+    "fields": {
+        "line": 1,
+        "option": 1,
+        "type": "testoption",
+        "value": "one sheep"
+    }
+},
+{
+    "model": "order.lineattribute",
+    "pk": 2,
+    "fields": {
+        "line": 2,
+        "option": 1,
+        "type": "testoption",
+        "value": "two sheep"
+    }
+},
+{
+    "model": "order.orderdiscount",
+    "pk": 1,
+    "fields": {
+        "order": 1,
+        "category": "Basket",
+        "offer_id": 1,
+        "offer_name": "50% discount on sheep",
+        "voucher_id": null,
+        "voucher_code": "",
+        "frequency": 1,
+        "amount": "5.00",
+        "message": ""
+    }
+}
+]
