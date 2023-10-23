@@ -9,6 +9,7 @@ import odin
 from ..fields import DecimalField
 from ._base import OscarResource
 from .address import BillingAddress, ShippingAddress
+from .auth import User
 
 
 class OscarOrder(OscarResource, abstract=True):
@@ -193,8 +194,7 @@ class Order(OscarOrder):
         verbose_name="Site ID",
         doc_text="Site that the order was made through.",
     )
-    basket_id: int
-    user_id: int
+    user: Optional[User]
     email: str = odin.Options(empty=True)  # Map off the order property on model
     billing_address: Optional[BillingAddress]
     currency: str

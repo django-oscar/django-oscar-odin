@@ -8,6 +8,7 @@ from oscar.core.loading import get_model
 from .. import resources
 from ._common import map_queryset
 from .address import BillingAddressToResource, ShippingAddressToResource
+from .auth import UserToResource
 
 __all__ = (
     "OrderToResource",
@@ -101,6 +102,12 @@ class OrderToResource(odin.Mapping):
 
     from_obj = OrderModel
     to_obj = resources.order.Order
+
+    @odin.assign_field
+    def user(self) -> Optional[resources.auth.User]:
+        """Map user."""
+        if self.source.user:
+            return UserToResource.apply(self.source.user)
 
     @odin.assign_field
     def billing_address(self) -> Optional[resources.address.BillingAddress]:
