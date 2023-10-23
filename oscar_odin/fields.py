@@ -14,7 +14,7 @@ class DecimalField(ScalarField):
     }
     scalar_type = Decimal
 
-    def __init__(self, places: int = 4, **kwargs):
+    def __init__(self, places: int = 2, **kwargs):
         """Initialise the field."""
         super().__init__(**kwargs)
         self.places = places
