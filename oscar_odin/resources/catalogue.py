@@ -5,6 +5,7 @@ from decimal import Decimal
 from typing import Any, Dict, List, Optional
 
 import odin
+from odin.annotated_resource.type_aliases import Url
 
 from ..fields import DecimalField
 from ._base import OscarResource
@@ -25,7 +26,7 @@ class Image(OscarCatalogue):
         verbose_name_plural = "Product images"
 
     id: int
-    original: str  # Image field (URL?)
+    original: Url = odin.Options(validators=[])
     caption: str = odin.Options(empty=True)
     display_order: int = odin.Options(
         default=0,

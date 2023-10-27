@@ -43,6 +43,19 @@ class ProductImageToResource(odin.Mapping):
         return value.url
 
 
+class ProductImageToModel(odin.Mapping):
+    """Map from an image resource to a model."""
+
+    from_obj = resources.catalogue.Image
+    to_obj = ProductImageModel
+
+    @odin.map_field
+    def original(self, value: str) -> str:
+        """Convert value into a pure URL."""
+        # TODO convert into a form that can be accepted by a model
+        return value
+
+
 class CategoryToResource(odin.Mapping):
     """Map from a category model to a resource."""
 
@@ -62,11 +75,31 @@ class CategoryToResource(odin.Mapping):
             return value.url
 
 
+class CategoryToModel(odin.Mapping):
+    """Map from a category resource to a model."""
+
+    from_obj = resources.catalogue.Category
+    to_obj = CategoryModel
+
+    @odin.map_field
+    def image(self, value: Optional[str]) -> Optional[str]:
+        """Convert value into a pure URL."""
+        # TODO convert into a form that can be accepted by a model
+        return value
+
+
 class ProductClassToResource(odin.Mapping):
     """Map from a product class model to a resource."""
 
     from_obj = ProductClassModel
     to_obj = resources.catalogue.ProductClass
+
+
+class ProductClassToModel(odin.Mapping):
+    """Map from a product class resource to a model."""
+
+    from_obj = resources.catalogue.ProductClass
+    to_obj = ProductClassModel
 
 
 class ProductToResource(odin.Mapping):
@@ -172,6 +205,23 @@ class ProductToResource(odin.Mapping):
             return Decimal(0), "", 0
 
 
+class ProductToModel(odin.Mapping):
+    """Map from a product resource to a model."""
+
+    from_obj = resources.catalogue.Product
+    to_obj = ProductModel
+
+    # @odin.assign_field
+    # def images(self) -> List[ProductImageModel]:
+    #     """Map related image."""
+    #     return list(ProductImageToModel.apply(self.source.images, context=self.context))
+    #
+    # @odin.assign_field
+    # def categories(self) -> List[CategoryModel]:
+    #     """Map related categories."""
+    #     return list(CategoryToModel.apply(self.source.categories, context=self.context))
+
+
 def product_to_resource_with_strategy(
     product: Union[ProductModel, Iterable[ProductModel]],
     stock_strategy: DefaultStrategy,
@@ -249,3 +299,11 @@ def product_queryset_to_resources(
     return product_to_resource(
         query_set, request, user, include_children=include_children, **kwargs
     )
+
+
+def product_to_model(
+    product: resources.catalogue.Product,
+) -> ProductModel:
+    """Map a product resource to a model."""
+    model = ProductToModel.apply(product)
+    return model
