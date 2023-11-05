@@ -42,12 +42,10 @@ class TestProduct(TestCase):
         self.assertIsNotNone(actual.children)
         self.assertEqual(3, len(actual.children))
 
-    def test_product_to_model__basic_model_to_resource(self):
+    def test_product_to_db__basic_model_to_resource(self):
         product = Product.objects.first()
 
         resource = catalogue.product_to_resource(product)
-        actual = catalogue.product_to_model(resource)
-
-        actual.save()
+        actual = catalogue.product_to_db(resource)
 
         self.assertEqual(resource.title, actual.title)

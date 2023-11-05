@@ -4,6 +4,7 @@ from typing import Any, Dict, Iterable, List, Optional, Tuple, Union
 
 import odin
 from django.contrib.auth.models import AbstractUser
+from django.db import transaction
 from django.db.models import QuerySet
 from django.db.models.fields.files import ImageFieldFile
 from django.http import HttpRequest
@@ -13,6 +14,7 @@ from oscar.core.loading import get_class, get_model
 from .. import resources
 from ..resources.catalogue import Structure
 from ._common import map_queryset
+from ._model_mapper import ModelMapping
 
 __all__ = (
     "ProductImageToResource",
@@ -205,17 +207,17 @@ class ProductToResource(odin.Mapping):
             return Decimal(0), "", 0
 
 
-class ProductToModel(odin.Mapping):
+class ProductToModel(ModelMapping):
     """Map from a product resource to a model."""
 
     from_obj = resources.catalogue.Product
     to_obj = ProductModel
 
-    # @odin.assign_field
-    # def images(self) -> List[ProductImageModel]:
-    #     """Map related image."""
-    #     return list(ProductImageToModel.apply(self.source.images, context=self.context))
-    #
+    @odin.map_list_field
+    def images(self, values) -> List[ProductImageModel]:
+        """Map related image."""
+        return list(ProductImageToModel.apply(values, context=self.context))
+
     # @odin.assign_field
     # def categories(self) -> List[CategoryModel]:
     #     """Map related categories."""
@@ -306,4 +308,23 @@ def product_to_model(
 ) -> ProductModel:
     """Map a product resource to a model."""
     model = ProductToModel.apply(product)
+    return model
+
+
+def product_to_db(
+    product: resources.catalogue.Product,
+) -> ProductModel:
+    """Map a product resource to a model and store in the database.
+
+    The method will handle the nested database saves required to store the entire resource
+    within a single transaction.
+    """
+    model: ProductModel = product_to_model(product)
+
+    with transaction.atomic():
+        model.save()
+        for image in product.images:
+            image.product = model
+            image.save()
+
     return model
