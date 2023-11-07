@@ -323,8 +323,5 @@ def product_to_db(
 
     with transaction.atomic():
         model.save()
-        for image in product.images:
-            image.product = model
-            image.save()
 
     return model
