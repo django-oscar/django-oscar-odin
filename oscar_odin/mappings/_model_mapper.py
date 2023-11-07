@@ -1,7 +1,6 @@
 """Extended model mapper for Django models."""
 from typing import Sequence
 
-from django.db.models import ManyToManyRel, ManyToOneRel, OneToOneRel
 from odin.mapping import MappingBase, MappingMeta
 from odin.utils import getmeta
 
@@ -19,12 +18,13 @@ class ModelMappingMeta(MappingMeta):
         mapping_type.one_to_one_fields = one_to_one_fields = []
         mapping_type.many_to_one_fields = many_to_one_fields = []
         mapping_type.many_to_many_fields = many_to_many_fields = []
-        for relation in getmeta(mapping_type.to_obj).related_objects:
-            if isinstance(relation, OneToOneRel):
+        related_object = getmeta(mapping_type.to_obj).related_objects
+        for relation in related_object:
+            if relation.many_to_many:
                 one_to_one_fields.append(relation.related_name)
-            elif isinstance(relation, ManyToOneRel):
+            elif relation.many_to_one:
                 many_to_one_fields.append(relation.related_name)
-            elif isinstance(relation, ManyToManyRel):
+            elif relation.one_to_many:
                 many_to_many_fields.append(relation.related_name)
 
         return mapping_type
@@ -42,17 +42,17 @@ class ModelMapping(MappingBase, metaclass=ModelMappingMeta):
     def create_object(self, **field_values):
         """Create a new product model."""
 
-        [
+        one_to_one_items = [
             (name, field_values.pop(name))
             for name in self.one_to_one_fields
             if name in field_values
         ]
-        many_to_one_values = [
+        many_to_one_items = [
             (name, field_values.pop(name))
             for name in self.many_to_one_fields
             if name in field_values
         ]
-        [
+        many_to_many_items = [
             (name, field_values.pop(name))
             for name in self.many_to_many_fields
             if name in field_values
@@ -60,10 +60,16 @@ class ModelMapping(MappingBase, metaclass=ModelMappingMeta):
 
         obj = super().create_object(**field_values)
 
-        # TODO add one_to_one_values
-        for name, value in many_to_one_values:
+        for name, value in one_to_one_items:
             if value:
                 getattr(obj, name).set(value)
-        # TODO add many_to_many_values
+
+        for name, value in many_to_one_items:
+            if value:
+                getattr(obj, name).set(value)
+
+        for name, value in many_to_many_items:
+            if value:
+                getattr(obj, name).set(value)
 
         return obj
