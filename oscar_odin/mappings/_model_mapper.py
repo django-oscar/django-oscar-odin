@@ -21,11 +21,17 @@ class ModelMappingMeta(MappingMeta):
         related_object = getmeta(mapping_type.to_obj).related_objects
         for relation in related_object:
             if relation.many_to_many:
-                one_to_one_fields.append(relation.related_name)
+                one_to_one_fields.append(
+                    (relation.related_name, relation.related_model._meta.db_table)
+                )
             elif relation.many_to_one:
-                many_to_one_fields.append(relation.related_name)
+                many_to_one_fields.append(
+                    (relation.related_name, relation.related_model._meta.db_table)
+                )
             elif relation.one_to_many:
-                many_to_many_fields.append(relation.related_name)
+                many_to_many_fields.append(
+                    (relation.related_name, relation.related_model._meta.db_table)
+                )
 
         return mapping_type
 
@@ -43,33 +49,36 @@ class ModelMapping(MappingBase, metaclass=ModelMappingMeta):
         """Create a new product model."""
 
         one_to_one_items = [
-            (name, field_values.pop(name))
-            for name in self.one_to_one_fields
+            (name, table_name, field_values.pop(name))
+            for name, table_name in self.one_to_one_fields
             if name in field_values
         ]
         many_to_one_items = [
-            (name, field_values.pop(name))
-            for name in self.many_to_one_fields
+            (name, table_name, field_values.pop(name))
+            for name, table_name in self.many_to_one_fields
             if name in field_values
         ]
         many_to_many_items = [
-            (name, field_values.pop(name))
-            for name in self.many_to_many_fields
+            (name, table_name, field_values.pop(name))
+            for name, table_name in self.many_to_many_fields
             if name in field_values
         ]
 
         obj = super().create_object(**field_values)
 
-        for name, value in one_to_one_items:
+        for name, table_name, value in one_to_one_items:
             if value:
+                self.context.setdefault(table_name, []).append(value)
                 getattr(obj, name).set(value)
 
-        for name, value in many_to_one_items:
+        for name, table_name, value in many_to_one_items:
             if value:
-                getattr(obj, name).set(value)
+                self.context.setdefault(table_name, []).extend(value)
+                getattr(obj, name).sadd(*value)
 
-        for name, value in many_to_many_items:
+        for name, table_name, value in many_to_many_items:
             if value:
-                getattr(obj, name).set(value)
+                self.context.setdefault(table_name, []).extend(value)
+                getattr(obj, name).add(*value)
 
         return obj
