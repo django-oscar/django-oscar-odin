@@ -325,8 +325,11 @@ def product_to_model(
     product: resources.catalogue.Product,
 ) -> ProductModel:
     """Map a product resource to a model."""
+    context = {}
+    
+    obj = ProductToModel.apply(product, context=context)
 
-    return ProductToModel.apply(product)
+    return obj, context
 
 
 def product_to_db(
@@ -337,9 +340,7 @@ def product_to_db(
     The method will handle the nested database saves required to store the entire resource
     within a single transaction.
     """
-    obj = product_to_model(product)
-
-    context = obj.odin_context
+    obj, context = product_to_model(product)
 
     with transaction.atomic():
         for fk_name, fk_attname, fk_instance in context.get("foreign_key_items", []):

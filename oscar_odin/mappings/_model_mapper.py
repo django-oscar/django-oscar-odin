@@ -78,8 +78,5 @@ class ModelMapping(MappingBase, metaclass=ModelMappingMeta):
             for name, table_name in self.foreign_key_fields
             if name in field_values
         ]
-        obj = super().create_object(**field_values)
 
-        setattr(obj, "odin_context", self.context)
-
-        return obj
+        return super().create_object(**field_values)
