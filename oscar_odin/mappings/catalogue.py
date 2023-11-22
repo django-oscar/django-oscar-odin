@@ -325,7 +325,7 @@ def product_to_model(
     product: resources.catalogue.Product,
 ) -> ProductModel:
     """Map a product resource to a model."""
-    context = {}
+    context = {"original_object": product}
     
     obj = ProductToModel.apply(product, context=context)
 
