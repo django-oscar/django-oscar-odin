@@ -26,7 +26,7 @@ classifiers = [
 [tool.poetry.dependencies]
 python = "^3.8"
 odin = "^2.9"
-django-oscar = "^3.2.2"
+django-oscar = "^3.2"
 
 [tool.poetry.dev-dependencies]
 coverage = "^7.3"

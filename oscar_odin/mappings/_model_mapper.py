@@ -21,29 +21,26 @@ class ModelMappingMeta(MappingMeta):
         mapping_type.many_to_one_fields = many_to_one_fields = []
         mapping_type.many_to_many_fields = many_to_many_fields = []
         mapping_type.foreign_key_fields = foreign_key_fields = []
-        
-        meta = getmeta(mapping_type.to_obj)    
+
+        meta = getmeta(mapping_type.to_obj)
 
         for relation in meta.related_objects:
             if relation.many_to_many:
-                one_to_one_fields.append(
-                    (relation.related_name, relation.related_model._meta.db_table)
+                many_to_many_fields.append(
+                    (relation.related_name, relation.field.attname)
                 )
             elif relation.many_to_one:
                 many_to_one_fields.append(
-                    (relation.related_name, relation.related_model._meta.db_table)
+                    (relation.related_name, relation.field.attname)
                 )
             elif relation.one_to_many:
                 many_to_many_fields.append(
-                    (relation.related_name, relation.related_model._meta.db_table)
+                    (relation.related_name, relation.field.attname)
                 )
-                
+
         for field in meta.fields:
             if isinstance(field, ForeignKey):
-                print(field, field.name, field.related_model)
-                foreign_key_fields.append(
-                    ("%s_id" % field.name, field.related_model._meta.db_table)
-                )
+                foreign_key_fields.append(("%s_id" % field.name, field.attname))
 
         return mapping_type
 
@@ -60,49 +57,29 @@ class ModelMapping(MappingBase, metaclass=ModelMappingMeta):
 
     def create_object(self, **field_values):
         """Create a new product model."""
-        
-        print("onetoone", self.one_to_one_fields)
-        print("manytomany", self.many_to_one_fields)
-        print("manytoone", self.many_to_many_fields)
-        print("foreignkey", self.foreign_key_fields)
-        print("fieldvalues", field_values)
 
-        one_to_one_items = [
+        self.context["one_to_one_items"] = one_to_one_items = [
             (name, table_name, field_values.pop(name))
             for name, table_name in self.one_to_one_fields
             if name in field_values
         ]
-        many_to_one_items = [
+        self.context["many_to_one_items"] = many_to_one_items = [
             (name, table_name, field_values.pop(name))
             for name, table_name in self.many_to_one_fields
             if name in field_values
         ]
-        many_to_many_items = [
+        self.context["many_to_many_items"] = many_to_many_items = [
             (name, table_name, field_values.pop(name))
             for name, table_name in self.many_to_many_fields
             if name in field_values
         ]
-        foreign_key_items = [
+        self.context["foreign_key_items"] = foreign_key_items = [
             (name, table_name, field_values.pop(name))
             for name, table_name in self.foreign_key_fields
             if name in field_values
         ]
-
         obj = super().create_object(**field_values)
 
-        # for name, table_name, value in one_to_one_items:
- #            if value:
- #                self.context.setdefault(table_name, []).append(value)
- #                # getattr(obj, name).set(value)
- #
- #        for name, table_name, value in many_to_one_items:
- #            if value:
- #                self.context.setdefault(table_name, []).extend(value)
- #                # getattr(obj, name).sadd(*value)
- #
- #        for name, table_name, value in many_to_many_items:
- #            if value:
- #                self.context.setdefault(table_name, []).extend(value)
- #                # getattr(obj, name).add(*value)
+        setattr(obj, "odin_context", self.context)
 
-        return obj, one_to_one_items, many_to_one_items, many_to_many_items, foreign_key_items
+        return obj

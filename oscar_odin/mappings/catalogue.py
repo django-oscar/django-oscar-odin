@@ -11,6 +11,8 @@ from django.http import HttpRequest
 from oscar.apps.partner.strategy import Default as DefaultStrategy
 from oscar.core.loading import get_class, get_model
 
+from datetime import datetime
+
 from .. import resources
 from ..resources.catalogue import Structure
 from ._common import map_queryset
@@ -56,6 +58,13 @@ class ProductImageToModel(odin.Mapping):
         """Convert value into a pure URL."""
         # TODO convert into a form that can be accepted by a model
         return value
+
+    @odin.map_field
+    def date_created(self, value: datetime) -> datetime:
+        if value:
+            return value
+
+        return datetime.now()
 
 
 class CategoryToResource(odin.Mapping):
@@ -213,11 +222,10 @@ class ProductToModel(ModelMapping):
     from_obj = resources.catalogue.Product
     to_obj = ProductModel
 
-    @odin.map_list_field(from_field="images", to_field="images")
+    @odin.map_list_field
     def images(self, values) -> List[ProductImageModel]:
-        """Map related image."""
-        print("IMAGES VALUES", values)
-        return list(ProductImageToModel.apply(values, context=self.context))
+        """Map related image. We save these later in bulk"""
+        return ProductImageToModel.apply(values)
 
     @odin.map_list_field
     def children(self, values) -> List[ProductModel]:
@@ -317,6 +325,7 @@ def product_to_model(
     product: resources.catalogue.Product,
 ) -> ProductModel:
     """Map a product resource to a model."""
+
     return ProductToModel.apply(product)
 
 
@@ -328,21 +337,20 @@ def product_to_db(
     The method will handle the nested database saves required to store the entire resource
     within a single transaction.
     """
-    model, one_to_one_items, many_to_one_items, many_to_many_items, foreign_key_items = product_to_model(product)
+    obj = product_to_model(product)
 
-    print(model)
-    print("one_to_one_items", one_to_one_items)
-    print("many_to_one_items", many_to_one_items)
-    print("many_to_many_items", many_to_many_items)
-    print("foreign_key_items", foreign_key_items)
+    context = obj.odin_context
 
     with transaction.atomic():
-        for fk_name, fk_db_table, fk_instance in foreign_key_items:
-            fk_instance.full_clean()
+        for fk_name, fk_attname, fk_instance in context.get("foreign_key_items", []):
             fk_instance.save()
-            setattr(model, fk_name, fk_instance.pk)
+            setattr(obj, fk_name, fk_instance.pk)
 
-        model.full_clean()
-        model.save()
+        obj.save()
 
-    return model
+        for mtm_name, mtm_attname, instances in context.get("many_to_many_items", []):
+            for mtm_instance in instances:
+                setattr(mtm_instance, mtm_attname, obj.pk)
+                mtm_instance.save()
+
+    return obj

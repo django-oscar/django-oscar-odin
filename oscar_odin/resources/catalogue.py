@@ -26,7 +26,6 @@ class Image(OscarCatalogue):
         verbose_name_plural = "Product images"
 
     id: int
-    product_id: int
     original: Url = odin.Options(validators=[])
     caption: str = odin.Options(empty=True)
     display_order: int = odin.Options(
