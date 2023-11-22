@@ -27,8 +27,9 @@ class ProductReverseTest(TestCase):
 
         prd = product_to_db(product_resource)
 
+        prd = Product.objects.get(upc="1234323")
+        
         self.assertEquals(prd.title, "asdf1")
-        self.assertTrue(Product.objects.filter(upc="1234323").exists())
 
     def test_create_product_with_related_fields(self):
         product_resource = ProductResource(
@@ -45,6 +46,8 @@ class ProductReverseTest(TestCase):
         )
 
         prd = product_to_db(product_resource)
+        
+        prd = Product.objects.get(upc="1234323-2")
 
         self.assertEquals(prd.title, "asdf2")
         
