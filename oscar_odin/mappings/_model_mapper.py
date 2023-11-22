@@ -40,7 +40,7 @@ class ModelMappingMeta(MappingMeta):
 
         for field in meta.fields:
             if isinstance(field, ForeignKey):
-                foreign_key_fields.append(("%s_id" % field.name, field.attname))
+                foreign_key_fields.append((field.attname, field.attname))
 
         return mapping_type
 
