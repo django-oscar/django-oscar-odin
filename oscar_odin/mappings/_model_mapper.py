@@ -1,6 +1,8 @@
 """Extended model mapper for Django models."""
 from typing import Sequence
 
+from django.db.models.fields.related import ForeignKey
+
 from odin.mapping import MappingBase, MappingMeta
 from odin.utils import getmeta
 
@@ -18,8 +20,11 @@ class ModelMappingMeta(MappingMeta):
         mapping_type.one_to_one_fields = one_to_one_fields = []
         mapping_type.many_to_one_fields = many_to_one_fields = []
         mapping_type.many_to_many_fields = many_to_many_fields = []
-        related_object = getmeta(mapping_type.to_obj).related_objects
-        for relation in related_object:
+        mapping_type.foreign_key_fields = foreign_key_fields = []
+        
+        meta = getmeta(mapping_type.to_obj)    
+
+        for relation in meta.related_objects:
             if relation.many_to_many:
                 one_to_one_fields.append(
                     (relation.related_name, relation.related_model._meta.db_table)
@@ -31,6 +36,13 @@ class ModelMappingMeta(MappingMeta):
             elif relation.one_to_many:
                 many_to_many_fields.append(
                     (relation.related_name, relation.related_model._meta.db_table)
+                )
+                
+        for field in meta.fields:
+            if isinstance(field, ForeignKey):
+                print(field, field.name, field.related_model)
+                foreign_key_fields.append(
+                    ("%s_id" % field.name, field.related_model._meta.db_table)
                 )
 
         return mapping_type
@@ -44,9 +56,16 @@ class ModelMapping(MappingBase, metaclass=ModelMappingMeta):
     one_to_one_fields: Sequence[str] = []
     many_to_one_fields: Sequence[str] = []
     many_to_many_fields: Sequence[str] = []
+    foreign_key_fields: Sequence[str] = []
 
     def create_object(self, **field_values):
         """Create a new product model."""
+        
+        print("onetoone", self.one_to_one_fields)
+        print("manytomany", self.many_to_one_fields)
+        print("manytoone", self.many_to_many_fields)
+        print("foreignkey", self.foreign_key_fields)
+        print("fieldvalues", field_values)
 
         one_to_one_items = [
             (name, table_name, field_values.pop(name))
@@ -63,22 +82,27 @@ class ModelMapping(MappingBase, metaclass=ModelMappingMeta):
             for name, table_name in self.many_to_many_fields
             if name in field_values
         ]
+        foreign_key_items = [
+            (name, table_name, field_values.pop(name))
+            for name, table_name in self.foreign_key_fields
+            if name in field_values
+        ]
 
         obj = super().create_object(**field_values)
 
-        for name, table_name, value in one_to_one_items:
-            if value:
-                self.context.setdefault(table_name, []).append(value)
-                getattr(obj, name).set(value)
+        # for name, table_name, value in one_to_one_items:
+ #            if value:
+ #                self.context.setdefault(table_name, []).append(value)
+ #                # getattr(obj, name).set(value)
+ #
+ #        for name, table_name, value in many_to_one_items:
+ #            if value:
+ #                self.context.setdefault(table_name, []).extend(value)
+ #                # getattr(obj, name).sadd(*value)
+ #
+ #        for name, table_name, value in many_to_many_items:
+ #            if value:
+ #                self.context.setdefault(table_name, []).extend(value)
+ #                # getattr(obj, name).add(*value)
 
-        for name, table_name, value in many_to_one_items:
-            if value:
-                self.context.setdefault(table_name, []).extend(value)
-                getattr(obj, name).sadd(*value)
-
-        for name, table_name, value in many_to_many_items:
-            if value:
-                self.context.setdefault(table_name, []).extend(value)
-                getattr(obj, name).add(*value)
-
-        return obj
+        return obj, one_to_one_items, many_to_one_items, many_to_many_items, foreign_key_items

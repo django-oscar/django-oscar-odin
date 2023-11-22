@@ -213,10 +213,20 @@ class ProductToModel(ModelMapping):
     from_obj = resources.catalogue.Product
     to_obj = ProductModel
 
-    @odin.map_list_field
+    @odin.map_list_field(from_field="images", to_field="images")
     def images(self, values) -> List[ProductImageModel]:
         """Map related image."""
+        print("IMAGES VALUES", values)
         return list(ProductImageToModel.apply(values, context=self.context))
+
+    @odin.map_list_field
+    def children(self, values) -> List[ProductModel]:
+        """Map related image."""
+        return []
+
+    @odin.map_field(from_field="product_class", to_field="product_class_id")
+    def product_class_id(self, value) -> ProductClassModel:
+        return ProductClassToModel.apply(value)
 
     # @odin.assign_field
     # def categories(self) -> List[CategoryModel]:
@@ -307,8 +317,7 @@ def product_to_model(
     product: resources.catalogue.Product,
 ) -> ProductModel:
     """Map a product resource to a model."""
-    model = ProductToModel.apply(product)
-    return model
+    return ProductToModel.apply(product)
 
 
 def product_to_db(
@@ -319,9 +328,21 @@ def product_to_db(
     The method will handle the nested database saves required to store the entire resource
     within a single transaction.
     """
-    model: ProductModel = product_to_model(product)
+    model, one_to_one_items, many_to_one_items, many_to_many_items, foreign_key_items = product_to_model(product)
+
+    print(model)
+    print("one_to_one_items", one_to_one_items)
+    print("many_to_one_items", many_to_one_items)
+    print("many_to_many_items", many_to_many_items)
+    print("foreign_key_items", foreign_key_items)
 
     with transaction.atomic():
+        for fk_name, fk_db_table, fk_instance in foreign_key_items:
+            fk_instance.full_clean()
+            fk_instance.save()
+            setattr(model, fk_name, fk_instance.pk)
+
+        model.full_clean()
         model.save()
 
     return model
