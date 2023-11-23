@@ -28,7 +28,7 @@ class ProductReverseTest(TestCase):
         prd = product_to_db(product_resource)
 
         prd = Product.objects.get(upc="1234323")
-        
+
         self.assertEquals(prd.title, "asdf1")
 
     def test_create_product_with_related_fields(self):
@@ -42,13 +42,16 @@ class ProductReverseTest(TestCase):
             product_class=ProductClassResource(
                 name="Klaas", slug="klaas", requires_shipping=True, track_stock=True
             ),
-            images=[ImageResource(caption="gekke caption", display_order=0), ImageResource(caption="gekke caption 2", display_order=1)],
+            images=[
+                ImageResource(caption="gekke caption", display_order=0),
+                ImageResource(caption="gekke caption 2", display_order=1),
+            ],
         )
 
         prd = product_to_db(product_resource)
-        
+
         prd = Product.objects.get(upc="1234323-2")
 
         self.assertEquals(prd.title, "asdf2")
-        
+
         self.assertEquals(prd.images.count(), 2)

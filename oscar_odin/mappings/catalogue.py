@@ -14,6 +14,7 @@ from oscar.core.loading import get_class, get_model
 from datetime import datetime
 
 from .. import resources
+from ..utils import RelatedModels
 from ..resources.catalogue import Structure
 from ._common import map_queryset
 from ._model_mapper import ModelMapping
@@ -57,7 +58,10 @@ class ProductImageToModel(odin.Mapping):
     def original(self, value: str) -> str:
         """Convert value into a pure URL."""
         # TODO convert into a form that can be accepted by a model
-        return value
+        if value:
+            return value
+
+        return "lege-image"
 
     @odin.map_field
     def date_created(self, value: datetime) -> datetime:
@@ -232,14 +236,9 @@ class ProductToModel(ModelMapping):
         """Map related image."""
         return []
 
-    @odin.map_field(from_field="product_class", to_field="product_class_id")
-    def product_class_id(self, value) -> ProductClassModel:
+    @odin.map_field
+    def product_class(self, value) -> ProductClassModel:
         return ProductClassToModel.apply(value)
-
-    # @odin.assign_field
-    # def categories(self) -> List[CategoryModel]:
-    #     """Map related categories."""
-    #     return list(CategoryToModel.apply(self.source.categories, context=self.context))
 
 
 def product_to_resource_with_strategy(
@@ -321,25 +320,6 @@ def product_queryset_to_resources(
     )
 
 
-ForeignRelationResult = Tuple[Model, ManyToManyField, Any]
-
-
-class RelatedModels(NamedTuple):
-    @classmethod
-    def from_context(cls, context: dict):
-        return cls(
-            context["one_to_many_items"],
-            context["many_to_one_items"],
-            context["many_to_many_items"],
-            context["foreign_key_items"],
-        )
-
-    one_to_many_items: ForeignRelationResult
-    many_to_one_items: ForeignRelationResult
-    many_to_many_items: ForeignRelationResult
-    foreign_key_items: Tuple[Model, ForeignKey, Any]
-
-
 def product_to_model(
     product: resources.catalogue.Product,
 ) -> Tuple[ProductModel, RelatedModels]:
@@ -363,14 +343,17 @@ def product_to_db(
 
     with transaction.atomic():
         for parent, field, fk_instance in related_models.foreign_key_items:
+            fk_instance.full_clean()
             fk_instance.save()
-            setattr(obj, fk_name, fk_instance.pk)
+            setattr(obj, field.name, fk_instance)
 
+        fk_instance.full_clean()
         obj.save()
 
-        for mtm_name, mtm_attname, instances in context.get("many_to_many_items", []):
-            for mtm_instance in instances:
-                setattr(mtm_instance, mtm_attname, obj.pk)
-                mtm_instance.save()
+        for parent, relation, instances in related_models.related_items:
+            for instance in instances:
+                setattr(instance, relation.field.name, obj)
+                instance.full_clean()
+                instance.save()
 
     return obj
