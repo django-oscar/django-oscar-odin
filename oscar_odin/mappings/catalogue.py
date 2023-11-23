@@ -1,11 +1,11 @@
 """Mappings between odin and django-oscar models."""
 from decimal import Decimal
-from typing import Any, Dict, Iterable, List, Optional, Tuple, Union
+from typing import Any, Dict, Iterable, List, Optional, Tuple, Union, NamedTuple
 
 import odin
 from django.contrib.auth.models import AbstractUser
 from django.db import transaction
-from django.db.models import QuerySet
+from django.db.models import QuerySet, Model, ManyToManyField, ForeignKey
 from django.db.models.fields.files import ImageFieldFile
 from django.http import HttpRequest
 from oscar.apps.partner.strategy import Default as DefaultStrategy
@@ -321,15 +321,34 @@ def product_queryset_to_resources(
     )
 
 
+ForeignRelationResult = Tuple[Model, ManyToManyField, Any]
+
+
+class RelatedModels(NamedTuple):
+    @classmethod
+    def from_context(cls, context: dict):
+        return cls(
+            context["one_to_many_items"],
+            context["many_to_one_items"],
+            context["many_to_many_items"],
+            context["foreign_key_items"],
+        )
+
+    one_to_many_items: ForeignRelationResult
+    many_to_one_items: ForeignRelationResult
+    many_to_many_items: ForeignRelationResult
+    foreign_key_items: Tuple[Model, ForeignKey, Any]
+
+
 def product_to_model(
     product: resources.catalogue.Product,
-) -> ProductModel:
+) -> Tuple[ProductModel, RelatedModels]:
     """Map a product resource to a model."""
     context = {"original_object": product}
-    
+
     obj = ProductToModel.apply(product, context=context)
 
-    return obj, context
+    return (obj, RelatedModels.from_context(context))
 
 
 def product_to_db(
@@ -340,10 +359,10 @@ def product_to_db(
     The method will handle the nested database saves required to store the entire resource
     within a single transaction.
     """
-    obj, context = product_to_model(product)
+    obj, related_models = product_to_model(product)
 
     with transaction.atomic():
-        for fk_name, fk_attname, fk_instance in context.get("foreign_key_items", []):
+        for parent, field, fk_instance in related_models.foreign_key_items:
             fk_instance.save()
             setattr(obj, fk_name, fk_instance.pk)
 
