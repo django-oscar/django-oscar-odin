@@ -1,5 +1,6 @@
 """Extended model mapper for Django models."""
 from typing import Sequence, cast
+from collections import defaultdict
 
 from django.db.models.fields.related import ForeignKey, ManyToManyField
 from django.db.models.fields.reverse_related import (
@@ -26,19 +27,21 @@ class ModelMappingMeta(MappingMeta):
 
         # Extract out foreign field types.
         mapping_type.many_to_one_fields = many_to_one_fields = []
-        mapping_type.many_to_many_fields = many_to_many_fields = []
+        mapping_type.one_to_many_fields = one_to_many_fields = []
+        mapping_type.many_to_many_fields = many_to_many_fields = [
+            field for field in meta.many_to_many
+        ]
         mapping_type.foreign_key_fields = [
             field for field in meta.fields if isinstance(field, ForeignKey)
         ]
 
         # Break out related objects by their type
         for relation in meta.related_objects:
-            if relation.many_to_many:
-                many_to_many_fields.append(relation)
-            elif relation.many_to_one:
-                many_to_one_fields.append(relation)
-            elif relation.one_to_many:
-                many_to_one_fields.append(relation)
+            if relation.related_name:
+                if relation.many_to_one:
+                    many_to_one_fields.append(relation)
+                elif relation.one_to_many:
+                    one_to_many_fields.append(relation)
 
         return mapping_type
 
@@ -50,38 +53,58 @@ class ModelMapping(MappingBase, metaclass=ModelMappingMeta):
     mappings = []
 
     # Specific fields
+    one_to_many_fields: Sequence[ManyToManyRel] = []
     many_to_one_fields: Sequence[ManyToOneRel] = []
     many_to_many_fields: Sequence[ManyToManyRel] = []
     foreign_key_fields: Sequence[ForeignKey] = []
 
     def create_object(self, **field_values):
         """Create a new product model."""
-        many_to_one_items = [
-            (relation, field_values.pop(relation.related_name))
+        m2m_related_values = {
+            field: field_values.pop(field.name)
+            for field in self.many_to_many_fields
+            if field.name in field_values
+        }
+
+        m2o_related_values = {
+            relation: field_values.pop(relation.related_name)
             for relation in self.many_to_one_fields
             if relation.related_name in field_values
-        ]
-        many_to_many_items = [
-            (relation, field_values.pop(relation.related_name))
-            for relation in self.many_to_many_fields
+        }
+
+        o2m_related_values = {
+            relation: field_values.pop(relation.related_name)
+            for relation in self.one_to_many_fields
             if relation.related_name in field_values
-        ]
-        foreign_key_items = [
-            (field, field_values.pop(field.name))
-            for field in self.foreign_key_fields
-            if field.name in field_values
-        ]
+        }
 
         parent = super().create_object(**field_values)
 
-        self.context["many_to_one_items"] = [
-            (parent, *item) for item in many_to_one_items
-        ]
-        self.context["many_to_many_items"] = [
-            (parent, *item) for item in many_to_many_items
-        ]
-        self.context["foreign_key_items"] = [
-            (parent, *item) for item in foreign_key_items
-        ]
+        for relation in m2o_related_values.keys():
+            instances = m2o_related_values[relation]
+            if instances:
+                self.context.add_instances_to_m2o_relation(
+                    relation, (parent, instances)
+                )
+
+        for relation in m2m_related_values.keys():
+            instances = m2m_related_values[relation]
+            if instances:
+                self.context.add_instances_to_m2m_relation(
+                    relation, (parent, instances)
+                )
+
+        for relation in o2m_related_values.keys():
+            instances = o2m_related_values[relation]
+            if instances:
+                self.context.add_instances_to_o2m_relation(
+                    relation, (parent, instances)
+                )
+
+        for field in self.foreign_key_fields:
+            if field.name in field_values:
+                self.context.add_instance_to_fk_items(
+                    field, field_values.get(field.name)
+                )
 
         return parent

@@ -1,11 +1,13 @@
 """Mappings between odin and django-oscar models."""
 from decimal import Decimal
 from typing import Any, Dict, Iterable, List, Optional, Tuple, Union, NamedTuple
+from collections import defaultdict
 
 import odin
 from django.contrib.auth.models import AbstractUser
 from django.db import transaction
 from django.db.models import QuerySet, Model, ManyToManyField, ForeignKey
+from django.core.exceptions import ValidationError
 from django.db.models.fields.files import ImageFieldFile
 from django.http import HttpRequest
 from oscar.apps.partner.strategy import Default as DefaultStrategy
@@ -14,7 +16,7 @@ from oscar.core.loading import get_class, get_model
 from datetime import datetime
 
 from .. import resources
-from ..utils import RelatedModels
+from ..utils import RelatedModels, DatabaseContext
 from ..resources.catalogue import Structure
 from ._common import map_queryset
 from ._model_mapper import ModelMapping
@@ -101,6 +103,25 @@ class CategoryToModel(odin.Mapping):
         """Convert value into a pure URL."""
         # TODO convert into a form that can be accepted by a model
         return value
+
+    @odin.map_field
+    def depth(self, value):
+        return 0
+
+    @odin.map_field
+    def ancestors_are_public(self, value):
+        return True
+
+    @odin.map_field
+    def path(self, value):
+        return "000001"
+
+    @odin.map_field
+    def description(self, value):
+        if value:
+            return value
+
+        return ""
 
 
 class ProductClassToResource(odin.Mapping):
@@ -232,6 +253,10 @@ class ProductToModel(ModelMapping):
         return ProductImageToModel.apply(values)
 
     @odin.map_list_field
+    def categories(self, values) -> List[CategoryModel]:
+        return CategoryToModel.apply(values)
+
+    @odin.map_list_field
     def children(self, values) -> List[ProductModel]:
         """Map related image."""
         return []
@@ -320,40 +345,153 @@ def product_queryset_to_resources(
     )
 
 
-def product_to_model(
-    product: resources.catalogue.Product,
-) -> Tuple[ProductModel, RelatedModels]:
-    """Map a product resource to a model."""
-    context = {"original_object": product}
+def validate_instances(instances, errors={}):
+    validated_instances = []
 
-    obj = ProductToModel.apply(product, context=context)
+    for instance in instances:
+        try:
+            instance.full_clean()
+            validated_instances.append(instance)
+        except ValidationError as e:
+            errors[instance] = e
 
-    return (obj, RelatedModels.from_context(context))
+    return validated_instances, errors
 
 
-def product_to_db(
-    product: resources.catalogue.Product,
-) -> ProductModel:
-    """Map a product resource to a model and store in the database.
+class ModelMapperContext(dict):
+    foreign_key_items = None
+    many_to_many_items = None
+    many_to_one_items = None
+    one_to_many_items = None
 
-    The method will handle the nested database saves required to store the entire resource
-    within a single transaction.
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.foreign_key_items = defaultdict(list)
+        self.many_to_many_items = defaultdict(list)
+        self.many_to_one_items = defaultdict(list)
+        self.one_to_many_items = defaultdict(list)
+
+    def __bool__(self):
+        return True
+
+    def add_instances_to_m2m_relation(self, relation, instances):
+        self.many_to_many_items[relation] += [instances]
+
+    def add_instances_to_m2o_relation(self, relation, instances):
+        self.many_to_one_items[relation] += [instances]
+
+    def add_instances_to_o2m_relation(self, relation, instances):
+        self.one_to_many_items[relation] += [instances]
+
+    def add_instance_to_fk_items(self, field, instance):
+        self.foreign_key_items[field] += [instance]
+
+    @property
+    def get_all_m2o_instances(self):
+        for relation in self.many_to_one_items:
+            for product, instances in self.many_to_one_items[relation]:
+                yield (relation, product, instances)
+
+    @property
+    def get_all_m2m_relations(self):
+        for relation in self.many_to_many_items:
+            for product, instances in self.many_to_many_items[relation]:
+                yield (relation, product, instances)
+
+    @property
+    def get_all_m2m_instances(self):
+        m2m_instances = defaultdict(list)
+
+        for field in self.many_to_many_items:
+            for product, instances in self.many_to_many_items[field]:
+                m2m_instances[field] += instances
+
+        return m2m_instances
+
+    @property
+    def get_all_o2m_instances(self):
+        for relation in self.one_to_many_items:
+            for product, instances in self.one_to_many_items[relation]:
+                yield (relation, product, instances)
+
+
+def products_to_model(
+    products: List[resources.catalogue.Product],
+) -> Tuple[List[ProductModel], Dict]:
+    context = ModelMapperContext()
+
+    result = ProductToModel.apply(products, context=context)
+
+    if hasattr(result, "__iter__"):
+        return (list(result), context)
+
+    return ([result], context)
+
+
+def save_foreign_keys(context, errors):
+    for field in context.foreign_key_items.keys():
+        fk_instances = context.foreign_key_items[field]
+        validated_fk_instances, errors = validate_instances(fk_instances, errors)
+        field.related_model.objects.bulk_create(validated_fk_instances)
+
+
+def save_products(instances, errors):
+    validated_instances, errors = validate_instances(instances, errors)
+    products = ProductModel.objects.bulk_create(validated_instances)
+
+
+def save_one_to_many(context, errors):
+    validated_o2m_instances = defaultdict(list)
+    for relation, product, instances in context.get_all_o2m_instances:
+        for instance in instances:
+            setattr(instance, relation.field.name, product)
+            try:
+                instance.full_clean()
+                validated_o2m_instances[relation] += [instance]
+            except Exception as e:
+                errors[instance] = e
+
+    for relation in validated_o2m_instances.keys():
+        relation.related_model.objects.bulk_create(validated_o2m_instances[relation])
+
+
+def save_many_to_many(context, errors):
+    all_m2m_instances = context.get_all_m2m_instances
+    validated_m2m_instances = []
+
+    for field in all_m2m_instances.keys():
+        validated_m2m_instances, errors = validate_instances(all_m2m_instances[field])
+        field.related_model.objects.bulk_create(validated_m2m_instances)
+
+    for field, product, instances in context.get_all_m2m_relations:
+        getattr(product, field.name).set(validated_m2m_instances)
+
+    return validated_m2m_instances, errors
+
+
+def products_to_db(
+    products: List[resources.catalogue.Product], rollback=True
+) -> Tuple[List[ProductModel], Dict]:
+    """Map mulitple products to a model and store them in the database.
+
+    The method will first bulk update or create the foreign keys like parent products and productclasses
+    After that all the products will be bulk saved.
+    At last all related models like images, stockrecords, and related_products can will be saved and set on the product.
     """
-    obj, related_models = product_to_model(product)
+    instances, context = products_to_model(products)
+    errors = {}
 
     with transaction.atomic():
-        for parent, field, fk_instance in related_models.foreign_key_items:
-            fk_instance.full_clean()
-            fk_instance.save()
-            setattr(obj, field.name, fk_instance)
+        # Save all the foreign keys; parents and productclasses
+        save_foreign_keys(context, errors)
 
-        fk_instance.full_clean()
-        obj.save()
+        # Save all the products in one go
+        save_products(instances, errors)
 
-        for parent, relation, instances in related_models.related_items:
-            for instance in instances:
-                setattr(instance, relation.field.name, obj)
-                instance.full_clean()
-                instance.save()
+        # Save and set all one to many relations; images, stockrecords
+        save_one_to_many(context, errors)
 
-    return obj
+        # Save and set all many to many relations; attributes, product_options, recommended_products and categories
+        save_many_to_many(context, errors)
+
+    return products, errors

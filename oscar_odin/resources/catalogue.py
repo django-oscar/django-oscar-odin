@@ -49,6 +49,8 @@ class Category(OscarCatalogue):
     image: Optional[str]
     is_public: bool
     ancestors_are_public: bool
+    depth: int
+    path: str
 
 
 class ProductClass(OscarCatalogue):
