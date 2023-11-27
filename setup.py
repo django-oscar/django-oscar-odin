@@ -1,3 +1,5 @@
+# this setup.py script is completely generated dynamically by poetry and
+# is needed to be able to integrate this project in tools that are based on setuptools
 from pathlib import Path
 
 from poetry.core.factory import Factory
