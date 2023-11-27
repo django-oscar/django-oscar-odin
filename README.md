@@ -18,3 +18,8 @@ Product = get_model("catalogue", "Product")
 product = Product.objects.get(id=1)
 product_resource = catalogue.product_to_resource(product)
 ```
+
+# run tests
+
+make install
+make tests
