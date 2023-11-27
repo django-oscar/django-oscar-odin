@@ -60,6 +60,9 @@ class ModelMapping(MappingBase, metaclass=ModelMappingMeta):
 
     def create_object(self, **field_values):
         """Create a new product model."""
+        print(field_values)
+        attribute_values = field_values.pop("attributes", [])
+        
         m2m_related_values = {
             field: field_values.pop(field.name)
             for field in self.many_to_many_fields
@@ -77,8 +80,14 @@ class ModelMapping(MappingBase, metaclass=ModelMappingMeta):
             for relation in self.one_to_many_fields
             if relation.related_name in field_values
         }
-
+        
         parent = super().create_object(**field_values)
+        
+        parent.attr.initialize()
+        for key, value in attribute_values.items():
+            parent.attr.set(key, value)
+
+        self.context.add_attribute_data((parent, attribute_values))
 
         for relation in m2o_related_values.keys():
             instances = m2o_related_values[relation]
@@ -106,5 +115,7 @@ class ModelMapping(MappingBase, metaclass=ModelMappingMeta):
                 self.context.add_instance_to_fk_items(
                     field, field_values.get(field.name)
                 )
+                
+        print(self.context)
 
         return parent

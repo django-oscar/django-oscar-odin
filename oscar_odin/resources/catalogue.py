@@ -4,11 +4,16 @@ from datetime import datetime
 from decimal import Decimal
 from typing import Any, Dict, List, Optional
 
+from oscar.core.loading import get_model
+
 import odin
 from odin.annotated_resource.type_aliases import Url
 
 from ..fields import DecimalField
 from ._base import OscarResource
+
+PartnerModel = get_model("partner", "Partner")
+ProductClassModel = get_model("catalogue", "ProductClass")
 
 
 class OscarCatalogue(OscarResource, abstract=True):
@@ -40,7 +45,8 @@ class Image(OscarCatalogue):
 
 class Category(OscarCatalogue):
     """A category within Django Oscar."""
-
+    
+    id: int
     name: str
     slug: str
     description: str
@@ -71,6 +77,20 @@ class Structure(str, enum.Enum):
     CHILD = "child"
 
 
+class StockRecord(OscarCatalogue):
+    id: int
+    partner_sku: str
+    num_in_stock: int
+    num_allocated: int
+    price: Decimal = DecimalField()
+    currency: str
+
+
+class ProductAttributeValue(OscarCatalogue):
+    code: str
+    value: Any
+
+
 class Product(OscarCatalogue):
     """A product within Django Oscar."""
 
@@ -88,9 +108,10 @@ class Product(OscarCatalogue):
     # Price information
     price: Decimal = DecimalField()
     currency: str
-    availability: int
+    availability: Optional[int]
+    partner: Optional[Any]
 
-    product_class: ProductClass
+    product_class: Any
     attributes: Dict[str, Any]
     categories: List[Category]
     children: Optional[List["Product"]] = odin.ListOf.delayed(

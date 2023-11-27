@@ -17,7 +17,7 @@ from datetime import datetime
 
 from .. import resources
 from ..utils import RelatedModels, DatabaseContext
-from ..resources.catalogue import Structure
+from ..resources.catalogue import Structure, ProductAttributeValue
 from ._common import map_queryset
 from ._model_mapper import ModelMapping
 
@@ -35,6 +35,8 @@ ProductImageModel = get_model("catalogue", "ProductImage")
 CategoryModel = get_model("catalogue", "Category")
 ProductClassModel = get_model("catalogue", "ProductClass")
 ProductModel = get_model("catalogue", "Product")
+StockRecordModel = get_model("partner", "StockRecord")
+ProductAttributeValueModel = get_model("catalogue", "ProductAttributeValue")
 
 
 class ProductImageToResource(odin.Mapping):
@@ -260,10 +262,22 @@ class ProductToModel(ModelMapping):
     def children(self, values) -> List[ProductModel]:
         """Map related image."""
         return []
+        
+    @odin.map_list_field(from_field=["price", "availability", "currency", "upc", "partner"])
+    def stockrecords(self, price, availability, currency, upc, partner) -> List[StockRecordModel]:
+        if upc and currency and partner:
+            return [StockRecordModel(price=price, num_in_stock=availability, price_currency=currency, partner=partner, partner_sku=upc)]
+    
+        return []
 
     @odin.map_field
     def product_class(self, value) -> ProductClassModel:
-        return ProductClassToModel.apply(value)
+        print(value)
+        return value
+        # if isinstance(value, self.to_obj):
+#             return value
+#
+#         return ProductClassToModel.apply(value)
 
 
 def product_to_resource_with_strategy(
@@ -349,11 +363,8 @@ def validate_instances(instances, errors={}):
     validated_instances = []
 
     for instance in instances:
-        try:
-            instance.full_clean()
-            validated_instances.append(instance)
-        except ValidationError as e:
-            errors[instance] = e
+        instance.full_clean()
+        validated_instances.append(instance)
 
     return validated_instances, errors
 
@@ -363,6 +374,7 @@ class ModelMapperContext(dict):
     many_to_many_items = None
     many_to_one_items = None
     one_to_many_items = None
+    attribute_data = None
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -370,9 +382,13 @@ class ModelMapperContext(dict):
         self.many_to_many_items = defaultdict(list)
         self.many_to_one_items = defaultdict(list)
         self.one_to_many_items = defaultdict(list)
+        self.attribute_data = []
 
     def __bool__(self):
         return True
+        
+    def add_attribute_data(self, attribute_data):
+        self.attribute_data.append(attribute_data)
 
     def add_instances_to_m2m_relation(self, relation, instances):
         self.many_to_many_items[relation] += [instances]
@@ -429,11 +445,12 @@ def products_to_model(
 
 
 def save_foreign_keys(context, errors):
-    for field in context.foreign_key_items.keys():
-        fk_instances = context.foreign_key_items[field]
-        validated_fk_instances, errors = validate_instances(fk_instances, errors)
-        field.related_model.objects.bulk_create(validated_fk_instances)
-
+    pass
+    # for field in context.foreign_key_items.keys():
+#         fk_instances = context.foreign_key_items[field]
+#         validated_fk_instances, errors = validate_instances(fk_instances, errors)
+#         field.related_model.objects.bulk_create(validated_fk_instances)
+#
 
 def save_products(instances, errors):
     validated_instances, errors = validate_instances(instances, errors)
@@ -469,6 +486,46 @@ def save_many_to_many(context, errors):
     return validated_m2m_instances, errors
 
 
+def save_attributes(context, errors):
+    attributes_to_create = []
+    attributes_to_delete = []
+    attributes_to_update = []
+    fields_to_be_updated = set()
+
+    for product, attr in context.attribute_data:
+        to_be_deleted, update_fields, to_be_updated, to_be_created = product.attr.prepare_save()
+        if to_be_deleted:
+            attributes_to_delete.extend(to_be_deleted)
+
+        if update_fields:
+            fields_to_be_updated.add(update_fields)
+            
+        if to_be_updated:
+            attributes_to_update.extend(to_be_updated)
+            
+        if to_be_created:
+            attributes_to_create.extend(to_be_created)
+    
+    for henk in attributes_to_create:
+        print(henk, henk.__dict__)
+    # now save all the attributes in bulk
+    if to_be_deleted:
+        ProductAttributeValueModel.objects.filter(pk__in=attributes_to_delete).delete()
+    if to_be_updated:
+        ProductAttributeValueModel.objects.bulk_update(
+            attributes_to_update, fields_to_be_updated, batch_size=500
+        )
+    if to_be_created:
+        ProductAttributeValueModel.objects.bulk_create(
+            attributes_to_create, batch_size=500, ignore_conflicts=False
+        )
+
+    print(attributes_to_create)
+    print(attributes_to_delete)
+    print(attributes_to_update)
+    print(fields_to_be_updated)
+
+
 def products_to_db(
     products: List[resources.catalogue.Product], rollback=True
 ) -> Tuple[List[ProductModel], Dict]:
@@ -487,6 +544,8 @@ def products_to_db(
 
         # Save all the products in one go
         save_products(instances, errors)
+        
+        save_attributes(context, errors)
 
         # Save and set all one to many relations; images, stockrecords
         save_one_to_many(context, errors)
