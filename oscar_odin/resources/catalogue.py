@@ -45,7 +45,7 @@ class Image(OscarCatalogue):
 
 class Category(OscarCatalogue):
     """A category within Django Oscar."""
-    
+
     id: int
     name: str
     slug: str

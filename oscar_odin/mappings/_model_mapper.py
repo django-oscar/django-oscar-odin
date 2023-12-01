@@ -10,8 +10,12 @@ from django.db.models.fields.reverse_related import (
 )
 from django.db.models.options import Options
 
+from oscar.core.loading import get_model
+
 from odin.mapping import MappingBase, MappingMeta
 from odin.utils import getmeta
+
+Product = get_model("catalogue", "Product")
 
 
 class ModelMappingMeta(MappingMeta):
@@ -60,9 +64,8 @@ class ModelMapping(MappingBase, metaclass=ModelMappingMeta):
 
     def create_object(self, **field_values):
         """Create a new product model."""
-        print(field_values)
         attribute_values = field_values.pop("attributes", [])
-        
+
         m2m_related_values = {
             field: field_values.pop(field.name)
             for field in self.many_to_many_fields
@@ -80,42 +83,52 @@ class ModelMapping(MappingBase, metaclass=ModelMappingMeta):
             for relation in self.one_to_many_fields
             if relation.related_name in field_values
         }
-        
+
         parent = super().create_object(**field_values)
-        
+
         parent.attr.initialize()
         for key, value in attribute_values.items():
             parent.attr.set(key, value)
 
         self.context.add_attribute_data((parent, attribute_values))
+        self.context.add_source_fields(Product, [self.source])
 
-        for relation in m2o_related_values.keys():
-            instances = m2o_related_values[relation]
+        for relation, instances in m2o_related_values.items():
             if instances:
+                source_objects = getattr(self.source, relation.name)
+                self.context.add_source_fields(relation.related_model, source_objects)
                 self.context.add_instances_to_m2o_relation(
                     relation, (parent, instances)
                 )
 
-        for relation in m2m_related_values.keys():
-            instances = m2m_related_values[relation]
+        for relation, instances in m2m_related_values.items():
             if instances:
+                source_objects = getattr(self.source, relation.name)
+                self.context.add_source_fields(relation.related_model, source_objects)
                 self.context.add_instances_to_m2m_relation(
                     relation, (parent, instances)
                 )
 
-        for relation in o2m_related_values.keys():
-            instances = o2m_related_values[relation]
+        for relation, instances in o2m_related_values.items():
             if instances:
+                try:
+                    source_objects = getattr(self.source, relation.name)
+                    self.context.add_source_fields(
+                        relation.related_model, source_objects
+                    )
+                except AttributeError:
+                    pass
+
                 self.context.add_instances_to_o2m_relation(
                     relation, (parent, instances)
                 )
 
         for field in self.foreign_key_fields:
             if field.name in field_values:
+                source_objects = getattr(self.source, field.name)
+                self.context.add_source_fields(field.related_model, [source_objects])
                 self.context.add_instance_to_fk_items(
                     field, field_values.get(field.name)
                 )
-                
-        print(self.context)
 
         return parent

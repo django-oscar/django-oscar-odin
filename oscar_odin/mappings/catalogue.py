@@ -1,7 +1,6 @@
 """Mappings between odin and django-oscar models."""
 from decimal import Decimal
 from typing import Any, Dict, Iterable, List, Optional, Tuple, Union, NamedTuple
-from collections import defaultdict
 
 import odin
 from django.contrib.auth.models import AbstractUser
@@ -20,6 +19,14 @@ from ..utils import RelatedModels, DatabaseContext
 from ..resources.catalogue import Structure, ProductAttributeValue
 from ._common import map_queryset
 from ._model_mapper import ModelMapping
+from .utils import (
+    save_attributes,
+    save_many_to_many,
+    save_one_to_many,
+    save_products,
+    save_foreign_keys,
+)
+from .context import ModelMapperContext
 
 __all__ = (
     "ProductImageToResource",
@@ -108,6 +115,9 @@ class CategoryToModel(odin.Mapping):
 
     @odin.map_field
     def depth(self, value):
+        if value is not None:
+            return value
+
         return 0
 
     @odin.map_field
@@ -116,14 +126,17 @@ class CategoryToModel(odin.Mapping):
 
     @odin.map_field
     def path(self, value):
-        return "000001"
+        if value is not None:
+            return value
+
+        return None
 
     @odin.map_field
     def description(self, value):
-        if value:
+        if value is not None:
             return value
 
-        return ""
+        return None
 
 
 class ProductClassToResource(odin.Mapping):
@@ -262,12 +275,24 @@ class ProductToModel(ModelMapping):
     def children(self, values) -> List[ProductModel]:
         """Map related image."""
         return []
-        
-    @odin.map_list_field(from_field=["price", "availability", "currency", "upc", "partner"])
-    def stockrecords(self, price, availability, currency, upc, partner) -> List[StockRecordModel]:
+
+    @odin.map_list_field(
+        from_field=["price", "availability", "currency", "upc", "partner"]
+    )
+    def stockrecords(
+        self, price, availability, currency, upc, partner
+    ) -> List[StockRecordModel]:
         if upc and currency and partner:
-            return [StockRecordModel(price=price, num_in_stock=availability, price_currency=currency, partner=partner, partner_sku=upc)]
-    
+            return [
+                StockRecordModel(
+                    price=price,
+                    num_in_stock=availability,
+                    price_currency=currency,
+                    partner=partner,
+                    partner_sku=upc,
+                )
+            ]
+
         return []
 
     @odin.map_field
@@ -275,6 +300,8 @@ class ProductToModel(ModelMapping):
         print(value)
         return value
         # if isinstance(value, self.to_obj):
+
+
 #             return value
 #
 #         return ProductClassToModel.apply(value)
@@ -359,78 +386,6 @@ def product_queryset_to_resources(
     )
 
 
-def validate_instances(instances, errors={}):
-    validated_instances = []
-
-    for instance in instances:
-        instance.full_clean()
-        validated_instances.append(instance)
-
-    return validated_instances, errors
-
-
-class ModelMapperContext(dict):
-    foreign_key_items = None
-    many_to_many_items = None
-    many_to_one_items = None
-    one_to_many_items = None
-    attribute_data = None
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.foreign_key_items = defaultdict(list)
-        self.many_to_many_items = defaultdict(list)
-        self.many_to_one_items = defaultdict(list)
-        self.one_to_many_items = defaultdict(list)
-        self.attribute_data = []
-
-    def __bool__(self):
-        return True
-        
-    def add_attribute_data(self, attribute_data):
-        self.attribute_data.append(attribute_data)
-
-    def add_instances_to_m2m_relation(self, relation, instances):
-        self.many_to_many_items[relation] += [instances]
-
-    def add_instances_to_m2o_relation(self, relation, instances):
-        self.many_to_one_items[relation] += [instances]
-
-    def add_instances_to_o2m_relation(self, relation, instances):
-        self.one_to_many_items[relation] += [instances]
-
-    def add_instance_to_fk_items(self, field, instance):
-        self.foreign_key_items[field] += [instance]
-
-    @property
-    def get_all_m2o_instances(self):
-        for relation in self.many_to_one_items:
-            for product, instances in self.many_to_one_items[relation]:
-                yield (relation, product, instances)
-
-    @property
-    def get_all_m2m_relations(self):
-        for relation in self.many_to_many_items:
-            for product, instances in self.many_to_many_items[relation]:
-                yield (relation, product, instances)
-
-    @property
-    def get_all_m2m_instances(self):
-        m2m_instances = defaultdict(list)
-
-        for field in self.many_to_many_items:
-            for product, instances in self.many_to_many_items[field]:
-                m2m_instances[field] += instances
-
-        return m2m_instances
-
-    @property
-    def get_all_o2m_instances(self):
-        for relation in self.one_to_many_items:
-            for product, instances in self.one_to_many_items[relation]:
-                yield (relation, product, instances)
-
-
 def products_to_model(
     products: List[resources.catalogue.Product],
 ) -> Tuple[List[ProductModel], Dict]:
@@ -442,88 +397,6 @@ def products_to_model(
         return (list(result), context)
 
     return ([result], context)
-
-
-def save_foreign_keys(context, errors):
-    pass
-    # for field in context.foreign_key_items.keys():
-#         fk_instances = context.foreign_key_items[field]
-#         validated_fk_instances, errors = validate_instances(fk_instances, errors)
-#         field.related_model.objects.bulk_create(validated_fk_instances)
-#
-
-def save_products(instances, errors):
-    validated_instances, errors = validate_instances(instances, errors)
-    products = ProductModel.objects.bulk_create(validated_instances)
-
-
-def save_one_to_many(context, errors):
-    validated_o2m_instances = defaultdict(list)
-    for relation, product, instances in context.get_all_o2m_instances:
-        for instance in instances:
-            setattr(instance, relation.field.name, product)
-            try:
-                instance.full_clean()
-                validated_o2m_instances[relation] += [instance]
-            except Exception as e:
-                errors[instance] = e
-
-    for relation in validated_o2m_instances.keys():
-        relation.related_model.objects.bulk_create(validated_o2m_instances[relation])
-
-
-def save_many_to_many(context, errors):
-    all_m2m_instances = context.get_all_m2m_instances
-    validated_m2m_instances = []
-
-    for field in all_m2m_instances.keys():
-        validated_m2m_instances, errors = validate_instances(all_m2m_instances[field])
-        field.related_model.objects.bulk_create(validated_m2m_instances)
-
-    for field, product, instances in context.get_all_m2m_relations:
-        getattr(product, field.name).set(validated_m2m_instances)
-
-    return validated_m2m_instances, errors
-
-
-def save_attributes(context, errors):
-    attributes_to_create = []
-    attributes_to_delete = []
-    attributes_to_update = []
-    fields_to_be_updated = set()
-
-    for product, attr in context.attribute_data:
-        to_be_deleted, update_fields, to_be_updated, to_be_created = product.attr.prepare_save()
-        if to_be_deleted:
-            attributes_to_delete.extend(to_be_deleted)
-
-        if update_fields:
-            fields_to_be_updated.add(update_fields)
-            
-        if to_be_updated:
-            attributes_to_update.extend(to_be_updated)
-            
-        if to_be_created:
-            attributes_to_create.extend(to_be_created)
-    
-    for henk in attributes_to_create:
-        print(henk, henk.__dict__)
-    # now save all the attributes in bulk
-    if to_be_deleted:
-        ProductAttributeValueModel.objects.filter(pk__in=attributes_to_delete).delete()
-    if to_be_updated:
-        ProductAttributeValueModel.objects.bulk_update(
-            attributes_to_update, fields_to_be_updated, batch_size=500
-        )
-    if to_be_created:
-        ProductAttributeValueModel.objects.bulk_create(
-            attributes_to_create, batch_size=500, ignore_conflicts=False
-        )
-
-    print(attributes_to_create)
-    print(attributes_to_delete)
-    print(attributes_to_update)
-    print(fields_to_be_updated)
 
 
 def products_to_db(
@@ -543,8 +416,8 @@ def products_to_db(
         save_foreign_keys(context, errors)
 
         # Save all the products in one go
-        save_products(instances, errors)
-        
+        save_products(instances, context, errors)
+
         save_attributes(context, errors)
 
         # Save and set all one to many relations; images, stockrecords

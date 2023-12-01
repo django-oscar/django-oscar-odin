@@ -22,25 +22,6 @@ ProductAttributeValue = get_model("catalogue", "ProductAttributeValue")
 
 
 class SingleProductReverseTest(TestCase):
-    # def test_create_simple_product(self):
-#         product_resource = ProductResource(
-#             upc="1234323",
-#             title="asdf1",
-#             slug="asdf-asdfasdf",
-#             description="description",
-#             structure=Product.STANDALONE,
-#             is_discountable=True,
-#             product_class=ProductClassResource(
-#                 name="Klaas", slug="klaas", requires_shipping=True, track_stock=True
-#             ),
-#         )
-#
-#         prd = products_to_db(product_resource)
-#
-#         prd = Product.objects.get(upc="1234323")
-#
-#         self.assertEquals(prd.title, "asdf1")
-
     def test_create_product_with_related_fields(self):
         product_class = ProductClass.objects.create(
             name="Klaas", slug="klaas", requires_shipping=True, track_stock=True
@@ -51,7 +32,10 @@ class SingleProductReverseTest(TestCase):
         ProductAttribute.objects.create(
             name="Harrie", code="harrie", type=ProductAttribute.INTEGER, product_class=product_class
         )
-        print(product_class)
+
+        Category.add_root(name="Hatsie", slug="batsie", is_public=True)
+        Category.add_root(name="henk", slug="klaas", is_public=True)
+
         product_resource = ProductResource(
             upc="1234323-2",
             title="asdf2",
@@ -68,7 +52,7 @@ class SingleProductReverseTest(TestCase):
                 ImageResource(caption="gekke caption", display_order=0),
                 ImageResource(caption="gekke caption 2", display_order=1),
             ],
-            categories=[CategoryResource(name="klaas", slug="henk", is_public=True)],
+            categories=[CategoryResource(name="henk", slug="klaas"), CategoryResource(name="Hatsie datsie", slug="batsie")],
             attributes={"henk": "Klaas", "harrie": 1}
         )
 
@@ -77,51 +61,47 @@ class SingleProductReverseTest(TestCase):
         prd = Product.objects.get(upc="1234323-2")
 
         self.assertEquals(prd.title, "asdf2")
-
+        self.assertEquals(Category.objects.get(slug="batsie").name, "Hatsie datsie")
         self.assertEquals(prd.images.count(), 2)
-        self.assertEquals(Category.objects.count(), 1)
-        self.assertEquals(prd.categories.count(), 1)
+        self.assertEquals(Category.objects.count(), 2)
+        self.assertEquals(prd.categories.count(), 2)
         self.assertEquals(prd.stockrecords.count(), 1)
-        
+
         self.assertEquals(prd.attr.henk, "Klaas")
         self.assertEquals(prd.attr.harrie, 1)
 
 
 class MultipleProductReverseTest(TestCase):
-    # def test_create_simple_product(self):
-#         product_resources = [
-#             ProductResource(
-#                 upc="1234323",
-#                 title="asdf1",
-#                 slug="asdf-asdfasdf",
-#                 description="description",
-#                 structure=Product.STANDALONE,
-#                 is_discountable=True,
-#                 product_class=ProductClassResource(
-#                     name="Klaas",
-#                     slug="klaasas",
-#                     requires_shipping=True,
-#                     track_stock=True,
-#                 ),
-#             ),
-#             ProductResource(
-#                 upc="1234323-2",
-#                 title="asdf2",
-#                 slug="asdf-asdfgasfdg",
-#                 description="description",
-#                 structure=Product.STANDALONE,
-#                 is_discountable=True,
-#                 product_class=ProductClassResource(
-#                     name="Klaas", slug="klaas", requires_shipping=True, track_stock=True
-#                 ),
-#             ),
-#         ]
-#
-#         products = products_to_db(product_resources)
-#
-#         self.assertEquals(Product.objects.all().count(), 2)
-#         self.assertEquals(ProductClass.objects.all().count(), 2)
-#
+    def test_create_simple_product(self):
+        product_class = ProductClass.objects.create(
+            name="Klaas", slug="klaas", requires_shipping=True, track_stock=True
+        )
+        Product.objects.create(upc="1234323asd", title="")
+        product_resources = [
+            ProductResource(
+                upc="1234323asd",
+                title="asdf1",
+                slug="asdf-asdfasdf",
+                description="description",
+                structure=Product.STANDALONE,
+                is_discountable=True,
+                product_class=product_class,
+            ),
+            ProductResource(
+                upc="1234323-2",
+                title="asdf2",
+                slug="asdf-asdfasdf-2",
+                description="description",
+                structure=Product.STANDALONE,
+                is_discountable=True,
+                product_class=product_class,
+            )
+        ]
+
+        prd = products_to_db(product_resources)
+
+        self.assertEqual(Product.objects.count(), 2)
+
     def test_create_product_with_related_fields(self):
         product_class = ProductClass.objects.create(
             name="Klaas", slug="klaas", requires_shipping=True, track_stock=True
@@ -182,10 +162,10 @@ class MultipleProductReverseTest(TestCase):
 
         self.assertEqual(prd.images.count(), 2)
         self.assertEqual(prd2.images.count(), 2)
-        
+
         self.assertEqual(prd.attr.henk, "Poep")
         self.assertEqual(prd.attr.harrie, 22)
-        
+
         self.assertEqual(prd2.attr.henk, "Klaas")
         self.assertEqual(prd2.attr.harrie, 1)
-        
+
