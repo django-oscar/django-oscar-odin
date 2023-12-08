@@ -68,25 +68,24 @@ def save_one_to_many(context, errors):
 
 def save_many_to_many(context, errors):
     m2m_to_create, m2m_to_update = context.get_all_m2m_relations
-    all_m2m_instances = defaultdict(list)
 
+    # Create many to many's
     for relation, instances in m2m_to_create.items():
         validated_m2m_instances, errors = validate_instances(instances)
         relation.related_model.objects.bulk_create(validated_m2m_instances)
-        all_m2m_instances[relation].append(validated_m2m_instances)
 
+    # Update many to many's
     for relation, instances in m2m_to_update.items():
         fields = context.get_fields_to_update(relation.related_model)
         if fields is not None:
             relation.related_model.objects.bulk_update(instances, fields=fields)
 
-        all_m2m_instances[relation].append(instances)
-
-    for relation, products in context.many_to_many_items.items():
+    for relation, values in context.many_to_many_items.items():
         Through = getattr(Product, relation.name).through
 
+        # Create all through models that are needed for the products and many to many
         throughs = defaultdict(Through)
-        for product, instances in products:
+        for product, instances in values:
             for instance in instances:
                 throughs[(product.pk, instance.pk)] = Through(
                     **{
@@ -95,16 +94,19 @@ def save_many_to_many(context, errors):
                     }
                 )
 
+        # Bulk query the through models to see if some already exist
         bulk_troughs = in_bulk(
             Through.objects,
             instances=list(throughs.values()),
             field_names=(relation.m2m_field_name(), relation.m2m_reverse_field_name()),
         )
 
+        # Remove existing through models
         for b in bulk_troughs.keys():
             if b in throughs:
                 throughs.pop(b)
 
+        # Save only new through models
         Through.objects.bulk_create(throughs.values())
 
 
