@@ -100,7 +100,7 @@ class ModelMapperContext(dict):
     def add_instance_to_fk_items(self, field, instance):
         if not instance.pk:
             self.foreign_key_items[field] += [instance]
-        
+
     def add_fields_to_update(self, fields_to_update):
         self.fields_to_update = fields_to_update
 

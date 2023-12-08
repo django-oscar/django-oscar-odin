@@ -1,6 +1,11 @@
+import io
+import PIL
+
 from decimal import Decimal as D
 
+from django.core.files import File
 from django.test import TestCase
+
 from oscar.core.loading import get_model
 
 from oscar_odin.mappings.catalogue import products_to_db
@@ -24,6 +29,14 @@ ProductAttributeValue = get_model("catalogue", "ProductAttributeValue")
 
 
 class SingleProductReverseTest(TestCase):
+
+    @property
+    def image(self):
+        img = PIL.Image.new(mode="RGB", size=(200, 200))
+        output = io.BytesIO()
+        img.save(output, "jpeg")
+        return output
+
     def test_create_product_with_related_fields(self):
         product_class = ProductClass.objects.create(
             name="Klaas", slug="klaas", requires_shipping=True, track_stock=True
@@ -57,8 +70,8 @@ class SingleProductReverseTest(TestCase):
             partner=partner,
             product_class=product_class,
             images=[
-                ImageResource(caption="gekke caption", display_order=0),
-                ImageResource(caption="gekke caption 2", display_order=1),
+                ImageResource(caption="gekke caption", display_order=0, original=File(self.image, name="harrie.jpg")),
+                ImageResource(caption="gekke caption 2", display_order=1, original=File(self.image, name="vats.jpg")),
             ],
             categories=[CategoryResource(name="henk", slug="klaas"), CategoryResource(name="Hatsie datsie", slug="batsie")],
             attributes={"henk": "Klaas", "harrie": 1}
@@ -82,6 +95,8 @@ class SingleProductReverseTest(TestCase):
         self.assertEquals(prd.attr.henk, "Klaas")
         self.assertEquals(prd.attr.harrie, 1)
         
+        self.assertEquals(prd.images.count(), 2)
+
         product_resource = ProductResource(
             upc="1234323-2",
             price=D("21.50"),
@@ -89,10 +104,14 @@ class SingleProductReverseTest(TestCase):
             currency="EUR",
             partner=partner,
             product_class=product_class,
+            images=[
+                ImageResource(caption="gekke caption", display_order=0, original=File(self.image, name="harriebatsie.jpg")),
+                ImageResource(caption="gekke caption 2", display_order=1, original=File(self.image, name="vatsie.jpg")),
+            ],
             categories=[CategoryResource(name="henk", slug="klaas"), CategoryResource(name="Hatsie datsie", slug="batsie")],
         )
         
-        fields_to_update = ["upc", "price", "num_in_stock", "num_allocated"]
+        fields_to_update = ["upc", "price", "num_in_stock", "num_allocated", "original"]
         products_to_db(product_resource, fields_to_update=fields_to_update)
 
         prd = Product.objects.get(upc="1234323-2")
@@ -101,9 +120,18 @@ class SingleProductReverseTest(TestCase):
         self.assertEquals(stockrecord.price, D("21.50"))
         self.assertEquals(stockrecord.num_in_stock, 3)
         self.assertEquals(prd.categories.count(), 2)
+        
+        self.assertEquals(prd.images.count(), 4)
 
 
 class MultipleProductReverseTest(TestCase):
+    @property
+    def image(self):
+        img = PIL.Image.new(mode="RGB", size=(200, 200))
+        output = io.BytesIO()
+        img.save(output, "jpeg")
+        return output
+    
     def test_create_simple_product(self):
         product_class = ProductClass.objects.create(
             name="Klaas", slug="klaas", requires_shipping=True, track_stock=True
@@ -166,8 +194,8 @@ class MultipleProductReverseTest(TestCase):
                 currency="EUR",
                 product_class=product_class,
                 images=[
-                    ImageResource(caption="gekke caption", display_order=0),
-                    ImageResource(caption="gekke caption 2", display_order=1),
+                    ImageResource(caption="gekke caption", display_order=0, original=File(self.image, name="klaas.jpg")),
+                    ImageResource(caption="gekke caption 2", display_order=1, original=File(self.image, name="harrie.jpg")),
                 ],
                 attributes={"henk": "Poep", "harrie": 22}
             ),
@@ -184,8 +212,8 @@ class MultipleProductReverseTest(TestCase):
                 partner=Partner.objects.create(name="klaas"),
                 product_class=product_class,
                 images=[
-                    ImageResource(caption="gekke caption", display_order=0),
-                    ImageResource(caption="gekke caption 2", display_order=1),
+                    ImageResource(caption="gekke caption", display_order=0, original=File(self.image, name="klaas.jpg")),
+                    ImageResource(caption="gekke caption 2", display_order=1, original=File(self.image, name="harrie.jpg")),
                 ],
                 attributes={"henk": "Klaas", "harrie": 1}
             )

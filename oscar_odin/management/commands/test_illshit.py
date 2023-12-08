@@ -95,9 +95,8 @@ class Command(BaseCommand):
                 attributes=attributes
             )
         )
-
         
         with querycounter("COMMANDO"):
             products_to_db(products)
-            
+
         print("AANTAL PRODUCTEN AANGEMAAKT:", Product.objects.count())

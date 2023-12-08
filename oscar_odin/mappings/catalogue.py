@@ -66,15 +66,6 @@ class ProductImageToModel(odin.Mapping):
     to_obj = ProductImageModel
 
     @odin.map_field
-    def original(self, value: str) -> str:
-        """Convert value into a pure URL."""
-        # TODO convert into a form that can be accepted by a model
-        if value:
-            return value
-
-        return "lege-image"
-
-    @odin.map_field
     def date_created(self, value: datetime) -> datetime:
         if value:
             return value
