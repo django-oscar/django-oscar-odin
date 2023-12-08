@@ -1,6 +1,10 @@
+import io
+import PIL
+
 from decimal import Decimal as D
 
 from django.core.management.base import BaseCommand
+from django.core.files import File
 from django.test import TestCase
 from oscar.core.loading import get_model
 
@@ -30,6 +34,10 @@ ProductAttributeValue = get_model("catalogue", "ProductAttributeValue")
 class Command(BaseCommand):
 
     def handle(self, *args, **options):
+        img = PIL.Image.new(mode="RGB", size=(200, 200))
+        output = io.BytesIO()
+        img.save(output, "jpeg")
+
         product_class, _ = ProductClass.objects.get_or_create(
             slug="klaas", defaults={"requires_shipping": True, "track_stock": True, "name": "Klaas"}
         )
@@ -84,8 +92,7 @@ class Command(BaseCommand):
                 partner=partner,
                 product_class=product_class,
                 images=[
-                    ImageResource(caption="gekke caption", display_order=0),
-                    ImageResource(caption="gekke caption 2", display_order=1),
+                    ImageResource(caption="gekke caption", display_order=0, original=File(output, name="image%s.jpg")),
                 ],
                 categories=[
                     CategoryResource(name="henk", slug="klaas"),
