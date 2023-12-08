@@ -10,6 +10,7 @@ from collections import defaultdict
 from django.db.models import Model, ManyToManyField, ForeignKey, Q
 from django.db import connections
 
+
 def get_filters(instances, field_names):
     for ui in instances:
         klaas = {}

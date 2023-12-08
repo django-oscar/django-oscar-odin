@@ -100,18 +100,7 @@ class ModelMapperContext(dict):
     def add_instance_to_fk_items(self, field, instance):
         if not instance.pk:
             self.foreign_key_items[field] += [instance]
-
-    def get_filled_out_fields(self, source_objects):
-        fields = set()
-        for source in source_objects:
-            meta = getmeta(source)
-            fields.update([k for k, v in source.__dict__.items() if v is not None])
-
-        return fields
-
-    def add_source_fields(self, model, source_objects):
-        self.source_fields[model] = self.get_filled_out_fields(source_objects)
-
+        
     def add_fields_to_update(self, fields_to_update):
         self.fields_to_update = fields_to_update
 
@@ -119,21 +108,9 @@ class ModelMapperContext(dict):
         model_field_names = [field.name for field in Model._meta.get_fields()]
         return [f for f in self.fields_to_update if f in model_field_names] or None
 
-    @property
-    def get_all_m2o_instances(self):
-        for relation in self.many_to_one_items:
-            for product, instances in self.many_to_one_items[relation]:
-                yield (relation, product, instances)
-
-    @property
-    def get_all_m2m_instances(self):
-        for relation in self.many_to_many_items:
-            for product, instances in self.many_to_many_items[relation]:
-                yield (relation, product, instances)
-
     def get_create_and_update_relations(self, related_instance_items):
-        m2m_to_create = defaultdict(list)
-        m2m_to_update = defaultdict(list)
+        to_create = defaultdict(list)
+        to_update = defaultdict(list)
         instance_update_pks = []
 
         for relation in related_instance_items.keys():
@@ -146,14 +123,10 @@ class ModelMapperContext(dict):
                 instances_to_update,
             ) = get_instances_to_create_or_update(relation.related_model, all_instances)
 
-            m2m_to_create[relation].extend(instances_to_create)
-            m2m_to_update[relation].extend(instances_to_update)
-            # for instance in instances_to_update:
-        #                if instance.pk not in instance_update_pks:
-        #                    m2m_to_update[relation].append(instance)
-        #                    instance_update_pks.append(instance.pk)
+            to_create[relation].extend(instances_to_create)
+            to_update[relation].extend(instances_to_update)
 
-        return (m2m_to_create, m2m_to_update)
+        return (to_create, to_update)
 
     @property
     def get_all_m2m_relations(self):
@@ -165,8 +138,8 @@ class ModelMapperContext(dict):
 
     @property
     def get_fk_relations(self):
-        m2m_to_create = defaultdict(list)
-        m2m_to_update = defaultdict(list)
+        to_create = defaultdict(list)
+        to_update = defaultdict(list)
         instance_update_pks = []
 
         for relation, instances in self.foreign_key_items.items():
@@ -175,15 +148,10 @@ class ModelMapperContext(dict):
                 instances_to_update,
             ) = get_instances_to_create_or_update(relation.related_model, instances)
 
-            m2m_to_create[relation].extend(instances_to_create)
-            m2m_to_update[relation].extend(instances_to_update)
+            to_create[relation].extend(instances_to_create)
+            to_update[relation].extend(instances_to_update)
 
-            # for instance in instances_to_update:
-        #                if instance.pk not in instance_update_pks:
-        #                    m2m_to_update[relation].append(instance)
-        #                    instance_update_pks.append(instance.pk)
-
-        return (m2m_to_create, m2m_to_update)
+        return (to_create, to_update)
 
     @property
     def get_all_o2m_instances(self):
