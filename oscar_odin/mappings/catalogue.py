@@ -15,7 +15,6 @@ from oscar.core.loading import get_class, get_model
 from datetime import datetime
 
 from .. import resources
-from ..utils import RelatedModels, DatabaseContext
 from ..resources.catalogue import Structure, ProductAttributeValue
 from ._common import map_queryset
 from ._model_mapper import ModelMapping
@@ -27,6 +26,7 @@ from .utils import (
     save_foreign_keys,
 )
 from .context import ModelMapperContext
+from .defaults import DEFAULT_UPDATE_FIELDS
 
 __all__ = (
     "ProductImageToResource",
@@ -297,8 +297,7 @@ class ProductToModel(ModelMapping):
 
     @odin.map_field
     def product_class(self, value) -> ProductClassModel:
-        print(value)
-        return value
+        return ProductClassToModel.apply(value)
         # if isinstance(value, self.to_obj):
 
 
@@ -400,7 +399,9 @@ def products_to_model(
 
 
 def products_to_db(
-    products: List[resources.catalogue.Product], rollback=True
+    products: List[resources.catalogue.Product],
+    rollback=True,
+    fields_to_update=DEFAULT_UPDATE_FIELDS,
 ) -> Tuple[List[ProductModel], Dict]:
     """Map mulitple products to a model and store them in the database.
 
@@ -409,6 +410,8 @@ def products_to_db(
     At last all related models like images, stockrecords, and related_products can will be saved and set on the product.
     """
     instances, context = products_to_model(products)
+    context.add_fields_to_update(fields_to_update)
+
     errors = {}
 
     with transaction.atomic():
@@ -418,6 +421,7 @@ def products_to_db(
         # Save all the products in one go
         save_products(instances, context, errors)
 
+        # Save all product attributes
         save_attributes(context, errors)
 
         # Save and set all one to many relations; images, stockrecords

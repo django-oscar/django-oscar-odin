@@ -111,7 +111,7 @@ class Product(OscarCatalogue):
     availability: Optional[int]
     partner: Optional[Any]
 
-    product_class: Any
+    product_class: ProductClass
     attributes: Dict[str, Any]
     categories: List[Category]
     children: Optional[List["Product"]] = odin.ListOf.delayed(

@@ -25,7 +25,5 @@ class ModelFieldResolver(FieldResolverBase):
             for r in meta.related_objects
             if r.related_name != "+"
         )
-        
-        print(fields)
 
         return fields

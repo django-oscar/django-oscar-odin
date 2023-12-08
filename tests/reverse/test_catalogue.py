@@ -12,6 +12,8 @@ from oscar_odin.resources.catalogue import (
     ProductAttributeValue as ProductAttributeValueResource
 )
 
+from oscar_odin.mappings.defaults import DEFAULT_UPDATE_FIELDS
+
 Product = get_model("catalogue", "Product")
 ProductClass = get_model("catalogue", "ProductClass")
 ProductAttribute = get_model("catalogue", "ProductAttribute")
@@ -32,6 +34,12 @@ class SingleProductReverseTest(TestCase):
         ProductAttribute.objects.create(
             name="Harrie", code="harrie", type=ProductAttribute.INTEGER, product_class=product_class
         )
+        
+        product_class = ProductClassResource(
+            slug="klaas", name="Klaas"
+        )
+        
+        partner = Partner.objects.create(name="klaas")
 
         Category.add_root(name="Hatsie", slug="batsie", is_public=True)
         Category.add_root(name="henk", slug="klaas", is_public=True)
@@ -46,7 +54,7 @@ class SingleProductReverseTest(TestCase):
             price=D("20"),
             availability=2,
             currency="EUR",
-            partner=Partner.objects.create(name="klaas"),
+            partner=partner,
             product_class=product_class,
             images=[
                 ImageResource(caption="gekke caption", display_order=0),
@@ -65,10 +73,34 @@ class SingleProductReverseTest(TestCase):
         self.assertEquals(prd.images.count(), 2)
         self.assertEquals(Category.objects.count(), 2)
         self.assertEquals(prd.categories.count(), 2)
+      
         self.assertEquals(prd.stockrecords.count(), 1)
+        stockrecord = prd.stockrecords.first()
+        self.assertEquals(stockrecord.price, D("20"))
+        self.assertEquals(stockrecord.num_in_stock, 2)
 
         self.assertEquals(prd.attr.henk, "Klaas")
         self.assertEquals(prd.attr.harrie, 1)
+        
+        product_resource = ProductResource(
+            upc="1234323-2",
+            price=D("21.50"),
+            availability=3,
+            currency="EUR",
+            partner=partner,
+            product_class=product_class,
+            categories=[CategoryResource(name="henk", slug="klaas"), CategoryResource(name="Hatsie datsie", slug="batsie")],
+        )
+        
+        fields_to_update = ["upc", "price", "num_in_stock", "num_allocated"]
+        products_to_db(product_resource, fields_to_update=fields_to_update)
+
+        prd = Product.objects.get(upc="1234323-2")
+        self.assertEquals(prd.stockrecords.count(), 1)
+        stockrecord = prd.stockrecords.first()
+        self.assertEquals(stockrecord.price, D("21.50"))
+        self.assertEquals(stockrecord.num_in_stock, 3)
+        self.assertEquals(prd.categories.count(), 2)
 
 
 class MultipleProductReverseTest(TestCase):
@@ -77,6 +109,10 @@ class MultipleProductReverseTest(TestCase):
             name="Klaas", slug="klaas", requires_shipping=True, track_stock=True
         )
         Product.objects.create(upc="1234323asd", title="")
+        product_class = ProductClassResource(
+            slug="klaas", name="Klaas"
+        )
+        
         product_resources = [
             ProductResource(
                 upc="1234323asd",
@@ -111,6 +147,10 @@ class MultipleProductReverseTest(TestCase):
         )
         ProductAttribute.objects.create(
             name="Harrie", code="harrie", type=ProductAttribute.INTEGER, product_class=product_class
+        )
+        
+        product_class = ProductClassResource(
+            slug="klaas", name="Klaas"
         )
 
         product_resources = [

@@ -91,42 +91,27 @@ class ModelMapping(MappingBase, metaclass=ModelMappingMeta):
             parent.attr.set(key, value)
 
         self.context.add_attribute_data((parent, attribute_values))
-        self.context.add_source_fields(Product, [self.source])
 
         for relation, instances in m2o_related_values.items():
             if instances:
-                source_objects = getattr(self.source, relation.name)
-                self.context.add_source_fields(relation.related_model, source_objects)
                 self.context.add_instances_to_m2o_relation(
                     relation, (parent, instances)
                 )
 
         for relation, instances in m2m_related_values.items():
             if instances:
-                source_objects = getattr(self.source, relation.name)
-                self.context.add_source_fields(relation.related_model, source_objects)
                 self.context.add_instances_to_m2m_relation(
                     relation, (parent, instances)
                 )
 
         for relation, instances in o2m_related_values.items():
             if instances:
-                try:
-                    source_objects = getattr(self.source, relation.name)
-                    self.context.add_source_fields(
-                        relation.related_model, source_objects
-                    )
-                except AttributeError:
-                    pass
-
                 self.context.add_instances_to_o2m_relation(
                     relation, (parent, instances)
                 )
 
         for field in self.foreign_key_fields:
             if field.name in field_values:
-                source_objects = getattr(self.source, field.name)
-                self.context.add_source_fields(field.related_model, [source_objects])
                 self.context.add_instance_to_fk_items(
                     field, field_values.get(field.name)
                 )

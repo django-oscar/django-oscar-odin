@@ -28,3 +28,9 @@ test: fail-if-no-virtualenv
 
 black:
 	@black oscar_odin/**/*.py
+
+
+ill:
+	rm db.sqlite3
+	cp klaas.sqlite3 db.sqlite3
+	python3 runtests.py test_illshit
