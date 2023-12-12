@@ -11,13 +11,15 @@ Product = get_model("catalogue", "Product")
 Category = get_model("catalogue", "Category")
 StockRecord = get_model("partner", "StockRecord")
 ProductClass = get_model("catalogue", "ProductClass")
+ProductImage = get_model("catalogue", "ProductImage")
 
 
 MODEL_IDENTIFIERS_MAPPING = {
-    Category: ("slug",),
+    Category: ("identifier",),
     Product: ("upc",),
-    StockRecord: ("product_id", "partner_id", "partner_sku"),
+    StockRecord: ("product_id",),
     ProductClass: ("slug",),
+    ProductImage: ("identifier",),
 }
 
 

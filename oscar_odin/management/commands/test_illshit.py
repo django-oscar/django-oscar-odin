@@ -67,9 +67,9 @@ class Command(BaseCommand):
         
         partner, _ = Partner.objects.get_or_create(name="klaas")
 
-        Category.add_root(name="Hatsie", slug="batsie", is_public=True)
-        Category.add_root(name="henk", slug="klaas", is_public=True)
-        Category.add_root(name="Knaken", slug="knaken", is_public=True)
+        batsie = Category.add_root(name="Hatsie", slug="batsie", is_public=True, identifier="batsie")
+        henk = batsie.add_child(name="henk", slug="klaas", is_public=True, identifier="henk")
+        henk.add_child(name="Knaken", slug="knaken", is_public=True, identifier="knaken")
 
         products = []
 
@@ -95,9 +95,9 @@ class Command(BaseCommand):
                     ImageResource(caption="gekke caption", display_order=0, original=File(output, name="image%s.jpg")),
                 ],
                 categories=[
-                    CategoryResource(name="henk", slug="klaas"),
-                    CategoryResource(name="Hatsie datsie", slug="batsie"),
-                    CategoryResource(name="Knaken", slug="knaken")
+                    CategoryResource(identifier="batsie"),
+                    CategoryResource(identifier="henk"),
+                    CategoryResource(identifier="knaken")
                 ],
                 attributes=attributes
             )
