@@ -26,7 +26,7 @@ from .utils import (
     save_foreign_keys,
 )
 from .context import ModelMapperContext
-from .defaults import DEFAULT_UPDATE_FIELDS
+from .constants import ALL_CATALOGUE_FIELDS
 
 __all__ = (
     "ProductImageToResource",
@@ -392,7 +392,7 @@ def products_to_model(
 def products_to_db(
     products: List[resources.catalogue.Product],
     rollback=True,
-    fields_to_update=DEFAULT_UPDATE_FIELDS,
+    fields_to_update=ALL_CATALOGUE_FIELDS,
 ) -> Tuple[List[ProductModel], Dict]:
     """Map mulitple products to a model and store them in the database.
 

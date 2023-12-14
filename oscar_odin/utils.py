@@ -50,10 +50,10 @@ def in_bulk(self, instances=None, field_names=('pk',)):
             for offset in range(0, len(instances), batch_size):
                 batch = instances[offset:offset + batch_size]
                 query = get_query(batch, field_names)
-                qs += tuple(self.filter(query).order_by().values(*("pk",) + field_names))
+                qs += tuple(self.filter(query).order_by().values("pk", *field_names))
         else:
             query = get_query(instances, field_names)
-            qs = self.filter(query).order_by().values(*("pk",) + field_names)
+            qs = self.filter(query).order_by().values("pk", *field_names)
     else:
         return {}
 

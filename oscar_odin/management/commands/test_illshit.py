@@ -18,6 +18,8 @@ from oscar_odin.resources.catalogue import (
 )
 
 from oscar_odin.mappings.defaults import DEFAULT_UPDATE_FIELDS
+from oscar_odin.mappings.constants import *
+
 from oscar_odin.utils import querycounter
 
 Product = get_model("catalogue", "Product")
@@ -64,22 +66,22 @@ class Command(BaseCommand):
         product_class = ProductClassResource(
             slug="klaas", name="Klaas"
         )
-        
+
         partner, _ = Partner.objects.get_or_create(name="klaas")
 
-        batsie = Category.add_root(name="Hatsie", slug="batsie", is_public=True, identifier="batsie")
-        henk = batsie.add_child(name="henk", slug="klaas", is_public=True, identifier="henk")
-        henk.add_child(name="Knaken", slug="knaken", is_public=True, identifier="knaken")
+        batsie = Category.add_root(name="Hatsie", slug="batsie", is_public=True, code="batsie")
+        henk = batsie.add_child(name="henk", slug="klaas", is_public=True, code="henk")
+        henk.add_child(name="Knaken", slug="knaken", is_public=True, code="knaken")
 
         products = []
-
-        for i in range(0, 5000):
+        
+        def create_product(i):
             attributes = dict()
             attributes.update({code: "%s-%s" % (code, i) for code in text_codes})
             attributes.update({code: i for code in int_codes})
             attributes.update({code: option for code in option_codes})
 
-            products.append(ProductResource(
+            return ProductResource(
                 upc="1234323-%s" % i,
                 title="asdf2 %s" % i,
                 slug="asdf-asdfasdf-%s" % i,
@@ -95,15 +97,16 @@ class Command(BaseCommand):
                     ImageResource(caption="gekke caption", display_order=0, original=File(output, name="image%s.jpg")),
                 ],
                 categories=[
-                    CategoryResource(identifier="batsie"),
-                    CategoryResource(identifier="henk"),
-                    CategoryResource(identifier="knaken")
+                    CategoryResource(code="batsie"),
+                    CategoryResource(code="henk"),
+                    CategoryResource(code="knaken")
                 ],
                 attributes=attributes
             )
-        )
-        
+
+        products = list(map(create_product, range(0, 5000)))
+
         with querycounter("COMMANDO"):
-            products_to_db(products)
+            products_to_db(products, fields_to_update=ALL_PRODUCT_FIELDS + ALL_STOCKRECORD_FIELDS+ ALL_PRODUCTIMAGE_FIELDS)
 
         print("AANTAL PRODUCTEN AANGEMAAKT:", Product.objects.count())

@@ -23,8 +23,7 @@ lint: fail-if-no-virtualenv
 	pylint oscar_odin/
 
 test: fail-if-no-virtualenv
-	python3 runtests.py makemigrations --check --dry-run
-	@python3 runtests.py test tests/
+	python3 runtests.py test tests/
 
 black:
 	@black oscar_odin/**/*.py

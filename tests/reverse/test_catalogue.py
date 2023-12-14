@@ -17,7 +17,7 @@ from oscar_odin.resources.catalogue import (
     ProductAttributeValue as ProductAttributeValueResource
 )
 
-from oscar_odin.mappings.defaults import DEFAULT_UPDATE_FIELDS
+from oscar_odin.mappings.constants import STOCKRECORD_PRICE, STOCKRECORD_NUM_IN_STOCK, STOCKRECORD_NUM_ALLOCATED, PRODUCTIMAGE_ORIGINAL
 
 Product = get_model("catalogue", "Product")
 ProductClass = get_model("catalogue", "ProductClass")
@@ -54,8 +54,8 @@ class SingleProductReverseTest(TestCase):
         
         partner = Partner.objects.create(name="klaas")
 
-        Category.add_root(name="Hatsie", slug="batsie", is_public=True)
-        Category.add_root(name="henk", slug="klaas", is_public=True)
+        Category.add_root(name="Hatsie", slug="batsie", is_public=True, code="1")
+        Category.add_root(name="henk", slug="klaas", is_public=True, code="2")
 
         product_resource = ProductResource(
             upc="1234323-2",
@@ -73,7 +73,7 @@ class SingleProductReverseTest(TestCase):
                 ImageResource(caption="gekke caption", display_order=0, original=File(self.image, name="harrie.jpg")),
                 ImageResource(caption="gekke caption 2", display_order=1, original=File(self.image, name="vats.jpg")),
             ],
-            categories=[CategoryResource(name="henk", slug="klaas"), CategoryResource(name="Hatsie datsie", slug="batsie")],
+            categories=[CategoryResource(code="2")],
             attributes={"henk": "Klaas", "harrie": 1}
         )
 
@@ -82,10 +82,9 @@ class SingleProductReverseTest(TestCase):
         prd = Product.objects.get(upc="1234323-2")
 
         self.assertEquals(prd.title, "asdf2")
-        self.assertEquals(Category.objects.get(slug="batsie").name, "Hatsie datsie")
         self.assertEquals(prd.images.count(), 2)
         self.assertEquals(Category.objects.count(), 2)
-        self.assertEquals(prd.categories.count(), 2)
+        self.assertEquals(prd.categories.count(), 1)
       
         self.assertEquals(prd.stockrecords.count(), 1)
         stockrecord = prd.stockrecords.first()
@@ -108,10 +107,10 @@ class SingleProductReverseTest(TestCase):
                 ImageResource(caption="gekke caption", display_order=0, original=File(self.image, name="harriebatsie.jpg")),
                 ImageResource(caption="gekke caption 2", display_order=1, original=File(self.image, name="vatsie.jpg")),
             ],
-            categories=[CategoryResource(name="henk", slug="klaas"), CategoryResource(name="Hatsie datsie", slug="batsie")],
+            categories=[CategoryResource(code="1")],
         )
         
-        fields_to_update = ["upc", "price", "num_in_stock", "num_allocated", "original"]
+        fields_to_update = [STOCKRECORD_PRICE, STOCKRECORD_NUM_IN_STOCK, STOCKRECORD_NUM_ALLOCATED, PRODUCTIMAGE_ORIGINAL]
         products_to_db(product_resource, fields_to_update=fields_to_update)
 
         prd = Product.objects.get(upc="1234323-2")

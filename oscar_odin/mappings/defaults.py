@@ -1,9 +1,9 @@
 DEFAULT_UPDATE_FIELDS = [
-    "title",
-    "slug",
-    "price",
-    "num_in_stock",
-    "num_allocated",
-    "name",
+    "product.title",
+    "product.slug",
+    "product.price",
+    "stockrecord.num_in_stock",
+    "stockrecord.num_allocated",
+    "category.name",
     "display_order",
 ]

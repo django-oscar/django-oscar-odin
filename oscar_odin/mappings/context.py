@@ -15,11 +15,11 @@ ProductImage = get_model("catalogue", "ProductImage")
 
 
 MODEL_IDENTIFIERS_MAPPING = {
-    Category: ("identifier",),
+    Category: ("code",),
     Product: ("upc",),
     StockRecord: ("product_id",),
     ProductClass: ("slug",),
-    ProductImage: ("identifier",),
+    ProductImage: ("code",),
 }
 
 
@@ -51,7 +51,7 @@ def get_instances_to_create_or_update(Model, instances):
         for instance in instances:
             key = get_key_values(instance)
 
-            if isinstance(key, str):
+            if not isinstance(key, tuple):
                 key = (key,)
 
             if key in id_mapping:
@@ -64,7 +64,7 @@ def get_instances_to_create_or_update(Model, instances):
 
         return instances_to_create, instances_to_update
     else:
-        return instances, instances_to_update
+        return instances, []
 
 
 class ModelMapperContext(dict):
@@ -107,8 +107,12 @@ class ModelMapperContext(dict):
         self.fields_to_update = fields_to_update
 
     def get_fields_to_update(self, Model):
-        model_field_names = [field.name for field in Model._meta.get_fields()]
-        return [f for f in self.fields_to_update if f in model_field_names] or None
+        modelname = "%s." % Model.__name__
+        return [
+            f.replace(modelname, "")
+            for f in self.fields_to_update
+            if f.startswith(modelname)
+        ] or None
 
     def get_create_and_update_relations(self, related_instance_items):
         to_create = defaultdict(list)

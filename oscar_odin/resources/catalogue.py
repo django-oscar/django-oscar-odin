@@ -31,7 +31,7 @@ class Image(OscarCatalogue):
         verbose_name_plural = "Product images"
 
     id: int
-    identifier: str
+    code: str
     original: Any
     caption: str = odin.Options(empty=True)
     display_order: int = odin.Options(
@@ -48,7 +48,7 @@ class Category(OscarCatalogue):
     """A category within Django Oscar."""
 
     id: int
-    identifier: str
+    code: str
     name: str
     slug: str
     description: str
