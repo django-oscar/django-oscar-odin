@@ -5,14 +5,6 @@ from odin.utils import getmeta
 
 from oscar_odin.utils import in_bulk
 
-from oscar.core.loading import get_model
-
-Product = get_model("catalogue", "Product")
-Category = get_model("catalogue", "Category")
-StockRecord = get_model("partner", "StockRecord")
-ProductClass = get_model("catalogue", "ProductClass")
-ProductImage = get_model("catalogue", "ProductImage")
-
 
 def get_instances_to_create_or_update(Model, instances, identifier_mapping):
     instances_to_create = []

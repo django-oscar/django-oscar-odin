@@ -106,6 +106,7 @@ class Product(OscarCatalogue):
     images: List[Image] = odin.Options(empty=True)
     rating: Optional[float]
     is_discountable: bool
+    is_public: bool
 
     # Price information
     price: Decimal = DecimalField()

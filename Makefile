@@ -23,7 +23,7 @@ lint: fail-if-no-virtualenv
 	pylint oscar_odin/
 
 test: fail-if-no-virtualenv
-	python3 runtests.py test tests/
+	python3 runtests.py test tests.reverse.test_reallifecase
 
 black:
 	@black oscar_odin/
