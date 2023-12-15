@@ -117,6 +117,7 @@ def save_attributes(context, errors):
     fields_to_be_updated = set()
 
     for product, attr in context.attribute_data:
+        product.attr.invalidate()
         (
             to_be_deleted,
             update_fields,
@@ -128,7 +129,7 @@ def save_attributes(context, errors):
             attributes_to_delete.extend(to_be_deleted)
 
         if update_fields:
-            fields_to_be_updated.add(update_fields)
+            fields_to_be_updated.update(update_fields)
 
         if to_be_updated:
             attributes_to_update.extend(to_be_updated)
@@ -137,13 +138,13 @@ def save_attributes(context, errors):
             attributes_to_create.extend(to_be_created)
 
     # now save all the attributes in bulk
-    if to_be_deleted:
+    if attributes_to_delete:
         ProductAttributeValue.objects.filter(pk__in=attributes_to_delete).delete()
-    if to_be_updated:
+    if attributes_to_update:
         ProductAttributeValue.objects.bulk_update(
             attributes_to_update, fields_to_be_updated, batch_size=500
         )
-    if to_be_created:
+    if attributes_to_create:
         ProductAttributeValue.objects.bulk_create(
             attributes_to_create, batch_size=500, ignore_conflicts=False
         )

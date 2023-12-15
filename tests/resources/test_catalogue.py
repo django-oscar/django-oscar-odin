@@ -13,7 +13,7 @@ from oscar_odin.resources.catalogue import (
     Image as ImageResource,
     ProductClass as ProductClassResource,
     Category as CategoryResource,
-    ProductAttributeValue as ProductAttributeValueResource
+    ProductAttributeValue as ProductAttributeValueResource,
 )
 
 from oscar_odin.mappings.defaults import DEFAULT_UPDATE_FIELDS

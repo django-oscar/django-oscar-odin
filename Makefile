@@ -26,8 +26,8 @@ test: fail-if-no-virtualenv
 	python3 runtests.py test tests/
 
 black:
-	@black oscar_odin/**/*.py
-
+	@black oscar_odin/
+	@black tests/
 
 ill:
 	rm db.sqlite3
