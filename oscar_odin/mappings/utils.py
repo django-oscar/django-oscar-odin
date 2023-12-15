@@ -37,7 +37,7 @@ def save_foreign_keys(context, errors):
 
 def save_products(instances, context, errors):
     instances_to_create, instances_to_update = get_instances_to_create_or_update(
-        Product, instances
+        Product, instances, context.identifier_mapping
     )
 
     validated_create_instances, errors = validate_instances(instances_to_create, errors)

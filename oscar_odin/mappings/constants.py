@@ -1,3 +1,11 @@
+from oscar.core.loading import get_model
+
+Product = get_model("catalogue", "Product")
+Category = get_model("catalogue", "Category")
+StockRecord = get_model("partner", "StockRecord")
+ProductClass = get_model("catalogue", "ProductClass")
+ProductImage = get_model("catalogue", "ProductImage")
+
 PRODUCT_STRUCTURE = "Product.structure"
 PRODUCT_IS_PUBLIC = "Product.is_public"
 PRODUCT_UPC = "Product.upc"
@@ -76,3 +84,11 @@ ALL_STOCKRECORD_FIELDS = [
 ALL_CATALOGUE_FIELDS = (
     ALL_PRODUCT_FIELDS + ALL_PRODUCTIMAGE_FIELDS + ALL_STOCKRECORD_FIELDS
 )
+
+MODEL_IDENTIFIERS_MAPPING = {
+    Category: ("code",),
+    Product: ("upc",),
+    StockRecord: ("product_id",),
+    ProductClass: ("slug",),
+    ProductImage: ("code",),
+}

@@ -14,33 +14,11 @@ ProductClass = get_model("catalogue", "ProductClass")
 ProductImage = get_model("catalogue", "ProductImage")
 
 
-MODEL_IDENTIFIERS_MAPPING = {
-    Category: ("code",),
-    Product: ("upc",),
-    StockRecord: ("product_id",),
-    ProductClass: ("slug",),
-    ProductImage: ("code",),
-}
-
-
-def get_unique_id_list(Model, instances):
-    unique_id_list = []
-    identifiers = MODEL_IDENTIFIERS_MAPPING.get(Model, {})
-
-    if identifiers:
-        for instance in instances:
-            unique_id_list.append(
-                [getattr(instance, identifier) for identifier in identifiers]
-            )
-
-    return unique_id_list, identifiers
-
-
-def get_instances_to_create_or_update(Model, instances):
+def get_instances_to_create_or_update(Model, instances, identifier_mapping):
     instances_to_create = []
     instances_to_update = []
 
-    unique_id_list, identifiers = get_unique_id_list(Model, instances)
+    identifiers = identifier_mapping.get(Model, {})
 
     if identifiers:
         id_mapping = in_bulk(
@@ -72,8 +50,8 @@ class ModelMapperContext(dict):
     many_to_many_items = None
     many_to_one_items = None
     one_to_many_items = None
-    source_fields = None
     attribute_data = None
+    identifier_mapping = None
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -82,6 +60,7 @@ class ModelMapperContext(dict):
         self.many_to_one_items = defaultdict(list)
         self.one_to_many_items = defaultdict(list)
         self.fields_to_update = defaultdict(list)
+        self.identifier_mapping = defaultdict(tuple)
         self.attribute_data = []
 
     def __bool__(self):
@@ -102,9 +81,6 @@ class ModelMapperContext(dict):
     def add_instance_to_fk_items(self, field, instance):
         if not instance.pk:
             self.foreign_key_items[field] += [instance]
-
-    def add_fields_to_update(self, fields_to_update):
-        self.fields_to_update = fields_to_update
 
     def get_fields_to_update(self, Model):
         modelname = "%s." % Model.__name__
@@ -127,7 +103,9 @@ class ModelMapperContext(dict):
             (
                 instances_to_create,
                 instances_to_update,
-            ) = get_instances_to_create_or_update(relation.related_model, all_instances)
+            ) = get_instances_to_create_or_update(
+                relation.related_model, all_instances, self.identifier_mapping
+            )
 
             to_create[relation].extend(instances_to_create)
             to_update[relation].extend(instances_to_update)
@@ -152,7 +130,9 @@ class ModelMapperContext(dict):
             (
                 instances_to_create,
                 instances_to_update,
-            ) = get_instances_to_create_or_update(relation.related_model, instances)
+            ) = get_instances_to_create_or_update(
+                relation.related_model, instances, self.identifier_mapping
+            )
 
             to_create[relation].extend(instances_to_create)
             to_update[relation].extend(instances_to_update)
