@@ -4,7 +4,7 @@ import sys
 
 import django
 from django.conf import settings
-from django.test.utils import get_runner
+
 
 if __name__ == "__main__":
     # Configure path and django settings module

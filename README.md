@@ -19,7 +19,14 @@ product = Product.objects.get(id=1)
 product_resource = catalogue.product_to_resource(product)
 ```
 
-# run tests
+# Developing odin
+
+## Using pip:
 
 make install
-make tests
+make test
+
+## Using poetry:
+
+poetry install --all-extras
+poetry run ./manage.py test

@@ -11,6 +11,7 @@ from odin.utils import getmeta
 class ModelFieldResolver(FieldResolverBase):
     """Field resolver for Django models."""
 
+    # pylint: disable=protected-access
     def get_field_dict(self) -> Dict[str, Optional[Field]]:
         """Get a dictionary of fields from the source object."""
         meta = getmeta(self.obj)

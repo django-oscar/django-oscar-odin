@@ -1,4 +1,4 @@
-.PHONY: fail-if-no-virtualenv all install lint test black
+.PHONY: fail-if-no-virtualenv all install dev lint test black
 
 all: install migrate loaddata collectstatic
 
@@ -14,16 +14,19 @@ PIP_INDEX_URL=https://pypi.org/simple
 endif
 
 
+dev: install
+	pip install .[dev]
+
 install: fail-if-no-virtualenv
-	pip install poetry
-	poetry install
+	pip install .[test]
 
 lint: fail-if-no-virtualenv
-	black --check  oscar_odin/**/*.py
+	black --check oscar_odin/
 	pylint oscar_odin/
 
 test: fail-if-no-virtualenv
-	python3 runtests.py test tests.reverse.test_catalogue
+	python3 manage.py makemigrations --check --dry-run
+	@python3 manage.py test tests/
 
 black:
 	@black oscar_odin/
@@ -32,5 +35,5 @@ black:
 ill:
 	rm db.sqlite3
 	cp klaas.sqlite3 db.sqlite3
-	python3 runtests.py migrate
-	python3 runtests.py test_illshit
+	python3 manage.py migrate
+	python3 manage.py test_illshit
