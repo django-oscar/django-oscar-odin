@@ -28,7 +28,7 @@ jobs:
 
     - name: Install dependencies
       run: |
-        python -m pip install .[test]
+        python -m pip install --upgrade pip
         poetry install --all-extras --no-root
 
     - name: Check code quality
