@@ -4,5 +4,5 @@ load-plugins = pylint_django
 score = n
 
 [MESSAGES CONTROL]
-disable = R,C,W5103,W0707,E5110
+disable = R,C,W5103,W0707,E5110,W0511
 

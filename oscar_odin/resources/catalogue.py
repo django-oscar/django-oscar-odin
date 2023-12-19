@@ -7,7 +7,6 @@ from typing import Any, Dict, List, Optional
 from oscar.core.loading import get_model
 
 import odin
-from odin.annotated_resource.type_aliases import Url
 
 from ..fields import DecimalField
 from ._base import OscarResource

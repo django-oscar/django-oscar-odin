@@ -4,7 +4,6 @@ import math
 
 from django.db import connection, reset_queries
 
-from typing import Any, Tuple, NamedTuple
 from collections import defaultdict
 
 from django.db.models import Model, ManyToManyField, ForeignKey, Q

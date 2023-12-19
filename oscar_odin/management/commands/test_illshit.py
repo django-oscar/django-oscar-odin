@@ -1,3 +1,4 @@
+# pylint: disable=W0611
 import io
 import PIL
 
@@ -5,7 +6,6 @@ from decimal import Decimal as D
 
 from django.core.management.base import BaseCommand
 from django.core.files import File
-from django.test import TestCase
 from oscar.core.loading import get_model
 
 from oscar_odin.mappings.catalogue import products_to_db
