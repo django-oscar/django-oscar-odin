@@ -31,6 +31,7 @@ class Image(OscarCatalogue):
         verbose_name_plural = "Product images"
 
     id: int
+    code: str
     original: Any
     caption: str = odin.Options(empty=True)
     display_order: int = odin.Options(
@@ -47,6 +48,7 @@ class Category(OscarCatalogue):
     """A category within Django Oscar."""
 
     id: int
+    code: str
     name: str
     slug: str
     description: str
@@ -91,6 +93,10 @@ class ProductAttributeValue(OscarCatalogue):
     value: Any
 
 
+class ParentProduct(OscarCatalogue):
+    upc: str
+
+
 class Product(OscarCatalogue):
     """A product within Django Oscar."""
 
@@ -99,11 +105,13 @@ class Product(OscarCatalogue):
     structure: Structure
     title: str
     slug: str
-    description: str = odin.Options(empty=True)
+    description: str = ""
     meta_title: Optional[str]
     images: List[Image] = odin.Options(empty=True)
     rating: Optional[float]
-    is_discountable: bool
+    is_discountable: bool = True
+    is_public: bool = True
+    parent: Optional[ParentProduct]
 
     # Price information
     price: Decimal = DecimalField()
@@ -111,12 +119,12 @@ class Product(OscarCatalogue):
     availability: Optional[int]
     partner: Optional[Any]
 
-    product_class: ProductClass
+    product_class: Optional[ProductClass] = None
     attributes: Dict[str, Any]
     categories: List[Category]
-    children: Optional[List["Product"]] = odin.ListOf.delayed(
-        lambda: Product, null=True
-    )
+    # children: Optional[List["Product"]] = odin.ListOf.delayed(
+    #         lambda: Product, null=True
+    #     )
 
     date_created: datetime
     date_updated: datetime

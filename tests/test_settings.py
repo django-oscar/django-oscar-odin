@@ -1,3 +1,10 @@
+import os
+import oscar
+
+# Path helper
+location = lambda x: os.path.join(os.path.dirname(os.path.realpath(__file__)), x)
+
+
 DEBUG = True
 USE_TZ = True
 SITE_ID = 1
@@ -11,6 +18,36 @@ DATABASES = {
 
 SECRET_KEY = "123"
 
+TEMPLATES = [
+    {
+        "BACKEND": "django.template.backends.django.DjangoTemplates",
+        "DIRS": [
+            location("templates"),
+        ],
+        "OPTIONS": {
+            "loaders": [
+                "django.template.loaders.filesystem.Loader",
+                "django.template.loaders.app_directories.Loader",
+            ],
+            "context_processors": [
+                "django.contrib.auth.context_processors.auth",
+                "django.template.context_processors.request",
+                "django.template.context_processors.debug",
+                "django.template.context_processors.i18n",
+                "django.template.context_processors.media",
+                "django.template.context_processors.static",
+                "django.contrib.messages.context_processors.messages",
+                # Oscar specific
+                "oscar.apps.search.context_processors.search_form",
+                "oscar.apps.communication.notifications.context_processors.notifications",
+                "oscar.apps.checkout.context_processors.checkout",
+                "oscar.core.context_processors.metadata",
+            ],
+            "debug": DEBUG,
+        },
+    }
+]
+
 INSTALLED_APPS = [
     "django.contrib.auth",
     "django.contrib.contenttypes",
@@ -18,6 +55,13 @@ INSTALLED_APPS = [
     "django.contrib.staticfiles",
     "django.contrib.sites",
     "django.contrib.flatpages",
+    "django.contrib.admin",
+    "django.contrib.messages",
+    "widget_tweaks",
+    "haystack",
+    "treebeard",
+    "sorl.thumbnail",
+    "django_tables2",
     # Oscar apps
     "oscar.config.Shop",
     "oscar.apps.analytics.apps.AnalyticsConfig",
@@ -53,6 +97,22 @@ INSTALLED_APPS = [
     "oscar_odin.apps.OscarOdinAppConfig",
 ]
 
+MIDDLEWARE = [
+    "django.middleware.security.SecurityMiddleware",
+    "django.contrib.sessions.middleware.SessionMiddleware",
+    "django.middleware.csrf.CsrfViewMiddleware",
+    "django.middleware.clickjacking.XFrameOptionsMiddleware",
+    "django.contrib.auth.middleware.AuthenticationMiddleware",
+    "django.contrib.messages.middleware.MessageMiddleware",
+    "django.contrib.flatpages.middleware.FlatpageFallbackMiddleware",
+    # Allow languages to be selected
+    "django.middleware.locale.LocaleMiddleware",
+    "django.middleware.http.ConditionalGetMiddleware",
+    "django.middleware.common.CommonMiddleware",
+    # Ensure a valid basket is added to the request instance for every request
+    "oscar.apps.basket.middleware.BasketMiddleware",
+]
+
 from oscar.defaults import *
 
 HAYSTACK_CONNECTIONS = {
@@ -62,3 +122,7 @@ HAYSTACK_CONNECTIONS = {
 }
 
 SILENCED_SYSTEM_CHECKS = ["models.W042"]
+
+STATIC_URL = "/static/"
+
+ROOT_URLCONF = "urls"

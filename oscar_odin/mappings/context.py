@@ -4,41 +4,18 @@ from operator import attrgetter
 from odin.utils import getmeta
 
 from oscar_odin.utils import in_bulk
+from oscar_odin.exceptions import OscarOdinException
 
 from oscar.core.loading import get_model
 
 Product = get_model("catalogue", "Product")
-Category = get_model("catalogue", "Category")
-StockRecord = get_model("partner", "StockRecord")
-ProductClass = get_model("catalogue", "ProductClass")
 
 
-MODEL_IDENTIFIERS_MAPPING = {
-    Category: ("slug",),
-    Product: ("upc",),
-    StockRecord: ("product_id", "partner_id", "partner_sku"),
-    ProductClass: ("slug",),
-}
-
-
-def get_unique_id_list(Model, instances):
-    unique_id_list = []
-    identifiers = MODEL_IDENTIFIERS_MAPPING.get(Model, {})
-
-    if identifiers:
-        for instance in instances:
-            unique_id_list.append(
-                [getattr(instance, identifier) for identifier in identifiers]
-            )
-
-    return unique_id_list, identifiers
-
-
-def get_instances_to_create_or_update(Model, instances):
+def get_instances_to_create_or_update(Model, instances, identifier_mapping):
     instances_to_create = []
     instances_to_update = []
 
-    unique_id_list, identifiers = get_unique_id_list(Model, instances)
+    identifiers = identifier_mapping.get(Model, {})
 
     if identifiers:
         id_mapping = in_bulk(
@@ -49,7 +26,7 @@ def get_instances_to_create_or_update(Model, instances):
         for instance in instances:
             key = get_key_values(instance)
 
-            if isinstance(key, str):
+            if not isinstance(key, tuple):
                 key = (key,)
 
             if key in id_mapping:
@@ -62,7 +39,7 @@ def get_instances_to_create_or_update(Model, instances):
 
         return instances_to_create, instances_to_update
     else:
-        return instances, instances_to_update
+        return instances, []
 
 
 class ModelMapperContext(dict):
@@ -70,8 +47,8 @@ class ModelMapperContext(dict):
     many_to_many_items = None
     many_to_one_items = None
     one_to_many_items = None
-    source_fields = None
     attribute_data = None
+    identifier_mapping = None
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -80,6 +57,7 @@ class ModelMapperContext(dict):
         self.many_to_one_items = defaultdict(list)
         self.one_to_many_items = defaultdict(list)
         self.fields_to_update = defaultdict(list)
+        self.identifier_mapping = defaultdict(tuple)
         self.attribute_data = []
 
     def __bool__(self):
@@ -98,15 +76,16 @@ class ModelMapperContext(dict):
         self.one_to_many_items[relation] += [instances]
 
     def add_instance_to_fk_items(self, field, instance):
-        if not instance.pk:
+        if instance is not None and not instance.pk:
             self.foreign_key_items[field] += [instance]
 
-    def add_fields_to_update(self, fields_to_update):
-        self.fields_to_update = fields_to_update
-
     def get_fields_to_update(self, Model):
-        model_field_names = [field.name for field in Model._meta.get_fields()]
-        return [f for f in self.fields_to_update if f in model_field_names] or None
+        modelname = "%s." % Model.__name__
+        return [
+            f.replace(modelname, "")
+            for f in self.fields_to_update
+            if f.startswith(modelname)
+        ] or None
 
     def get_create_and_update_relations(self, related_instance_items):
         to_create = defaultdict(list)
@@ -121,7 +100,9 @@ class ModelMapperContext(dict):
             (
                 instances_to_create,
                 instances_to_update,
-            ) = get_instances_to_create_or_update(relation.related_model, all_instances)
+            ) = get_instances_to_create_or_update(
+                relation.related_model, all_instances, self.identifier_mapping
+            )
 
             to_create[relation].extend(instances_to_create)
             to_update[relation].extend(instances_to_update)
@@ -146,10 +127,21 @@ class ModelMapperContext(dict):
             (
                 instances_to_create,
                 instances_to_update,
-            ) = get_instances_to_create_or_update(relation.related_model, instances)
+            ) = get_instances_to_create_or_update(
+                relation.related_model, instances, self.identifier_mapping
+            )
 
-            to_create[relation].extend(instances_to_create)
-            to_update[relation].extend(instances_to_update)
+            if relation.related_model == Product:
+                if instances_to_create:
+                    raise OscarOdinException(
+                        "Cannot create parents this way. Please create all parents first seperately, then create the childs while linking the parents using the `oscar_odin.resources.catalogue.ParentProduct`"
+                    )
+
+                for instance in instances_to_update:
+                    instance.refresh_from_db()
+            else:
+                to_create[relation].extend(instances_to_create)
+                to_update[relation].extend(instances_to_update)
 
         return (to_create, to_update)
 

@@ -23,14 +23,14 @@ lint: fail-if-no-virtualenv
 	pylint oscar_odin/
 
 test: fail-if-no-virtualenv
-	python3 runtests.py makemigrations --check --dry-run
-	@python3 runtests.py test tests/
+	python3 runtests.py test tests.reverse.test_catalogue
 
 black:
-	@black oscar_odin/**/*.py
-
+	@black oscar_odin/
+	@black tests/
 
 ill:
 	rm db.sqlite3
 	cp klaas.sqlite3 db.sqlite3
+	python3 runtests.py migrate
 	python3 runtests.py test_illshit

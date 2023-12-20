@@ -1,0 +1,2 @@
+class OscarOdinException(TypeError):
+    pass
