@@ -217,19 +217,6 @@ class ProductToResource(odin.Mapping):
             for item in self.source.get_attribute_values()
         }
 
-    @odin.assign_field
-    def children(self) -> Tuple[Optional[List[resources.catalogue.Product]]]:
-        """Children of parent products."""
-
-        if self.context.get("include_children", False) and self.source.is_parent:
-            # Return a tuple as an optional list causes problems.
-            return (
-                map_queryset(
-                    ProductToResource, self.source.children, context=self.context
-                ),
-            )
-        return (None,)
-
     @odin.assign_field(to_field=("price", "currency", "availability"))
     def map_stock_price(self) -> Tuple[Decimal, str, int]:
         """Resolve stock price using strategy and decompose into price/currency/availability."""
@@ -258,14 +245,16 @@ class ProductToModel(ModelMapping):
         """Map related image. We save these later in bulk"""
         return ProductImageToModel.apply(values)
 
+    @odin.map_field
+    def parent(self, parent):
+        if parent:
+            return ParentToModel.apply(parent)
+
+        return None
+
     @odin.map_list_field
     def categories(self, values) -> List[CategoryModel]:
         return CategoryToModel.apply(values)
-
-    @odin.map_list_field
-    def children(self, values) -> List[ProductModel]:
-        """Map related image."""
-        return []
 
     @odin.map_list_field(
         from_field=["price", "availability", "currency", "upc", "partner"]
@@ -288,13 +277,19 @@ class ProductToModel(ModelMapping):
 
     @odin.map_field
     def product_class(self, value) -> ProductClassModel:
+        if not value and self.source.structure == ProductModel.CHILD:
+            return None
+
         return ProductClassToModel.apply(value)
-        # if isinstance(value, self.to_obj):
 
 
-#             return value
-#
-#         return ProductClassToModel.apply(value)
+class ParentToModel(odin.Mapping):
+    from_obj = resources.catalogue.ParentProduct
+    to_obj = ProductModel
+
+    @odin.assign_field
+    def structure(self):
+        return ProductModel.PARENT
 
 
 def product_to_resource_with_strategy(

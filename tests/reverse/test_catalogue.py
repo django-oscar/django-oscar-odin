@@ -15,8 +15,9 @@ from oscar_odin.resources.catalogue import (
     ProductClass as ProductClassResource,
     Category as CategoryResource,
     ProductAttributeValue as ProductAttributeValueResource,
+    ParentProduct as ParentProductResource,
 )
-
+from oscar_odin.exceptions import OscarOdinException
 from oscar_odin.mappings.constants import (
     STOCKRECORD_PRICE,
     STOCKRECORD_NUM_IN_STOCK,
@@ -404,3 +405,94 @@ class MultipleProductReverseTest(TestCase):
 
         self.assertEqual(prd2.attr.henk, "Klaas")
         self.assertEqual(prd2.attr.harrie, 1)
+
+
+class ParentChildTest(TestCase):
+    def test_parent_childs(self):
+        Category.add_root(name="henk", slug="klaas", is_public=True, code="2")
+        ProductClass.objects.create(
+            name="Klaas", slug="klaas", requires_shipping=True, track_stock=True
+        )
+        product_class = ProductClassResource(slug="klaas")
+        partner = Partner.objects.create(name="klaas")
+
+        prds = ProductResource(
+            upc="1234323-2",
+            title="asdf2",
+            slug="asdf-asdfasdf2",
+            description="description",
+            structure=Product.PARENT,
+            product_class=product_class,
+            categories=[CategoryResource(code="2")],
+        )
+
+        products_to_db(prds)
+
+        prd = Product.objects.get(upc="1234323-2")
+
+        self.assertEquals(prd.structure, Product.PARENT)
+        self.assertEquals(prd.product_class.slug, "klaas")
+
+        child_product = ProductResource(
+            parent=ParentProductResource(upc="1234323-2"),
+            upc="1234323-child",
+            title="asdf2 child",
+            slug="asdf-asdfasdf2-child",
+            structure=Product.CHILD,
+            price=D("20"),
+            availability=2,
+            currency="EUR",
+            partner=Partner.objects.create(name="klaas"),
+        )
+
+        products_to_db(child_product)
+
+        prd = Product.objects.get(upc="1234323-2")
+
+        self.assertEquals(prd.structure, Product.PARENT)
+        self.assertEquals(prd.product_class.slug, "klaas")
+
+        child = Product.objects.get(upc="1234323-child")
+
+        self.assertEquals(child.structure, Product.CHILD)
+        self.assertEquals(child.parent.pk, prd.pk)
+
+    def test_non_existing_parent_childs(self):
+        Category.add_root(name="henk", slug="klaas", is_public=True, code="2")
+        ProductClass.objects.create(
+            name="Klaas", slug="klaas", requires_shipping=True, track_stock=True
+        )
+        product_class = ProductClassResource(slug="klaas")
+        partner = Partner.objects.create(name="klaas")
+
+        prds = ProductResource(
+            upc="1234323-2",
+            title="asdf2",
+            slug="asdf-asdfasdf2",
+            description="description",
+            structure=Product.PARENT,
+            product_class=product_class,
+            categories=[CategoryResource(code="2")],
+        )
+
+        products_to_db(prds)
+
+        prd = Product.objects.get(upc="1234323-2")
+
+        self.assertEquals(prd.structure, Product.PARENT)
+        self.assertEquals(prd.product_class.slug, "klaas")
+
+        child_product = ProductResource(
+            parent=ParentProductResource(upc="1234323-654"),
+            upc="1234323-child",
+            title="asdf2 child",
+            slug="asdf-asdfasdf2-child",
+            structure=Product.CHILD,
+            price=D("20"),
+            availability=2,
+            currency="EUR",
+            partner=Partner.objects.create(name="klaas"),
+        )
+
+        with self.assertRaises(OscarOdinException):
+            products_to_db(child_product)

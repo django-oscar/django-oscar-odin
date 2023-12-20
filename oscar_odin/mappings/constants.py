@@ -2,9 +2,10 @@ from oscar.core.loading import get_model
 
 Product = get_model("catalogue", "Product")
 Category = get_model("catalogue", "Category")
-StockRecord = get_model("partner", "StockRecord")
 ProductClass = get_model("catalogue", "ProductClass")
 ProductImage = get_model("catalogue", "ProductImage")
+StockRecord = get_model("partner", "StockRecord")
+Partner = get_model("partner", "Partner")
 
 PRODUCT_STRUCTURE = "Product.structure"
 PRODUCT_IS_PUBLIC = "Product.is_public"
@@ -16,6 +17,7 @@ PRODUCT_DESCRIPTION = "Product.description"
 PRODUCT_META_TITLE = "Product.meta_title"
 PRODUCT_META_DESCRIPTION = "Product.meta_description"
 PRODUCT_PRODUCT_CLASS = "Product.product_class"
+PRODUCT_PARENT = "Product.parent"
 PRODUCT_IS_DISCOUNTABLE = "Product.is_discountable"
 
 CATEGORY_NAME = "Category.name"
@@ -51,6 +53,7 @@ ALL_PRODUCT_FIELDS = [
     PRODUCT_META_DESCRIPTION,
     PRODUCT_PRODUCT_CLASS,
     PRODUCT_IS_DISCOUNTABLE,
+    PRODUCT_PARENT,
 ]
 
 ALL_CATEGORY_FIELDS = [
@@ -91,4 +94,5 @@ MODEL_IDENTIFIERS_MAPPING = {
     StockRecord: ("product_id",),
     ProductClass: ("slug",),
     ProductImage: ("code",),
+    Partner: ("slug",),
 }

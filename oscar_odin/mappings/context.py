@@ -4,6 +4,11 @@ from operator import attrgetter
 from odin.utils import getmeta
 
 from oscar_odin.utils import in_bulk
+from oscar_odin.exceptions import OscarOdinException
+
+from oscar.core.loading import get_model
+
+Product = get_model("catalogue", "Product")
 
 
 def get_instances_to_create_or_update(Model, instances, identifier_mapping):
@@ -71,7 +76,7 @@ class ModelMapperContext(dict):
         self.one_to_many_items[relation] += [instances]
 
     def add_instance_to_fk_items(self, field, instance):
-        if not instance.pk:
+        if instance is not None and not instance.pk:
             self.foreign_key_items[field] += [instance]
 
     def get_fields_to_update(self, Model):
@@ -126,8 +131,17 @@ class ModelMapperContext(dict):
                 relation.related_model, instances, self.identifier_mapping
             )
 
-            to_create[relation].extend(instances_to_create)
-            to_update[relation].extend(instances_to_update)
+            if relation.related_model == Product:
+                if instances_to_create:
+                    raise OscarOdinException(
+                        "Cannot create parents this way. Please create all parents first seperately, then create the childs while linking the parents using the `oscar_odin.resources.catalogue.ParentProduct`"
+                    )
+
+                for instance in instances_to_update:
+                    instance.refresh_from_db()
+            else:
+                to_create[relation].extend(instances_to_create)
+                to_update[relation].extend(instances_to_update)
 
         return (to_create, to_update)
 

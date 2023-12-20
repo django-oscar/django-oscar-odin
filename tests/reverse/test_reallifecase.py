@@ -130,6 +130,11 @@ class CSVProductMapping(odin.Mapping):
 
 class RealLifeTest(TestCase):
     def test_mapping(self):
+        for partner_id in ["1049", "1052", "1053", "1049"]:
+            Partner.objects.get_or_create(
+                code=partner_id, defaults={"name": partner_id}
+            )
+
         # Create product class
         product_class, _ = ProductClass.objects.get_or_create(
             slug="standard",
