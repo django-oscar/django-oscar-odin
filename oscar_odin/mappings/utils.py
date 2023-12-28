@@ -39,18 +39,18 @@ def save_foreign_keys(context, errors):
             Model.objects.bulk_update(instances, fields=fields)
 
 
-def save_products(instances, context, errors):
+def save_objects(Model, instances, context, errors):
     instances_to_create, instances_to_update = get_instances_to_create_or_update(
-        Product, instances, context.identifier_mapping
+        Model, instances, context.identifier_mapping
     )
 
     validated_create_instances, errors = validate_instances(instances_to_create, errors)
 
-    Product.objects.bulk_create(validated_create_instances)
+    Model.objects.bulk_create(validated_create_instances)
 
     fields = context.get_fields_to_update(Product)
     if fields is not None:
-        Product.objects.bulk_update(instances_to_update, fields=fields)
+        Model.objects.bulk_update(instances_to_update, fields=fields)
 
 
 def save_one_to_many(context, errors):

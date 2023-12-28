@@ -22,7 +22,7 @@ from .utils import (
     save_attributes,
     save_many_to_many,
     save_one_to_many,
-    save_products,
+    save_objects,
     save_foreign_keys,
 )
 from .context import ModelMapperContext
@@ -405,7 +405,7 @@ def products_to_db(
         save_foreign_keys(context, errors)
 
         # Save all the products in one go
-        save_products(instances, context, errors)
+        save_objects(ProductModel, instances, context, errors)
 
         # Save all product attributes
         save_attributes(instances)
