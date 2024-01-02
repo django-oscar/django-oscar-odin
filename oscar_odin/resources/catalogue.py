@@ -123,3 +123,7 @@ class Product(OscarCatalogue):
 
     date_created: datetime
     date_updated: datetime
+
+    children: Optional[List["Product"]] = odin.ListOf.delayed(
+        lambda: Product, null=True
+    )

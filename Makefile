@@ -25,18 +25,15 @@ lint: fail-if-no-virtualenv
 	pylint oscar_odin/
 
 test: fail-if-no-virtualenv
-	python3 manage.py makemigrations --check --dry-run
+	pip install .[test]
 	@python3 manage.py test tests/
 
 black:
 	@black oscar_odin/
 	@black tests/
 
-test:
-	python3 manage.py test tests/
-
 ill:
 	rm db.sqlite3
 	cp klaas.sqlite3 db.sqlite3
 	python3 manage.py migrate
-	python3 manage.py test_illshit
+	python3 manage.py test_queries

@@ -216,6 +216,19 @@ class ProductToResource(odin.Mapping):
             for item in self.source.get_attribute_values()
         }
 
+    @odin.assign_field
+    def children(self) -> Tuple[Optional[List[resources.catalogue.Product]]]:
+        """Children of parent products."""
+
+        if self.context.get("include_children", False) and self.source.is_parent:
+            # Return a tuple as an optional list causes problems.
+            return (
+                map_queryset(
+                    ProductToResource, self.source.children, context=self.context
+                ),
+            )
+        return (None,)
+
     @odin.assign_field(to_field=("price", "currency", "availability"))
     def map_stock_price(self) -> Tuple[Decimal, str, int]:
         """Resolve stock price using strategy and decompose into price/currency/availability."""
@@ -236,6 +249,8 @@ class ProductToModel(ModelMapping):
 
     from_obj = resources.catalogue.Product
     to_obj = ProductModel
+
+    mappings = (odin.define(from_field="children", skip_if_none=True),)
 
     @odin.map_list_field
     def images(self, values) -> List[ProductImageModel]:
@@ -383,7 +398,6 @@ def products_to_model(
 
 def products_to_db(
     products,
-    rollback=True,
     fields_to_update=ALL_CATALOGUE_FIELDS,
     identifier_mapping=MODEL_IDENTIFIERS_MAPPING,
     product_mapper=ProductToModel,

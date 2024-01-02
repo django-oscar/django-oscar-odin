@@ -2,6 +2,7 @@ import io
 import PIL
 import odin
 import requests
+import responses
 
 from urllib.parse import urlparse
 
@@ -139,7 +140,16 @@ class CSVProductMapping(odin.Mapping):
 
 
 class RealLifeTest(TestCase):
+    @responses.activate
     def test_mapping(self):
+        responses.add(
+            responses.GET,
+            "https://picsum.photos/200/300",
+            body="Dit is nep content van een image",
+            status=200,
+            content_type="image/jpeg",
+        )
+
         for partner_id in ["1049", "1052", "1053", "1049"]:
             Partner.objects.get_or_create(
                 code=partner_id, defaults={"name": partner_id}

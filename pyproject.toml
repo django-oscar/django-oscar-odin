@@ -41,6 +41,9 @@ pre-commit = {version = "*", optional = true}
 test = ["coverage", "pylint", "black", "pylint-django", "poetry"]
 dev = ["ruff", "isort", "pre-commit"]
 
+[tool.poetry.group.test.dependencies]
+responses = "^0.24.1"
+
 [build-system]
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"

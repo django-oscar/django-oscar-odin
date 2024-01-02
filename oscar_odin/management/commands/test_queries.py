@@ -118,7 +118,7 @@ class Command(BaseCommand):
                 attributes=attributes,
             )
 
-        products = list(map(create_product, range(0, 5000)))
+        products = list(map(create_product, range(0, 1000)))
 
         with querycounter("COMMANDO"):
             products_to_db(
@@ -128,4 +128,4 @@ class Command(BaseCommand):
                 + ALL_PRODUCTIMAGE_FIELDS,
             )
 
-        print("AANTAL PRODUCTEN AANGEMAAKT:", Product.objects.count())
+        print("Amount of products created:", Product.objects.count())

@@ -31,3 +31,13 @@ class TestProduct(TestCase):
         actual = catalogue.product_to_resource(product)
 
         self.assertEqual(product.title, actual.title)
+        self.assertIsNone(actual.children)
+
+    def test_mapping__where_is_a_parent_product_include_children(self):
+        product = Product.objects.get(id=8)
+
+        actual = catalogue.product_to_resource(product, include_children=True)
+
+        self.assertEqual(product.title, actual.title)
+        self.assertIsNotNone(actual.children)
+        self.assertEqual(3, len(actual.children))
