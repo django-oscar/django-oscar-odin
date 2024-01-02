@@ -16,8 +16,6 @@ from oscar_odin.resources.catalogue import (
     ProductAttributeValue as ProductAttributeValueResource,
 )
 
-from oscar_odin.mappings.defaults import DEFAULT_UPDATE_FIELDS
-
 Product = get_model("catalogue", "Product")
 ProductClass = get_model("catalogue", "ProductClass")
 ProductAttribute = get_model("catalogue", "ProductAttribute")
