@@ -61,8 +61,15 @@ class ModelMapping(MappingBase, metaclass=ModelMappingMeta):
 
     def create_object(self, **field_values):
         """Create a new product model."""
-        attribute_values = field_values.pop("attributes", [])
+        related_field_values = self.get_related_field_values(field_values)
 
+        parent = super().create_object(**field_values)
+
+        self.add_related_field_values_to_context(parent, related_field_values)
+
+        return parent
+
+    def get_related_field_values(self, field_values):
         m2m_related_values = {
             field: field_values.pop(field.name)
             for field in self.many_to_many_fields
@@ -81,34 +88,38 @@ class ModelMapping(MappingBase, metaclass=ModelMappingMeta):
             if relation.related_name in field_values
         }
 
-        parent = super().create_object(**field_values)
+        foreign_key_related_values = {
+            field: field_values.get(field.name)
+            for field in self.foreign_key_fields
+            if field.name in field_values
+        }
 
-        parent.attr.initialize()
-        for key, value in attribute_values.items():
-            parent.attr.set(key, value)
+        return {
+            "m2m_related_values": m2m_related_values,
+            "m2o_related_values": m2o_related_values,
+            "o2m_related_values": o2m_related_values,
+            "fk_related_values": foreign_key_related_values,
+        }
 
-        for relation, instances in m2o_related_values.items():
+    def add_related_field_values_to_context(self, parent, related_field_values):
+        for relation, instances in related_field_values["m2o_related_values"].items():
             if instances:
                 self.context.add_instances_to_m2o_relation(
                     relation, (parent, instances)
                 )
 
-        for relation, instances in m2m_related_values.items():
+        for relation, instances in related_field_values["m2m_related_values"].items():
             if instances:
                 self.context.add_instances_to_m2m_relation(
                     relation, (parent, instances)
                 )
 
-        for relation, instances in o2m_related_values.items():
+        for relation, instances in related_field_values["o2m_related_values"].items():
             if instances:
                 self.context.add_instances_to_o2m_relation(
                     relation, (parent, instances)
                 )
 
-        for field in self.foreign_key_fields:
-            if field.name in field_values:
-                self.context.add_instance_to_fk_items(
-                    field, field_values.get(field.name)
-                )
-
-        return parent
+        for field, instance in related_field_values["fk_related_values"].items():
+            if instance:
+                self.context.add_instance_to_fk_items(field, instance)

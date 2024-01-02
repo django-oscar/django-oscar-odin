@@ -252,6 +252,19 @@ class ProductToModel(ModelMapping):
 
     mappings = (odin.define(from_field="children", skip_if_none=True),)
 
+    def get_related_field_values(self, field_values):
+        attribute_values = field_values.pop("attributes", [])
+        context = super().get_related_field_values(field_values)
+        context["attribute_values"] = attribute_values
+        return context
+
+    def add_related_field_values_to_context(self, parent, related_field_values):
+        parent.attr.initialize()
+        for key, value in related_field_values["attribute_values"].items():
+            parent.attr.set(key, value)
+
+        super().add_related_field_values_to_context(parent, related_field_values)
+
     @odin.map_list_field
     def images(self, values) -> List[ProductImageModel]:
         """Map related image. We save these later in bulk"""
