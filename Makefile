@@ -31,9 +31,3 @@ test: fail-if-no-virtualenv
 black:
 	@black oscar_odin/
 	@black tests/
-
-ill:
-	rm db.sqlite3
-	cp klaas.sqlite3 db.sqlite3
-	python3 manage.py migrate
-	python3 manage.py test_queries
