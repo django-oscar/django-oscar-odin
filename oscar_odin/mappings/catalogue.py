@@ -399,7 +399,7 @@ def products_to_model(
 
     try:
         return (list(result), context)
-    except TypeError: # it is not a list
+    except TypeError:  # it is not a list
         return ([result], context)
 
 
