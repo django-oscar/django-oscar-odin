@@ -51,7 +51,6 @@ class ModelMapperContext(dict):
     one_to_many_items = None
     attribute_data = None
     identifier_mapping = None
-    instances = None
     Model = None
     errors = None
 
@@ -66,7 +65,6 @@ class ModelMapperContext(dict):
         self.attribute_data = []
         self.errors = []
         self.Model = Model
-        self.instances = Model.objects.none()
 
     def __bool__(self):
         return True
@@ -174,9 +172,9 @@ class ModelMapperContext(dict):
             if fields is not None:
                 Model.objects.bulk_update(instances, fields=fields)
 
-    def bulk_update_or_create_instances(self):
+    def bulk_update_or_create_instances(self, instances):
         instances_to_create, instances_to_update = get_instances_to_create_or_update(
-            self.Model, self.instances, self.identifier_mapping
+            self.Model, instances, self.identifier_mapping
         )
 
         validated_create_instances = self.validate_instances(instances_to_create)
@@ -249,20 +247,19 @@ class ModelMapperContext(dict):
             Through.objects.bulk_create(throughs.values())
 
     def bulk_save(self, instances, fields_to_update, identifier_mapping):
-        self.instances = instances
         self.fields_to_update = fields_to_update
         self.identifier_mapping = identifier_mapping
 
         with transaction.atomic():
             self.bulk_update_or_create_foreign_keys()
 
-            self.bulk_update_or_create_instances()
+            self.bulk_update_or_create_instances(instances)
 
             self.bulk_update_or_create_one_to_many()
 
             self.bulk_update_or_create_many_to_many()
 
-            return self.instances, self.errors
+            return instances, self.errors
 
 
 class ProductModelMapperContext(ModelMapperContext):
@@ -283,13 +280,13 @@ class ProductModelMapperContext(ModelMapperContext):
 
         return to_create, to_update
 
-    def bulk_update_or_create_product_attributes(self):
+    def bulk_update_or_create_product_attributes(self, instances):
         attributes_to_update = []
         attributes_to_create = []
         attributes_to_delete = []
         fields_to_be_updated = set()
 
-        for product in self.instances:
+        for product in instances:
             product.attr.invalidate()
             (
                 to_be_updated,
@@ -322,7 +319,7 @@ class ProductModelMapperContext(ModelMapperContext):
                 attributes_to_create, batch_size=500, ignore_conflicts=False
             )
 
-    def bulk_update_or_create_many_to_many(self):
-        super().bulk_update_or_create_many_to_many()
+    def bulk_update_or_create_instances(self, instances):
+        super().bulk_update_or_create_instances(instances)
 
-        self.bulk_update_or_create_product_attributes()
+        self.bulk_update_or_create_product_attributes(instances)
