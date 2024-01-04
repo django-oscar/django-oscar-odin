@@ -397,10 +397,10 @@ def products_to_model(
 
     result = product_mapper.apply(products, context=context)
 
-    if not isinstance(result, ProductModel):
+    try:
         return (list(result), context)
-
-    return ([result], context)
+    except TypeError: # it is not a list
+        return ([result], context)
 
 
 def products_to_db(
