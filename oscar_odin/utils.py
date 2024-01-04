@@ -30,36 +30,26 @@ def get_query(instances, field_names):
     return query
 
 
-def in_bulk(self, instances=None, field_names=None):
+def in_bulk(self, instances, field_names):
     """
     Return a dictionary mapping each of the given IDs to the object with
     that ID. If `id_list` isn't provided, evaluate the entire QuerySet.
     """
-    if field_names is None or len(field_names) < 1:
-        return {}
 
-    if instances is not None:
-        if not instances:
-            return {}
+    batch_size = (
+        math.floor(connections[self.db].features.max_query_params / len(field_names))
+        - 1
+    )
 
-        batch_size = (
-            math.floor(
-                connections[self.db].features.max_query_params / len(field_names)
-            )
-            - 1
-        )
-
-        if batch_size and batch_size < len(instances):
-            qs = ()
-            for offset in range(0, len(instances), batch_size):
-                batch = instances[offset : offset + batch_size]
-                query = get_query(batch, field_names)
-                qs += tuple(self.filter(query).order_by().values("pk", *field_names))
-        else:
-            query = get_query(instances, field_names)
-            qs = self.filter(query).order_by().values("pk", *field_names)
+    if batch_size and batch_size < len(instances):
+        qs = ()
+        for offset in range(0, len(instances), batch_size):
+            batch = instances[offset : offset + batch_size]
+            query = get_query(batch, field_names)
+            qs += tuple(self.filter(query).order_by().values("pk", *field_names))
     else:
-        return {}
+        query = get_query(instances, field_names)
+        qs = self.filter(query).order_by().values("pk", *field_names)
 
     object_mapping = defaultdict(tuple)
     for obj in qs:

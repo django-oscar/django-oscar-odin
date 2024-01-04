@@ -416,10 +416,9 @@ def products_to_db(
     At last all related models like images, stockrecords, and related_products can will be saved and set on the product.
     """
     instances, context = products_to_model(products, product_mapper=product_mapper)
-    context.fields_to_update = fields_to_update
-    context.identifier_mapping = identifier_mapping
-    context.instances = instances
 
-    products, errors = context.bulk_update_or_create()
+    products, errors = context.bulk_save(
+        instances, fields_to_update, identifier_mapping
+    )
 
     return products, errors

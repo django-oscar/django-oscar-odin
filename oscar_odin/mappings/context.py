@@ -21,9 +21,7 @@ def get_instances_to_create_or_update(Model, instances, identifier_mapping):
 
     if identifiers:
         # pylint: disable=protected-access
-        id_mapping = in_bulk(
-            Model._default_manager, instances=instances, field_names=identifiers
-        )
+        id_mapping = in_bulk(Model._default_manager, instances, identifiers)
 
         get_key_values = attrgetter(*identifiers)
         for instance in instances:
@@ -250,7 +248,11 @@ class ModelMapperContext(dict):
             # Save only new through models
             Through.objects.bulk_create(throughs.values())
 
-    def bulk_update_or_create(self):
+    def bulk_save(self, instances, fields_to_update, identifier_mapping):
+        self.instances = instances
+        self.fields_to_update = fields_to_update
+        self.identifier_mapping = identifier_mapping
+
         with transaction.atomic():
             self.bulk_update_or_create_foreign_keys()
 
