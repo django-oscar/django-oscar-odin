@@ -1,11 +1,11 @@
 # pylint: disable=W0613
 """Mappings between odin and django-oscar models."""
+import odin
+
 from decimal import Decimal
 from typing import Any, Dict, Iterable, List, Optional, Tuple, Union
 
-import odin
 from django.contrib.auth.models import AbstractUser
-from django.db import transaction
 from django.db.models import QuerySet, Model, ManyToManyField, ForeignKey
 from django.db.models.fields.files import ImageFieldFile
 from django.http import HttpRequest
@@ -18,14 +18,8 @@ from .. import resources
 from ..resources.catalogue import Structure
 from ._common import map_queryset
 from ._model_mapper import ModelMapping
-from .utils import (
-    save_attributes,
-    save_many_to_many,
-    save_one_to_many,
-    save_objects,
-    save_foreign_keys,
-)
-from .context import ModelMapperContext
+
+from .context import ProductModelMapperContext
 from .constants import ALL_CATALOGUE_FIELDS, MODEL_IDENTIFIERS_MAPPING
 
 __all__ = (
@@ -399,11 +393,11 @@ def product_queryset_to_resources(
 def products_to_model(
     products: List[resources.catalogue.Product], product_mapper=ProductToModel
 ) -> Tuple[List[ProductModel], Dict]:
-    context = ModelMapperContext()
+    context = ProductModelMapperContext(ProductModel)
 
     result = product_mapper.apply(products, context=context)
 
-    if hasattr(result, "__iter__"):
+    if not isinstance(result, ProductModel):
         return (list(result), context)
 
     return ([result], context)
@@ -424,23 +418,8 @@ def products_to_db(
     instances, context = products_to_model(products, product_mapper=product_mapper)
     context.fields_to_update = fields_to_update
     context.identifier_mapping = identifier_mapping
+    context.instances = instances
 
-    errors = []
-
-    with transaction.atomic():
-        # Save all the foreign keys; parents and productclasses
-        save_foreign_keys(context, errors)
-
-        # Save all the products in one go
-        save_objects(ProductModel, instances, context, errors)
-
-        # Save all product attributes
-        save_attributes(instances)
-
-        # Save and set all one to many relations; images, stockrecords
-        save_one_to_many(context, errors)
-
-        # Save and set all many to many relations; attributes, product_options, recommended_products and categories
-        save_many_to_many(context, errors)
+    products, errors = context.bulk_update_or_create()
 
     return products, errors
