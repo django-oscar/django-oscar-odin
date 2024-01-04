@@ -30,12 +30,12 @@ def get_query(instances, field_names):
     return query
 
 
-def in_bulk(self, instances=None, field_names=("pk",)):
+def in_bulk(self, instances=None, field_names=None):
     """
     Return a dictionary mapping each of the given IDs to the object with
     that ID. If `id_list` isn't provided, evaluate the entire QuerySet.
     """
-    if len(field_names) < 1:
+    if field_names is None or len(field_names) < 1:
         return {}
 
     if instances is not None:
