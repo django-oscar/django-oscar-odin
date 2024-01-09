@@ -213,9 +213,9 @@ class RealLifeTest(TestCase):
             # Map the product resources to products and save in DB
             products_to_db(product_resources)
 
-            self.assertEquals(Product.objects.all().count(), 59)
-            self.assertEquals(ProductAttributeValue.objects.all().count(), 257)
-            self.assertEquals(ProductImage.objects.all().count(), 52)
+            self.assertEqual(Product.objects.all().count(), 59)
+            self.assertEqual(ProductAttributeValue.objects.all().count(), 257)
+            self.assertEqual(ProductImage.objects.all().count(), 52)
 
     def get_csv_fixture(self, filename):
         return path.realpath(

@@ -98,20 +98,20 @@ class SingleProductReverseTest(TestCase):
 
         prd = Product.objects.get(upc="1234323-2")
 
-        self.assertEquals(prd.title, "asdf2")
-        self.assertEquals(prd.images.count(), 2)
-        self.assertEquals(Category.objects.count(), 2)
-        self.assertEquals(prd.categories.count(), 1)
+        self.assertEqual(prd.title, "asdf2")
+        self.assertEqual(prd.images.count(), 2)
+        self.assertEqual(Category.objects.count(), 2)
+        self.assertEqual(prd.categories.count(), 1)
 
-        self.assertEquals(prd.stockrecords.count(), 1)
+        self.assertEqual(prd.stockrecords.count(), 1)
         stockrecord = prd.stockrecords.first()
-        self.assertEquals(stockrecord.price, D("20"))
-        self.assertEquals(stockrecord.num_in_stock, 2)
+        self.assertEqual(stockrecord.price, D("20"))
+        self.assertEqual(stockrecord.num_in_stock, 2)
 
-        self.assertEquals(prd.attr.henk, "Klaas")
-        self.assertEquals(prd.attr.harrie, 1)
+        self.assertEqual(prd.attr.henk, "Klaas")
+        self.assertEqual(prd.attr.harrie, 1)
 
-        self.assertEquals(prd.images.count(), 2)
+        self.assertEqual(prd.images.count(), 2)
 
         product_resource = ProductResource(
             upc="1234323-2",
@@ -144,13 +144,13 @@ class SingleProductReverseTest(TestCase):
         products_to_db(product_resource, fields_to_update=fields_to_update)
 
         prd = Product.objects.get(upc="1234323-2")
-        self.assertEquals(prd.stockrecords.count(), 1)
+        self.assertEqual(prd.stockrecords.count(), 1)
         stockrecord = prd.stockrecords.first()
-        self.assertEquals(stockrecord.price, D("21.50"))
-        self.assertEquals(stockrecord.num_in_stock, 3)
-        self.assertEquals(prd.categories.count(), 2)
+        self.assertEqual(stockrecord.price, D("21.50"))
+        self.assertEqual(stockrecord.num_in_stock, 3)
+        self.assertEqual(prd.categories.count(), 2)
 
-        self.assertEquals(prd.images.count(), 4)
+        self.assertEqual(prd.images.count(), 4)
 
     def test_idempotent(self):
         product_class = ProductClass.objects.create(
@@ -210,20 +210,20 @@ class SingleProductReverseTest(TestCase):
 
         prd = Product.objects.get(upc="1234323-2")
 
-        self.assertEquals(prd.title, "asdf2")
-        self.assertEquals(prd.images.count(), 2)
-        self.assertEquals(Category.objects.count(), 2)
-        self.assertEquals(prd.categories.count(), 1)
+        self.assertEqual(prd.title, "asdf2")
+        self.assertEqual(prd.images.count(), 2)
+        self.assertEqual(Category.objects.count(), 2)
+        self.assertEqual(prd.categories.count(), 1)
 
-        self.assertEquals(prd.stockrecords.count(), 1)
+        self.assertEqual(prd.stockrecords.count(), 1)
         stockrecord = prd.stockrecords.first()
-        self.assertEquals(stockrecord.price, D("20"))
-        self.assertEquals(stockrecord.num_in_stock, 2)
+        self.assertEqual(stockrecord.price, D("20"))
+        self.assertEqual(stockrecord.num_in_stock, 2)
 
-        self.assertEquals(prd.attr.henk, "Klaas")
-        self.assertEquals(prd.attr.harrie, 1)
+        self.assertEqual(prd.attr.henk, "Klaas")
+        self.assertEqual(prd.attr.harrie, 1)
 
-        self.assertEquals(prd.images.count(), 2)
+        self.assertEqual(prd.images.count(), 2)
 
         product_resource = ProductResource(
             upc="1234323-2",
@@ -259,20 +259,20 @@ class SingleProductReverseTest(TestCase):
 
         prd = Product.objects.get(upc="1234323-2")
 
-        self.assertEquals(prd.title, "asdf2")
-        self.assertEquals(prd.images.count(), 2)
-        self.assertEquals(Category.objects.count(), 2)
-        self.assertEquals(prd.categories.count(), 1)
+        self.assertEqual(prd.title, "asdf2")
+        self.assertEqual(prd.images.count(), 2)
+        self.assertEqual(Category.objects.count(), 2)
+        self.assertEqual(prd.categories.count(), 1)
 
-        self.assertEquals(prd.stockrecords.count(), 1)
+        self.assertEqual(prd.stockrecords.count(), 1)
         stockrecord = prd.stockrecords.first()
-        self.assertEquals(stockrecord.price, D("20"))
-        self.assertEquals(stockrecord.num_in_stock, 2)
+        self.assertEqual(stockrecord.price, D("20"))
+        self.assertEqual(stockrecord.num_in_stock, 2)
 
-        self.assertEquals(prd.attr.henk, "Klaas")
-        self.assertEquals(prd.attr.harrie, 1)
+        self.assertEqual(prd.attr.henk, "Klaas")
+        self.assertEqual(prd.attr.harrie, 1)
 
-        self.assertEquals(prd.images.count(), 2)
+        self.assertEqual(prd.images.count(), 2)
 
 
 class MultipleProductReverseTest(TestCase):
@@ -430,8 +430,8 @@ class ParentChildTest(TestCase):
 
         prd = Product.objects.get(upc="1234323-2")
 
-        self.assertEquals(prd.structure, Product.PARENT)
-        self.assertEquals(prd.product_class.slug, "klaas")
+        self.assertEqual(prd.structure, Product.PARENT)
+        self.assertEqual(prd.product_class.slug, "klaas")
 
         child_product = ProductResource(
             parent=ParentProductResource(upc="1234323-2"),
@@ -449,13 +449,13 @@ class ParentChildTest(TestCase):
 
         prd = Product.objects.get(upc="1234323-2")
 
-        self.assertEquals(prd.structure, Product.PARENT)
-        self.assertEquals(prd.product_class.slug, "klaas")
+        self.assertEqual(prd.structure, Product.PARENT)
+        self.assertEqual(prd.product_class.slug, "klaas")
 
         child = Product.objects.get(upc="1234323-child")
 
-        self.assertEquals(child.structure, Product.CHILD)
-        self.assertEquals(child.parent.pk, prd.pk)
+        self.assertEqual(child.structure, Product.CHILD)
+        self.assertEqual(child.parent.pk, prd.pk)
 
     def test_non_existing_parent_childs(self):
         Category.add_root(name="henk", slug="klaas", is_public=True, code="2")
@@ -479,8 +479,8 @@ class ParentChildTest(TestCase):
 
         prd = Product.objects.get(upc="1234323-2")
 
-        self.assertEquals(prd.structure, Product.PARENT)
-        self.assertEquals(prd.product_class.slug, "klaas")
+        self.assertEqual(prd.structure, Product.PARENT)
+        self.assertEqual(prd.product_class.slug, "klaas")
 
         child_product = ProductResource(
             parent=ParentProductResource(upc="1234323-654"),
