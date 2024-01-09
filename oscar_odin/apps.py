@@ -2,7 +2,7 @@
 
 from django.apps import AppConfig
 from django.db.models import Model
-from django.utils.translation import ugettext_lazy as _
+from django.utils.translation import gettext_lazy as _
 from odin import registration
 
 from .django_resolver import ModelFieldResolver

@@ -17,4 +17,4 @@ def tests(session: Session):
     )
     # fmt: on
     session.install("-Ur", "requirements.txt")
-    session.run(HERE / "runtests.py")
+    session.run(HERE / "manage.py")

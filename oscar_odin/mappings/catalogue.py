@@ -1,18 +1,26 @@
+# pylint: disable=W0613
 """Mappings between odin and django-oscar models."""
+import odin
+
 from decimal import Decimal
 from typing import Any, Dict, Iterable, List, Optional, Tuple, Union
 
-import odin
 from django.contrib.auth.models import AbstractUser
-from django.db.models import QuerySet
+from django.db.models import QuerySet, Model, ManyToManyField, ForeignKey
 from django.db.models.fields.files import ImageFieldFile
 from django.http import HttpRequest
 from oscar.apps.partner.strategy import Default as DefaultStrategy
 from oscar.core.loading import get_class, get_model
 
+from datetime import datetime
+
 from .. import resources
 from ..resources.catalogue import Structure
 from ._common import map_queryset
+from ._model_mapper import ModelMapping
+
+from .context import ProductModelMapperContext
+from .constants import ALL_CATALOGUE_FIELDS, MODEL_IDENTIFIERS_MAPPING
 
 __all__ = (
     "ProductImageToResource",
@@ -28,6 +36,8 @@ ProductImageModel = get_model("catalogue", "ProductImage")
 CategoryModel = get_model("catalogue", "Category")
 ProductClassModel = get_model("catalogue", "ProductClass")
 ProductModel = get_model("catalogue", "Product")
+StockRecordModel = get_model("partner", "StockRecord")
+ProductAttributeValueModel = get_model("catalogue", "ProductAttributeValue")
 
 
 class ProductImageToResource(odin.Mapping):
@@ -41,6 +51,20 @@ class ProductImageToResource(odin.Mapping):
         """Convert value into a pure URL."""
         # Need URL prefix here
         return value.url
+
+
+class ProductImageToModel(odin.Mapping):
+    """Map from an image resource to a model."""
+
+    from_obj = resources.catalogue.Image
+    to_obj = ProductImageModel
+
+    @odin.map_field
+    def date_created(self, value: datetime) -> datetime:
+        if value:
+            return value
+
+        return datetime.now()
 
 
 class CategoryToResource(odin.Mapping):
@@ -62,11 +86,55 @@ class CategoryToResource(odin.Mapping):
             return value.url
 
 
+class CategoryToModel(odin.Mapping):
+    """Map from a category resource to a model."""
+
+    from_obj = resources.catalogue.Category
+    to_obj = CategoryModel
+
+    @odin.map_field
+    def image(self, value: Optional[str]) -> Optional[str]:
+        """Convert value into a pure URL."""
+        return value
+
+    @odin.map_field
+    def depth(self, value):
+        if value is not None:
+            return value
+
+        return 0
+
+    @odin.map_field
+    def ancestors_are_public(self, value):
+        return True
+
+    @odin.map_field
+    def path(self, value):
+        if value is not None:
+            return value
+
+        return None
+
+    @odin.map_field
+    def description(self, value):
+        if value is not None:
+            return value
+
+        return None
+
+
 class ProductClassToResource(odin.Mapping):
     """Map from a product class model to a resource."""
 
     from_obj = ProductClassModel
     to_obj = resources.catalogue.ProductClass
+
+
+class ProductClassToModel(odin.Mapping):
+    """Map from a product class resource to a model."""
+
+    from_obj = resources.catalogue.ProductClass
+    to_obj = ProductClassModel
 
 
 class ProductToResource(odin.Mapping):
@@ -161,15 +229,86 @@ class ProductToResource(odin.Mapping):
         stock_strategy: DefaultStrategy = self.context["stock_strategy"]
 
         # Switch here based on if this is a parent or child product
-        price, availability, stock_record = stock_strategy.fetch_for_product(
-            self.source
-        )
+        price, availability, _ = stock_strategy.fetch_for_product(self.source)
 
         if availability.is_available_to_buy:
             return price.excl_tax, price.currency, availability.num_available
         else:
             # There is no stock record for this product.
             return Decimal(0), "", 0
+
+
+class ProductToModel(ModelMapping):
+    """Map from a product resource to a model."""
+
+    from_obj = resources.catalogue.Product
+    to_obj = ProductModel
+
+    mappings = (odin.define(from_field="children", skip_if_none=True),)
+
+    def get_related_field_values(self, field_values):
+        attribute_values = field_values.pop("attributes", [])
+        context = super().get_related_field_values(field_values)
+        context["attribute_values"] = attribute_values
+        return context
+
+    def add_related_field_values_to_context(self, parent, related_field_values):
+        parent.attr.initialize()
+        for key, value in related_field_values["attribute_values"].items():
+            parent.attr.set(key, value)
+
+        super().add_related_field_values_to_context(parent, related_field_values)
+
+    @odin.map_list_field
+    def images(self, values) -> List[ProductImageModel]:
+        """Map related image. We save these later in bulk"""
+        return ProductImageToModel.apply(values)
+
+    @odin.map_field
+    def parent(self, parent):
+        if parent:
+            return ParentToModel.apply(parent)
+
+        return None
+
+    @odin.map_list_field
+    def categories(self, values) -> List[CategoryModel]:
+        return CategoryToModel.apply(values)
+
+    @odin.map_list_field(
+        from_field=["price", "availability", "currency", "upc", "partner"]
+    )
+    def stockrecords(
+        self, price, availability, currency, upc, partner
+    ) -> List[StockRecordModel]:
+        if upc and currency and partner:
+            return [
+                StockRecordModel(
+                    price=price,
+                    num_in_stock=availability,
+                    price_currency=currency,
+                    partner=partner,
+                    partner_sku=upc,
+                )
+            ]
+
+        return []
+
+    @odin.map_field
+    def product_class(self, value) -> ProductClassModel:
+        if not value and self.source.structure == ProductModel.CHILD:
+            return None
+
+        return ProductClassToModel.apply(value)
+
+
+class ParentToModel(odin.Mapping):
+    from_obj = resources.catalogue.ParentProduct
+    to_obj = ProductModel
+
+    @odin.assign_field
+    def structure(self):
+        return ProductModel.PARENT
 
 
 def product_to_resource_with_strategy(
@@ -249,3 +388,37 @@ def product_queryset_to_resources(
     return product_to_resource(
         query_set, request, user, include_children=include_children, **kwargs
     )
+
+
+def products_to_model(
+    products: List[resources.catalogue.Product], product_mapper=ProductToModel
+) -> Tuple[List[ProductModel], Dict]:
+    context = ProductModelMapperContext(ProductModel)
+
+    result = product_mapper.apply(products, context=context)
+
+    try:
+        return (list(result), context)
+    except TypeError:  # it is not a list
+        return ([result], context)
+
+
+def products_to_db(
+    products,
+    fields_to_update=ALL_CATALOGUE_FIELDS,
+    identifier_mapping=MODEL_IDENTIFIERS_MAPPING,
+    product_mapper=ProductToModel,
+) -> Tuple[List[ProductModel], Dict]:
+    """Map mulitple products to a model and store them in the database.
+
+    The method will first bulk update or create the foreign keys like parent products and productclasses
+    After that all the products will be bulk saved.
+    At last all related models like images, stockrecords, and related_products can will be saved and set on the product.
+    """
+    instances, context = products_to_model(products, product_mapper=product_mapper)
+
+    products, errors = context.bulk_save(
+        instances, fields_to_update, identifier_mapping
+    )
+
+    return products, errors
