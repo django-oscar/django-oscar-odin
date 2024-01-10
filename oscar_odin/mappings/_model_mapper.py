@@ -1,19 +1,15 @@
 """Extended model mapper for Django models."""
 from typing import Sequence, cast
 
-from django.db.models.fields.related import ForeignKey, ManyToManyField
+from django.db.models.fields.related import ForeignKey
 from django.db.models.fields.reverse_related import (
     ManyToOneRel,
     ManyToManyRel,
 )
 from django.db.models.options import Options
 
-from oscar.core.loading import get_model
-
 from odin.mapping import MappingBase, MappingMeta
 from odin.utils import getmeta
-
-Product = get_model("catalogue", "Product")
 
 
 class ModelMappingMeta(MappingMeta):

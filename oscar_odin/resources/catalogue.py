@@ -4,15 +4,10 @@ from datetime import datetime
 from decimal import Decimal
 from typing import Any, Dict, List, Optional
 
-from oscar.core.loading import get_model
-
 import odin
 
 from ..fields import DecimalField
 from ._base import OscarResource
-
-PartnerModel = get_model("partner", "Partner")
-ProductClassModel = get_model("catalogue", "ProductClass")
 
 
 class OscarCatalogue(OscarResource, abstract=True):
