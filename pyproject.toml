@@ -1,8 +1,11 @@
 [tool.poetry]
-name = "oscar-odin"
-version = "0.1.0"
+name = "django-oscar-odin"
+version = "0.1.0a1"
 description = "Odin Resources and mappings to Oscar models"
 authors = ["Tim Savage <tim@savage.company>"]
+maintainers = [
+    "Viggo de Vries <viggo@highbiza.nl>",
+]
 license = "BSD-3-Clause"
 readme = "README.md"
 packages = [{include = "oscar_odin"}]
@@ -12,7 +15,6 @@ classifiers = [
     "Development Status :: 3 - Alpha",
     "Intended Audience :: Developers",
     "License :: OSI Approved :: BSD License",
-    "Operating System :: Linux",
     "Topic :: Software Development :: Libraries :: Python Modules",
     "Programming Language :: Python",
     "Programming Language :: Python :: 3",
