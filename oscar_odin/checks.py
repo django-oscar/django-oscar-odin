@@ -1,4 +1,4 @@
-from django import get_version
+from django import VERSION
 from django.core.checks import Error, register, Tags
 from django.conf import settings
 
@@ -8,9 +8,9 @@ from django.conf import settings
 def odin_startup_check(app_configs, **kwargs):
     errors = []
 
-    django_version = float(get_version())
+    django_major_version = VERSION[0]
 
-    if django_version < 4:
+    if django_major_version < 4:
         for _, database in settings.DATABASES.items():
             if database["ENGINE"] == "django.db.backends.sqlite3":
                 errors.append(
