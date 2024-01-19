@@ -18,3 +18,6 @@ class OscarOdinAppConfig(AppConfig):
 
         # Register the Django model field resolver
         registration.register_field_resolver(ModelFieldResolver, Model)
+
+        # pylint: disable=W0611
+        from .checks import odin_startup_check

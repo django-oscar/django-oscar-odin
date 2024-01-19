@@ -36,10 +36,12 @@ def in_bulk(self, instances, field_names):
     that ID. If `id_list` isn't provided, evaluate the entire QuerySet.
     """
 
-    batch_size = (
-        math.floor(connections[self.db].features.max_query_params / len(field_names))
-        - 1
-    )
+    max_query_params = connections[self.db].features.max_query_params
+
+    if max_query_params is not None:
+        batch_size = math.floor(max_query_params / len(field_names)) - 1
+    else:
+        batch_size = None
 
     if batch_size and batch_size < len(instances):
         qs = ()
