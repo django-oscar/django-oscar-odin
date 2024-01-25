@@ -1,4 +1,5 @@
 """Resolver for resolving attributes on Django models."""
+from copy import deepcopy
 from typing import Dict, Optional
 
 from odin import Field
@@ -14,7 +15,7 @@ class ModelFieldResolver(FieldResolverBase):
         """Get a dictionary of fields from the source object."""
         meta = getmeta(self.obj)
 
-        fields = meta._forward_fields_map
+        fields = deepcopy(meta._forward_fields_map)
 
         fields.update(
             (r.related_name, r.field)
