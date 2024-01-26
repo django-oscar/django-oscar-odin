@@ -4,7 +4,7 @@ from operator import attrgetter
 from django.db import transaction
 from django.core.exceptions import ValidationError
 
-from oscar_odin.utils import in_bulk, prepare_related_fields_for_save
+from oscar_odin.utils import in_bulk
 from oscar_odin.exceptions import OscarOdinException
 
 from oscar.core.loading import get_model
@@ -183,9 +183,8 @@ class ModelMapperContext(dict):
         fields = self.get_fields_to_update(self.Model)
         if fields is not None:
             for instance in instances_to_update:
-                prepare_related_fields_for_save(
-                    instance, operation_name="bulk_update", fields=fields
-                )
+                # This should be removed once support for django 3.2 is dropped
+                instance._prepare_related_fields_for_save("bulk_update")
             self.Model.objects.bulk_update(instances_to_update, fields=fields)
 
     def bulk_update_or_create_one_to_many(self):
