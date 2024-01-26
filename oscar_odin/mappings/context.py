@@ -173,7 +173,10 @@ class ModelMapperContext(dict):
                 Model.objects.bulk_update(instances, fields=fields)
 
     def bulk_update_or_create_instances(self, instances):
-        instances_to_create, instances_to_update = separate_instances_to_create_and_update(
+        (
+            instances_to_create,
+            instances_to_update,
+        ) = separate_instances_to_create_and_update(
             self.Model, instances, self.identifier_mapping
         )
 
@@ -184,6 +187,7 @@ class ModelMapperContext(dict):
         if fields is not None:
             for instance in instances_to_update:
                 # This should be removed once support for django 3.2 is dropped
+                # pylint: disable=protected-access
                 instance._prepare_related_fields_for_save("bulk_update")
             self.Model.objects.bulk_update(instances_to_update, fields=fields)
 
