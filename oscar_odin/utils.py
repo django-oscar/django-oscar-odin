@@ -1,13 +1,10 @@
+from collections import defaultdict
 import contextlib
 import time
 import math
 
-from django.db import connection, reset_queries
-
-from collections import defaultdict
-
-from django.db.models import Model, ManyToManyField, ForeignKey, Q
-from django.db import connections
+from django.db import connection, connections, reset_queries
+from django.db.models import Q
 
 
 def get_filters(instances, field_names):
