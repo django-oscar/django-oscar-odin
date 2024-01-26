@@ -37,14 +37,12 @@ isort = {version = "^5.13.2", optional = true}
 ruff = {version = "^0.1.8", optional = true}
 poetry = {version = "^1.7.1", optional = true}
 pre-commit = {version = "*", optional = true}
+responses = {version = "^0.24.1", optional = true}
 
 
 [tool.poetry.extras]
-test = ["coverage", "pylint", "black", "pylint-django", "poetry"]
+test = ["coverage", "pylint", "black", "pylint-django", "poetry", "responses"]
 dev = ["ruff", "isort", "pre-commit"]
-
-[tool.poetry.group.test.dependencies]
-responses = "^0.24.1"
 
 [build-system]
 requires = ["poetry-core"]

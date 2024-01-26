@@ -1,6 +1,6 @@
 .PHONY: fail-if-no-virtualenv all install dev lint test black
 
-all: install migrate loaddata collectstatic
+all: install migrate collectstatic
 
 fail-if-no-virtualenv:
 ifndef VIRTUAL_ENV # check for a virtualenv in development environment
@@ -19,6 +19,12 @@ dev: install
 
 install: fail-if-no-virtualenv
 	pip install .[test]
+
+migrate:
+	manage.py migrate --no-input
+
+collectstatic:
+	manage.py collectstatic --no-input
 
 lint: fail-if-no-virtualenv
 	black --check oscar_odin/

@@ -14,7 +14,7 @@ def map_queryset(
 ) -> list:
     """Map a queryset to a list of resources.
 
-    This method will call ``QuerySet.all()`` to ensure that the queryset is can
+    This method will call ``QuerySet.all()`` to ensure that the queryset can
     be directly iterated.
 
     :param mapping: The mapping type to use.

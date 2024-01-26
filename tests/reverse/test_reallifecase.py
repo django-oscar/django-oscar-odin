@@ -1,5 +1,4 @@
 import io
-import PIL
 import odin
 import requests
 import responses
@@ -24,7 +23,6 @@ from oscar_odin.resources.catalogue import (
     Image as ImageResource,
     ProductClass as ProductClassResource,
     Category as CategoryResource,
-    ProductAttributeValue as ProductAttributeValueResource,
 )
 
 Product = get_model("catalogue", "Product")

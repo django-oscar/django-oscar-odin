@@ -13,7 +13,7 @@ Product = get_model("catalogue", "Product")
 ProductAttributeValue = get_model("catalogue", "ProductAttributeValue")
 
 
-def get_instances_to_create_or_update(Model, instances, identifier_mapping):
+def separate_instances_to_create_and_update(Model, instances, identifier_mapping):
     instances_to_create = []
     instances_to_update = []
 
@@ -118,7 +118,7 @@ class ModelMapperContext(dict):
             (
                 instances_to_create,
                 instances_to_update,
-            ) = get_instances_to_create_or_update(
+            ) = separate_instances_to_create_and_update(
                 relation.related_model, all_instances, self.identifier_mapping
             )
 
@@ -144,7 +144,7 @@ class ModelMapperContext(dict):
             (
                 instances_to_create,
                 instances_to_update,
-            ) = get_instances_to_create_or_update(
+            ) = separate_instances_to_create_and_update(
                 relation.related_model, instances, self.identifier_mapping
             )
 
@@ -173,7 +173,7 @@ class ModelMapperContext(dict):
                 Model.objects.bulk_update(instances, fields=fields)
 
     def bulk_update_or_create_instances(self, instances):
-        instances_to_create, instances_to_update = get_instances_to_create_or_update(
+        instances_to_create, instances_to_update = separate_instances_to_create_and_update(
             self.Model, instances, self.identifier_mapping
         )
 
@@ -273,7 +273,7 @@ class ProductModelMapperContext(ModelMapperContext):
         for relation, instances in to_create.items():
             if relation.related_model == self.Model and instances:
                 raise OscarOdinException(
-                    "Cannot create parents this way. Please create all parents first seperately, then create the childs while linking the parents using the `oscar_odin.resources.catalogue.ParentProduct`"
+                    "Cannot create parents this way. Please create all parents first separately, then create the childs while linking the parents using the `oscar_odin.resources.catalogue.ParentProduct`"
                 )
 
         for relation, instances in to_update.items():

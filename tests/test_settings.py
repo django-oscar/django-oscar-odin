@@ -1,5 +1,5 @@
 import os
-import oscar
+from oscar.defaults import *
 
 # Path helper
 location = lambda x: os.path.join(os.path.dirname(os.path.realpath(__file__)), x)
@@ -112,8 +112,6 @@ MIDDLEWARE = [
     "oscar.apps.basket.middleware.BasketMiddleware",
 ]
 
-from oscar.defaults import *
-
 HAYSTACK_CONNECTIONS = {
     "default": {
         "ENGINE": "haystack.backends.simple_backend.SimpleEngine",
@@ -123,5 +121,6 @@ HAYSTACK_CONNECTIONS = {
 SILENCED_SYSTEM_CHECKS = ["models.W042"]
 
 STATIC_URL = "/static/"
+STATIC_ROOT = "static"
 
 ROOT_URLCONF = "urls"
