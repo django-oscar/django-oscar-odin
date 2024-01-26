@@ -152,6 +152,61 @@ class SingleProductReverseTest(TestCase):
 
         self.assertEqual(prd.images.count(), 4)
 
+    def test_create_productclass_with_product(self):
+        product_class = ProductClassResource(
+            slug="klaas", name="Klaas", requires_shipping=True, track_stock=True
+        )
+
+        partner = Partner.objects.create(name="klaas")
+
+        Category.add_root(name="Hatsie", slug="batsie", is_public=True, code="1")
+        Category.add_root(name="henk", slug="klaas", is_public=True, code="2")
+
+        product_resource = ProductResource(
+            upc="1234323-2",
+            title="asdf2",
+            slug="asdf-asdfasdf2",
+            description="description",
+            structure=Product.STANDALONE,
+            is_discountable=True,
+            price=D("20"),
+            availability=2,
+            currency="EUR",
+            partner=partner,
+            product_class=product_class,
+            images=[
+                ImageResource(
+                    caption="gekke caption",
+                    display_order=0,
+                    original=File(self.image, name="harrie.jpg"),
+                ),
+                ImageResource(
+                    caption="gekke caption 2",
+                    display_order=1,
+                    original=File(self.image, name="vats.jpg"),
+                ),
+            ],
+            categories=[CategoryResource(code="2")],
+        )
+
+        prd = products_to_db(product_resource)
+
+        prd = Product.objects.get(upc="1234323-2")
+
+        self.assertEqual(prd.product_class.slug, "klaas")
+
+        self.assertEqual(prd.title, "asdf2")
+        self.assertEqual(prd.images.count(), 2)
+        self.assertEqual(Category.objects.count(), 2)
+        self.assertEqual(prd.categories.count(), 1)
+
+        self.assertEqual(prd.stockrecords.count(), 1)
+        stockrecord = prd.stockrecords.first()
+        self.assertEqual(stockrecord.price, D("20"))
+        self.assertEqual(stockrecord.num_in_stock, 2)
+
+        self.assertEqual(prd.images.count(), 2)
+
     def test_idempotent(self):
         product_class = ProductClass.objects.create(
             name="Klaas", slug="klaas", requires_shipping=True, track_stock=True
