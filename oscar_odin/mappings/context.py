@@ -182,6 +182,14 @@ class ModelMapperContext(dict):
 
         validated_create_instances = self.validate_instances(instances_to_create)
         self.Model.objects.bulk_create(validated_create_instances)
+        for instance in validated_create_instances:
+            if instance.pk is None:
+                raise OscarOdinException(
+                    """
+                        oscar_odin.mappings.catalogue.products_to_db does not support sqlite3 with Django < 4.
+                        Please use engines that have can_return_rows_from_bulk_insert set to True (like Postgres) or upgrade your Django version to 4 or higher.
+                    """
+                )
 
         fields = self.get_fields_to_update(self.Model)
         if fields is not None:
