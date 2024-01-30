@@ -170,7 +170,8 @@ class ModelMapperContext(dict):
             Model = field.related_model
             fields = self.get_fields_to_update(Model)
             if fields is not None:
-                Model.objects.bulk_update(instances, fields=fields)
+                validated_instances_to_update = self.validate_instances(instances)
+                Model.objects.bulk_update(validated_instances_to_update, fields=fields)
 
     def bulk_update_or_create_instances(self, instances):
         (
@@ -185,11 +186,12 @@ class ModelMapperContext(dict):
 
         fields = self.get_fields_to_update(self.Model)
         if fields is not None:
-            for instance in instances_to_update:
+            validated_instances_to_update = self.validate_instances(instances_to_update)
+            for instance in validated_instances_to_update:
                 # This should be removed once support for django 3.2 is dropped
                 # pylint: disable=protected-access
                 instance._prepare_related_fields_for_save("bulk_update")
-            self.Model.objects.bulk_update(instances_to_update, fields=fields)
+            self.Model.objects.bulk_update(validated_instances_to_update, fields=fields)
 
     def bulk_update_or_create_one_to_many(self):
         for relation, product, instances in self.get_all_o2m_instances:
@@ -205,7 +207,10 @@ class ModelMapperContext(dict):
         for relation, instances in instances_to_update.items():
             fields = self.get_fields_to_update(relation.related_model)
             if fields is not None:
-                relation.related_model.objects.bulk_update(instances, fields=fields)
+                validated_instances_to_update = self.validate_instances(instances)
+                relation.related_model.objects.bulk_update(
+                    validated_instances_to_update, fields=fields
+                )
 
     def bulk_update_or_create_many_to_many(self):
         m2m_to_create, m2m_to_update = self.get_all_m2m_relations
@@ -219,7 +224,10 @@ class ModelMapperContext(dict):
         for relation, instances in m2m_to_update.items():
             fields = self.get_fields_to_update(relation.related_model)
             if fields is not None:
-                relation.related_model.objects.bulk_update(instances, fields=fields)
+                validated_instances_to_update = self.validate_instances(instances)
+                relation.related_model.objects.bulk_update(
+                    validated_instances_to_update, fields=fields
+                )
 
         for relation, values in self.many_to_many_items.items():
             Through = getattr(self.Model, relation.name).through
@@ -318,12 +326,18 @@ class ProductModelMapperContext(ModelMapperContext):
         if attributes_to_delete:
             ProductAttributeValue.objects.filter(pk__in=attributes_to_delete).delete()
         if attributes_to_update:
+            validated_attributes_to_update = self.validate_instances(
+                attributes_to_update
+            )
             ProductAttributeValue.objects.bulk_update(
-                attributes_to_update, fields_to_be_updated, batch_size=500
+                validated_attributes_to_update, fields_to_be_updated, batch_size=500
             )
         if attributes_to_create:
+            validated_attributes_to_create = self.validate_instances(
+                attributes_to_create
+            )
             ProductAttributeValue.objects.bulk_create(
-                attributes_to_create, batch_size=500, ignore_conflicts=False
+                validated_attributes_to_create, batch_size=500, ignore_conflicts=False
             )
 
     def bulk_update_or_create_instances(self, instances):
