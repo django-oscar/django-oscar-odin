@@ -551,3 +551,129 @@ class ParentChildTest(TestCase):
 
         with self.assertRaises(OscarOdinException):
             products_to_db(child_product)
+
+
+class SingleProductErrorHandlingTest(TestCase):
+    @property
+    def image(self):
+        img = PIL.Image.new(mode="RGB", size=(200, 200))
+        output = io.BytesIO()
+        img.save(output, "jpeg")
+        return output
+
+    def test_error_handling_on_product_operations(self):
+        product_class = ProductClassResource(
+            slug="klaas", name="Klaas", requires_shipping=True, track_stock=True
+        )
+
+        partner = Partner.objects.create(name="klaas")
+
+        Category.add_root(name="Hatsie", slug="batsie", is_public=True, code="1")
+        Category.add_root(name="henk", slug="klaas", is_public=True, code="2")
+
+        # Incorrect data for creating product
+        product_resource = ProductResource(
+            upc="1234323-2",
+            title="asdf2",
+            slug="asdf-asdfasdf2",
+            description="description",
+            structure=Product.STANDALONE,
+            is_discountable=True,
+            price=D("20"),
+            availability=2,
+            currency="EUR",
+            partner=partner,
+            product_class=product_class,
+            images=[
+                ImageResource(
+                    caption="gekke caption",
+                    display_order="top",
+                    original=File(self.image, name="harrie.jpg"),
+                ),
+                ImageResource(
+                    caption="gekke caption 2",
+                    display_order=1,
+                    original=File(self.image, name="vats.jpg"),
+                ),
+            ],
+            categories=[CategoryResource(code="2")],
+        )
+        _, errors = products_to_db(product_resource)
+        self.assertEqual(len(errors), 1)
+        self.assertEqual(
+            errors[0].message_dict['display_order'][0],
+            "“top” value must be an integer."
+        )
+
+        # Correct Data for creating product
+        product_resource = ProductResource(
+            upc="1234323-2",
+            title="asdf2",
+            slug="asdf-asdfasdf2",
+            description="description",
+            structure=Product.STANDALONE,
+            is_discountable=True,
+            price="20",
+            availability=2,
+            currency="EUR",
+            partner=partner,
+            product_class=product_class,
+            images=[
+                ImageResource(
+                    caption="gekke caption",
+                    display_order=0,
+                    original=File(self.image, name="harrie.jpg"),
+                ),
+                ImageResource(
+                    caption="gekke caption 2",
+                    display_order=1,
+                    original=File(self.image, name="vats.jpg"),
+                ),
+            ],
+            categories=[CategoryResource(code="2")],
+        )
+        _, errors = products_to_db(product_resource)
+        self.assertEqual(len(errors), 0)
+
+        # Incorrect data for updating product
+        product_resource = ProductResource(
+            upc="1234323-2",
+            title="asdf2",
+            slug="asdf-asdfasdf2",
+            description="description",
+            structure=Product.STANDALONE,
+            is_discountable=53,
+            price="expensive",
+            availability=2,
+            currency="EUR",
+            partner=partner,
+            product_class=product_class,
+            images=[
+                ImageResource(
+                    caption="gekke caption",
+                    display_order=0,
+                    original=File(self.image, name="harrie.jpg"),
+                ),
+                ImageResource(
+                    caption="gekke caption 2",
+                    display_order="Alphabet",
+                    original=File(self.image, name="vats.jpg"),
+                ),
+            ],
+            categories=[CategoryResource(code="2")],
+        )
+        _, errors = products_to_db(product_resource)
+
+        self.assertEqual(len(errors), 3)
+        self.assertEqual(
+            errors[0].message_dict['is_discountable'][0],
+            "“53” value must be either True or False."
+        )
+        self.assertEqual(
+            errors[1].message_dict['display_order'][0],
+            "“Alphabet” value must be an integer."
+        )
+        self.assertEqual(
+            errors[2].message_dict['price'][0],
+            "“expensive” value must be a decimal number."
+        )
