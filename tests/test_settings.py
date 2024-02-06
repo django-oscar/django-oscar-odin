@@ -61,6 +61,7 @@ INSTALLED_APPS = [
     "haystack",
     "treebeard",
     "django_tables2",
+    "sorl.thumbnail",
     # Oscar apps
     "oscar.config.Shop",
     "oscar.apps.analytics.apps.AnalyticsConfig",
