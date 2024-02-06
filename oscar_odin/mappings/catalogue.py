@@ -391,9 +391,16 @@ def product_queryset_to_resources(
 
 
 def products_to_model(
-    products: List[resources.catalogue.Product], product_mapper=ProductToModel
+    products: List[resources.catalogue.Product],
+    product_mapper=ProductToModel,
+    identifier_mapping=MODEL_IDENTIFIERS_MAPPING,
+    delete_related=False,
 ) -> Tuple[List[ProductModel], Dict]:
-    context = ProductModelMapperContext(ProductModel)
+    context = ProductModelMapperContext(
+        ProductModel,
+        identifier_mapping=identifier_mapping,
+        delete_related=delete_related,
+    )
 
     result = product_mapper.apply(products, context=context)
 
@@ -408,6 +415,7 @@ def products_to_db(
     fields_to_update=ALL_CATALOGUE_FIELDS,
     identifier_mapping=MODEL_IDENTIFIERS_MAPPING,
     product_mapper=ProductToModel,
+    delete_related=False,
 ) -> Tuple[List[ProductModel], Dict]:
     """Map mulitple products to a model and store them in the database.
 
@@ -415,7 +423,12 @@ def products_to_db(
     After that all the products will be bulk saved.
     At last all related models like images, stockrecords, and related_products can will be saved and set on the product.
     """
-    instances, context = products_to_model(products, product_mapper=product_mapper)
+    instances, context = products_to_model(
+        products,
+        product_mapper=product_mapper,
+        identifier_mapping=identifier_mapping,
+        delete_related=delete_related,
+    )
 
     products, errors = context.bulk_save(
         instances, fields_to_update, identifier_mapping

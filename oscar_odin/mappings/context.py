@@ -2,12 +2,15 @@ from collections import defaultdict
 from operator import attrgetter
 
 from django.db import transaction
+from django.db.models import Q
 from django.core.exceptions import ValidationError
 
 from oscar_odin.utils import in_bulk
 from oscar_odin.exceptions import OscarOdinException
 
 from oscar.core.loading import get_model
+
+from .constants import MODEL_IDENTIFIERS_MAPPING
 
 Product = get_model("catalogue", "Product")
 ProductAttributeValue = get_model("catalogue", "ProductAttributeValue")
@@ -54,7 +57,14 @@ class ModelMapperContext(dict):
     Model = None
     errors = None
 
-    def __init__(self, Model, *args, **kwargs):
+    def __init__(
+        self,
+        Model,
+        *args,
+        identifier_mapping=MODEL_IDENTIFIERS_MAPPING,
+        delete_related=False,
+        **kwargs
+    ):
         super().__init__(*args, **kwargs)
         self.foreign_key_items = defaultdict(list)
         self.many_to_many_items = defaultdict(list)
@@ -64,6 +74,8 @@ class ModelMapperContext(dict):
         self.identifier_mapping = defaultdict(tuple)
         self.attribute_data = []
         self.errors = []
+        self.identifier_mapping = identifier_mapping
+        self.delete_related = delete_related
         self.Model = Model
 
     def __bool__(self):
@@ -202,6 +214,7 @@ class ModelMapperContext(dict):
             self.Model.objects.bulk_update(validated_instances_to_update, fields=fields)
 
     def bulk_update_or_create_one_to_many(self):
+        instance_identifiers = dict()
         for relation, product, instances in self.get_all_o2m_instances:
             for instance in instances:
                 setattr(instance, relation.field.name, product)
@@ -210,15 +223,38 @@ class ModelMapperContext(dict):
 
         for relation, instances in instances_to_create.items():
             validated_instances_to_create = self.validate_instances(instances)
+            instance_identifiers[relation] = dict()
+            for identifier in self.identifier_mapping[relation.related_model]:
+                instance_identifiers[relation][identifier] = [
+                    getattr(instance, identifier)
+                    for instance in validated_instances_to_create
+                ]
             relation.related_model.objects.bulk_create(validated_instances_to_create)
 
         for relation, instances in instances_to_update.items():
             fields = self.get_fields_to_update(relation.related_model)
             if fields is not None:
+                relation.related_model.objects.bulk_update(instances, fields=fields)
                 validated_instances_to_update = self.validate_instances(instances)
+                for identifier in self.identifier_mapping[relation.related_model]:
+                    instance_identifiers[relation][identifier].extend(
+                        getattr(instance, identifier)
+                        for instance in validated_instances_to_update
+                    )
                 relation.related_model.objects.bulk_update(
                     validated_instances_to_update, fields=fields
                 )
+
+        if self.delete_related:
+            for relation, identifier_values in instance_identifiers.items():
+                conditions = Q()
+                keys = list(identifier_values.keys())
+                for i in range(len(identifier_values[keys[0]])):
+                    filter_condition = {}
+                    for key in keys:
+                        filter_condition[key] = identifier_values[key][i]
+                    conditions |= Q(**filter_condition)
+                relation.related_model.objects.exclude(conditions).delete()
 
     def bulk_update_or_create_many_to_many(self):
         m2m_to_create, m2m_to_update = self.get_all_m2m_relations
@@ -265,6 +301,12 @@ class ModelMapperContext(dict):
             for b in bulk_troughs.keys():
                 if b in throughs:
                     throughs.pop(b)
+
+            # Delete non-existing through models
+            if self.delete_related:
+                Through.objects.filter(
+                    product_id__in=[item[0] for item in bulk_troughs.keys()]
+                ).exclude(id__in=bulk_troughs.values()).delete()
 
             # Save only new through models
             Through.objects.bulk_create(throughs.values())
@@ -331,7 +373,7 @@ class ProductModelMapperContext(ModelMapperContext):
                 fields_to_be_updated.update(update_fields)
 
         # now save all the attributes in bulk
-        if attributes_to_delete:
+        if attributes_to_delete and self.delete_related:
             ProductAttributeValue.objects.filter(pk__in=attributes_to_delete).delete()
         if attributes_to_update:
             validated_attributes_to_update = self.validate_instances(
