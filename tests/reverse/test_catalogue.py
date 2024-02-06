@@ -14,7 +14,6 @@ from oscar_odin.resources.catalogue import (
     Image as ImageResource,
     ProductClass as ProductClassResource,
     Category as CategoryResource,
-    ProductAttributeValue as ProductAttributeValueResource,
     ParentProduct as ParentProductResource,
 )
 from oscar_odin.exceptions import OscarOdinException
@@ -31,7 +30,6 @@ ProductAttribute = get_model("catalogue", "ProductAttribute")
 ProductImage = get_model("catalogue", "ProductImage")
 Category = get_model("catalogue", "Category")
 Partner = get_model("partner", "Partner")
-ProductAttributeValue = get_model("catalogue", "ProductAttributeValue")
 
 
 class SingleProductReverseTest(TestCase):
