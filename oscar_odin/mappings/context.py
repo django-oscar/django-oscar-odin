@@ -226,7 +226,6 @@ class ModelMapperContext(dict):
         for relation, instances in instances_to_update.items():
             fields = self.get_fields_to_update(relation.related_model)
             if fields is not None:
-                relation.related_model.objects.bulk_update(instances, fields=fields)
                 validated_instances_to_update = self.validate_instances(instances)
                 relation.related_model.objects.bulk_update(
                     validated_instances_to_update, fields=fields
@@ -237,7 +236,10 @@ class ModelMapperContext(dict):
                 conditions = Q()
                 identifiers = self.identifier_mapping[relation.related_model]
                 for key in keys:
-                    conditions |= Q(**dict(list(zip(identifiers, key))))
+                    if isinstance(key, (list, tuple)):
+                        conditions |= Q(**dict(list(zip(identifiers, key))))
+                    else:
+                        conditions |= Q(**{f"{identifiers[0]}": key})
                 relation.related_model.objects.exclude(conditions).delete()
 
     def bulk_update_or_create_many_to_many(self):
