@@ -153,7 +153,7 @@ class ModelMapperContext(dict):
             (
                 instances_to_create,
                 instances_to_update,
-                _
+                _,
             ) = separate_instances_to_create_and_update(
                 relation.related_model, instances, self.identifier_mapping
             )
@@ -187,7 +187,7 @@ class ModelMapperContext(dict):
         (
             instances_to_create,
             instances_to_update,
-            _
+            _,
         ) = separate_instances_to_create_and_update(
             self.Model, instances, self.identifier_mapping
         )

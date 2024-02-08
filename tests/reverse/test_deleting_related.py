@@ -112,10 +112,7 @@ class DeleteRelatedModelReverseTest(TestCase):
         # Manually add another stockrecord in product and check if its deleted later
         partner_henk = Partner.objects.create(name="henry")
         Stockrecord.objects.create(
-            partner=partner_henk,
-            product=prd,
-            num_in_stock=4,
-            price=D("20.0")
+            partner=partner_henk, product=prd, num_in_stock=4, price=D("20.0")
         )
         self.assertEqual(prd.stockrecords.count(), 2)
         self.assertTrue(prd.stockrecords.filter(partner=partner).exists())
