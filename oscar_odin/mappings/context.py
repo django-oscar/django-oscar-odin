@@ -10,8 +10,6 @@ from oscar_odin.exceptions import OscarOdinException
 
 from oscar.core.loading import get_model
 
-from .constants import MODEL_IDENTIFIERS_MAPPING
-
 Product = get_model("catalogue", "Product")
 ProductAttributeValue = get_model("catalogue", "ProductAttributeValue")
 
