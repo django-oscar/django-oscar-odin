@@ -393,14 +393,9 @@ def product_queryset_to_resources(
 def products_to_model(
     products: List[resources.catalogue.Product],
     product_mapper=ProductToModel,
-    identifier_mapping=MODEL_IDENTIFIERS_MAPPING,
     delete_related=False,
 ) -> Tuple[List[ProductModel], Dict]:
-    context = ProductModelMapperContext(
-        ProductModel,
-        identifier_mapping=identifier_mapping,
-        delete_related=delete_related,
-    )
+    context = ProductModelMapperContext(ProductModel, delete_related=delete_related)
 
     result = product_mapper.apply(products, context=context)
 
@@ -426,7 +421,6 @@ def products_to_db(
     instances, context = products_to_model(
         products,
         product_mapper=product_mapper,
-        identifier_mapping=identifier_mapping,
         delete_related=delete_related,
     )
 

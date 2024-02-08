@@ -19,6 +19,7 @@ ProductAttributeValue = get_model("catalogue", "ProductAttributeValue")
 def separate_instances_to_create_and_update(Model, instances, identifier_mapping):
     instances_to_create = []
     instances_to_update = []
+    identifiying_keys = []
 
     identifiers = identifier_mapping.get(Model, {})
 
@@ -29,6 +30,7 @@ def separate_instances_to_create_and_update(Model, instances, identifier_mapping
         get_key_values = attrgetter(*identifiers)
         for instance in instances:
             key = get_key_values(instance)
+            identifiying_keys.append(key)
 
             if not isinstance(key, tuple):
                 key = (key,)
@@ -42,9 +44,9 @@ def separate_instances_to_create_and_update(Model, instances, identifier_mapping
             else:
                 instances_to_create.append(instance)
 
-        return instances_to_create, instances_to_update
+        return instances_to_create, instances_to_update, identifiying_keys
     else:
-        return instances, []
+        return instances, [], []
 
 
 class ModelMapperContext(dict):
@@ -57,14 +59,7 @@ class ModelMapperContext(dict):
     Model = None
     errors = None
 
-    def __init__(
-        self,
-        Model,
-        *args,
-        identifier_mapping=MODEL_IDENTIFIERS_MAPPING,
-        delete_related=False,
-        **kwargs
-    ):
+    def __init__(self, Model, *args, delete_related=False, **kwargs):
         super().__init__(*args, **kwargs)
         self.foreign_key_items = defaultdict(list)
         self.many_to_many_items = defaultdict(list)
@@ -74,7 +69,6 @@ class ModelMapperContext(dict):
         self.identifier_mapping = defaultdict(tuple)
         self.attribute_data = []
         self.errors = []
-        self.identifier_mapping = identifier_mapping
         self.delete_related = delete_related
         self.Model = Model
 
@@ -121,6 +115,7 @@ class ModelMapperContext(dict):
     def get_create_and_update_relations(self, related_instance_items):
         to_create = defaultdict(list)
         to_update = defaultdict(list)
+        identities = defaultdict(list)
 
         for relation in related_instance_items.keys():
             all_instances = []
@@ -130,14 +125,16 @@ class ModelMapperContext(dict):
             (
                 instances_to_create,
                 instances_to_update,
+                identifying_keys,
             ) = separate_instances_to_create_and_update(
                 relation.related_model, all_instances, self.identifier_mapping
             )
 
             to_create[relation].extend(instances_to_create)
             to_update[relation].extend(instances_to_update)
+            identities[relation].extend(identifying_keys)
 
-        return (to_create, to_update)
+        return (to_create, to_update, identities)
 
     @property
     def get_all_m2m_relations(self):
@@ -156,6 +153,7 @@ class ModelMapperContext(dict):
             (
                 instances_to_create,
                 instances_to_update,
+                _
             ) = separate_instances_to_create_and_update(
                 relation.related_model, instances, self.identifier_mapping
             )
@@ -189,6 +187,7 @@ class ModelMapperContext(dict):
         (
             instances_to_create,
             instances_to_update,
+            _
         ) = separate_instances_to_create_and_update(
             self.Model, instances, self.identifier_mapping
         )
@@ -214,21 +213,14 @@ class ModelMapperContext(dict):
             self.Model.objects.bulk_update(validated_instances_to_update, fields=fields)
 
     def bulk_update_or_create_one_to_many(self):
-        instance_identifiers = dict()
         for relation, product, instances in self.get_all_o2m_instances:
             for instance in instances:
                 setattr(instance, relation.field.name, product)
 
-        instances_to_create, instances_to_update = self.get_o2m_relations
+        instances_to_create, instances_to_update, identities = self.get_o2m_relations
 
         for relation, instances in instances_to_create.items():
             validated_instances_to_create = self.validate_instances(instances)
-            instance_identifiers[relation] = dict()
-            for identifier in self.identifier_mapping[relation.related_model]:
-                instance_identifiers[relation][identifier] = [
-                    getattr(instance, identifier)
-                    for instance in validated_instances_to_create
-                ]
             relation.related_model.objects.bulk_create(validated_instances_to_create)
 
         for relation, instances in instances_to_update.items():
@@ -236,28 +228,20 @@ class ModelMapperContext(dict):
             if fields is not None:
                 relation.related_model.objects.bulk_update(instances, fields=fields)
                 validated_instances_to_update = self.validate_instances(instances)
-                for identifier in self.identifier_mapping[relation.related_model]:
-                    instance_identifiers[relation][identifier].extend(
-                        getattr(instance, identifier)
-                        for instance in validated_instances_to_update
-                    )
                 relation.related_model.objects.bulk_update(
                     validated_instances_to_update, fields=fields
                 )
 
         if self.delete_related:
-            for relation, identifier_values in instance_identifiers.items():
+            for relation, keys in identities.items():
                 conditions = Q()
-                keys = list(identifier_values.keys())
-                for i in range(len(identifier_values[keys[0]])):
-                    filter_condition = {}
-                    for key in keys:
-                        filter_condition[key] = identifier_values[key][i]
-                    conditions |= Q(**filter_condition)
+                identifiers = self.identifier_mapping[relation.related_model]
+                for key in keys:
+                    conditions |= Q(**dict(list(zip(identifiers, key))))
                 relation.related_model.objects.exclude(conditions).delete()
 
     def bulk_update_or_create_many_to_many(self):
-        m2m_to_create, m2m_to_update = self.get_all_m2m_relations
+        m2m_to_create, m2m_to_update, _ = self.get_all_m2m_relations
 
         # Create many to many's
         for relation, instances in m2m_to_create.items():
