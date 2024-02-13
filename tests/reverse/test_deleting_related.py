@@ -25,6 +25,7 @@ Product = get_model("catalogue", "Product")
 ProductClass = get_model("catalogue", "ProductClass")
 ProductAttribute = get_model("catalogue", "ProductAttribute")
 Category = get_model("catalogue", "Category")
+ProductImage = get_model("catalogue", "ProductImage")
 Partner = get_model("partner", "Partner")
 Stockrecord = get_model("partner", "Stockrecord")
 
@@ -288,3 +289,87 @@ class DeleteRelatedModelReverseTest(TestCase):
         self.assertEqual(prd.stockrecords.count(), 0)
         self.assertEqual(prd.categories.count(), 0)
         self.assertEqual(prd.attribute_values.count(), 0)
+
+    def test_partial_deletion_of_one_to_many_related_models(self):
+        partner, _ = Partner.objects.get_or_create(name="klass")
+        product_class = ProductClassResource(slug="klaas", name="Klaas")
+        product_resources = [
+            ProductResource(
+                upc="harrie",
+                title="harrie",
+                slug="asdf-harrie",
+                structure=Product.STANDALONE,
+                product_class=product_class,
+                price=D("20"),
+                availability=2,
+                currency="EUR",
+                partner=partner,
+                images=[
+                    ImageResource(
+                        caption="gekke caption",
+                        display_order=0,
+                        code="harrie",
+                        original=File(self.image, name="harrie.jpg"),
+                    ),
+                ],
+            ),
+            ProductResource(
+                upc="bat",
+                title="bat",
+                slug="asdf-bat",
+                structure=Product.STANDALONE,
+                product_class=product_class,
+                price=D("10"),
+                availability=2,
+                currency="EUR",
+                partner=partner,
+                images=[
+                    ImageResource(
+                        caption="gekke caption",
+                        display_order=0,
+                        code="bat",
+                        original=File(self.image, name="bat.jpg"),
+                    ),
+                ],
+            ),
+            ProductResource(
+                upc="hat",
+                title="hat",
+                slug="asdf-hat",
+                structure=Product.STANDALONE,
+                product_class=product_class,
+                price=D("30"),
+                availability=1,
+                currency="EUR",
+                partner=partner,
+                images=[
+                    ImageResource(
+                        caption="gekke caption",
+                        display_order=0,
+                        code="hat",
+                        original=File(self.image, name="hat.jpg"),
+                    ),
+                ],
+            ),
+        ]
+        _, errors = products_to_db(product_resources)
+        self.assertEqual(len(errors), 0)
+        self.assertEqual(Product.objects.count(), 3)
+
+        product_resource = ProductResource(
+            upc="hat",
+            title="hat",
+            slug="asdf-hat",
+            structure=Product.STANDALONE,
+            product_class=product_class,
+        )
+        _, errors = products_to_db(product_resource, delete_related=True)
+        self.assertEqual(len(errors), 0)
+
+        self.assertEqual(Product.objects.count(), 3)
+        prd = Product.objects.get(upc="hat")
+        self.assertEqual(prd.stockrecords.count(), 0)
+        self.assertEqual(prd.images.count(), 0)
+        # Other products' related models of stay unaffected
+        self.assertTrue(Stockrecord.objects.count(), 2)
+        self.assertTrue(ProductImage.objects.count(), 2)

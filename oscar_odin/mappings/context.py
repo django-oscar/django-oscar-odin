@@ -256,6 +256,9 @@ class ModelMapperContext(dict):
                 field_name = relation.remote_field.attname.replace("_", "__").replace(
                     "id", product_identity
                 )
+                # Delete all related one_to_many instances where product is in the
+                # given list of resources and excluding any instances present in those
+                # resources
                 relation.related_model.objects.filter(
                     **{f"{field_name}__in": self.product_identity_list}
                 ).exclude(conditions).delete()
