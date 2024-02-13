@@ -677,3 +677,50 @@ class SingleProductErrorHandlingTest(TestCase):
             errors[2].message_dict["price"][0],
             "“expensive” value must be a decimal number.",
         )
+
+
+class SingleProductFieldsToUpdateTest(TestCase):
+    @property
+    def image(self):
+        img = PIL.Image.new(mode="RGB", size=(200, 200))
+        output = io.BytesIO()
+        img.save(output, "jpeg")
+        return output
+
+    def test_fields_to_update_on_product_operations(self):
+        product_class = ProductClassResource(
+            slug="klaas", name="Klaas", requires_shipping=True, track_stock=True
+        )
+
+        partner = Partner.objects.create(name="klaas")
+
+        Category.add_root(name="Hatsie", slug="batsie", is_public=True, code="1")
+        Category.add_root(name="henk", slug="klaas", is_public=True, code="2")
+
+        product_resource = ProductResource(
+            upc="1234323-2",
+            title="asdf2",
+            slug="asdf-asdfasdf2",
+            description="description",
+            structure=Product.STANDALONE,
+            price=D("20"),
+            availability=2,
+            currency="EUR",
+            partner=partner,
+            product_class=product_class,
+            images=[
+                ImageResource(
+                    caption="gekke caption",
+                    display_order=0,
+                    original=File(self.image, name="harrie.jpg"),
+                ),
+                ImageResource(
+                    caption="gekke caption 2",
+                    display_order=1,
+                    original=File(self.image, name="vats.jpg"),
+                ),
+            ],
+            categories=[CategoryResource(code="2")],
+        )
+        _, errors = products_to_db(product_resource)
+        self.assertEqual(len(errors), 0)

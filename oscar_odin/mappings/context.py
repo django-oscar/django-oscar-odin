@@ -73,12 +73,16 @@ class ModelMapperContext(dict):
     def __bool__(self):
         return True
 
-    def validate_instances(self, instances, validate_unique=True):
+    def validate_instances(self, instances, validate_unique=True, fields=None):
         validated_instances = []
+        exclude = ()
+        if fields and instances:
+            all_fields = instances[0]._meta.fields
+            exclude = (f.name for f in all_fields if f.name not in fields)
 
         for instance in instances:
             try:
-                instance.full_clean(validate_unique=validate_unique)
+                instance.full_clean(validate_unique=validate_unique, exclude=exclude)
             except ValidationError as e:
                 self.errors.append(e)
             else:
@@ -218,13 +222,19 @@ class ModelMapperContext(dict):
         instances_to_create, instances_to_update, identities = self.get_o2m_relations
 
         for relation, instances in instances_to_create.items():
-            validated_instances_to_create = self.validate_instances(instances)
-            relation.related_model.objects.bulk_create(validated_instances_to_create)
+            fields = self.get_fields_to_update(relation.related_model)
+            if fields is not None:
+                validated_instances_to_create = self.validate_instances(instances)
+                relation.related_model.objects.bulk_create(
+                    validated_instances_to_create
+                )
 
         for relation, instances in instances_to_update.items():
             fields = self.get_fields_to_update(relation.related_model)
             if fields is not None:
-                validated_instances_to_update = self.validate_instances(instances)
+                validated_instances_to_update = self.validate_instances(
+                    instances, fields=fields
+                )
                 relation.related_model.objects.bulk_update(
                     validated_instances_to_update, fields=fields
                 )
@@ -254,7 +264,9 @@ class ModelMapperContext(dict):
         for relation, instances in m2m_to_update.items():
             fields = self.get_fields_to_update(relation.related_model)
             if fields is not None:
-                validated_instances_to_update = self.validate_instances(instances)
+                validated_instances_to_update = self.validate_instances(
+                    instances, fields=fields
+                )
                 relation.related_model.objects.bulk_update(
                     validated_instances_to_update, fields=fields
                 )
