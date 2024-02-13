@@ -54,6 +54,7 @@ class ModelMapperContext(dict):
     one_to_many_items = None
     attribute_data = None
     identifier_mapping = None
+    product_identity_list = None
     Model = None
     errors = None
 
@@ -189,7 +190,7 @@ class ModelMapperContext(dict):
         (
             instances_to_create,
             instances_to_update,
-            _,
+            self.product_identity_list,
         ) = separate_instances_to_create_and_update(
             self.Model, instances, self.identifier_mapping
         )
@@ -240,7 +241,11 @@ class ModelMapperContext(dict):
                 )
 
         if self.delete_related:
+            product_identity = self.identifier_mapping.get(Product)[0]
             for relation, keys in identities.items():
+                fields = self.get_fields_to_update(relation.related_model)
+                if fields is None:
+                    continue
                 conditions = Q()
                 identifiers = self.identifier_mapping[relation.related_model]
                 for key in keys:
@@ -248,7 +253,12 @@ class ModelMapperContext(dict):
                         conditions |= Q(**dict(list(zip(identifiers, key))))
                     else:
                         conditions |= Q(**{f"{identifiers[0]}": key})
-                relation.related_model.objects.exclude(conditions).delete()
+                field_name = relation.remote_field.attname.replace("_", "__").replace(
+                    "id", product_identity
+                )
+                relation.related_model.objects.filter(
+                    **{f"{field_name}__in": self.product_identity_list}
+                ).exclude(conditions).delete()
 
     def bulk_update_or_create_many_to_many(self):
         m2m_to_create, m2m_to_update, _ = self.get_all_m2m_relations
@@ -280,10 +290,10 @@ class ModelMapperContext(dict):
 
             # Create all through models that are needed for the products and many to many
             throughs = defaultdict(Through)
-            delete_throughs = []
+            through_product_ids = []
             for product, instances in values:
                 if not instances and self.delete_related:
-                    delete_throughs.append(product.id)
+                    through_product_ids.append(product.id)
                     continue
                 for instance in instances:
                     throughs[(product.pk, instance.pk)] = Through(
@@ -294,7 +304,7 @@ class ModelMapperContext(dict):
                     )
 
             # Delete throughs if no instances are passed for the field
-            Through.objects.filter(product_id__in=delete_throughs).all().delete()
+            Through.objects.filter(product_id__in=through_product_ids).all().delete()
             if not throughs:
                 continue
 
