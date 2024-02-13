@@ -146,7 +146,9 @@ class SingleProductReverseTest(TestCase):
         stockrecord = prd.stockrecords.first()
         self.assertEqual(stockrecord.price, D("21.50"))
         self.assertEqual(stockrecord.num_in_stock, 3)
-        self.assertEqual(prd.categories.count(), 2)
+        # Category was not included in fields_to_update
+        self.assertEqual(prd.categories.count(), 1)
+        self.assertFalse(prd.categories.filter(code="1").exists())
 
         self.assertEqual(prd.images.count(), 4)
 

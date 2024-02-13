@@ -107,10 +107,7 @@ class ModelMapping(MappingBase, metaclass=ModelMappingMeta):
                 )
 
         for relation, instances in related_field_values["m2m_related_values"].items():
-            if instances:
-                self.context.add_instances_to_m2m_relation(
-                    relation, (parent, instances)
-                )
+            self.context.add_instances_to_m2m_relation(relation, (parent, instances))
 
         for relation, instances in related_field_values["o2m_related_values"].items():
             if instances:

@@ -21,7 +21,7 @@ def separate_instances_to_create_and_update(Model, instances, identifier_mapping
 
     identifiers = identifier_mapping.get(Model, {})
 
-    if identifiers:
+    if identifiers and instances:
         # pylint: disable=protected-access
         id_mapping = in_bulk(Model._default_manager, instances, identifiers)
 
@@ -245,8 +245,10 @@ class ModelMapperContext(dict):
 
         # Create many to many's
         for relation, instances in m2m_to_create.items():
-            validated_m2m_instances = self.validate_instances(instances)
-            relation.related_model.objects.bulk_create(validated_m2m_instances)
+            fields = self.get_fields_to_update(relation.related_model)
+            if fields is not None:
+                validated_m2m_instances = self.validate_instances(instances)
+                relation.related_model.objects.bulk_create(validated_m2m_instances)
 
         # Update many to many's
         for relation, instances in m2m_to_update.items():
@@ -258,11 +260,19 @@ class ModelMapperContext(dict):
                 )
 
         for relation, values in self.many_to_many_items.items():
+            fields = self.get_fields_to_update(relation.related_model)
+            if fields is None:
+                continue
+
             Through = getattr(self.Model, relation.name).through
 
             # Create all through models that are needed for the products and many to many
             throughs = defaultdict(Through)
+            delete_throughs = []
             for product, instances in values:
+                if not instances and self.delete_related:
+                    delete_throughs.append(product.id)
+                    continue
                 for instance in instances:
                     throughs[(product.pk, instance.pk)] = Through(
                         **{
@@ -270,6 +280,11 @@ class ModelMapperContext(dict):
                             relation.m2m_reverse_field_name(): instance,
                         }
                     )
+
+            # Delete throughs if no instances are passed for the field
+            Through.objects.filter(product_id__in=delete_throughs).all().delete()
+            if not throughs:
+                continue
 
             # Bulk query the through models to see if some already exist
             bulk_troughs = in_bulk(
@@ -286,7 +301,7 @@ class ModelMapperContext(dict):
                 if b in throughs:
                     throughs.pop(b)
 
-            # Delete non-existing through models
+            # Delete remaining non-existing through models
             if self.delete_related:
                 Through.objects.filter(
                     product_id__in=[item[0] for item in bulk_troughs.keys()]
