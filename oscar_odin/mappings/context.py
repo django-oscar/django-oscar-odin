@@ -208,7 +208,9 @@ class ModelMapperContext(dict):
 
         fields = self.get_fields_to_update(self.Model)
         if fields is not None:
-            validated_instances_to_update = self.validate_instances(instances_to_update)
+            validated_instances_to_update = self.validate_instances(
+                instances_to_update, fields=fields
+            )
             for instance in validated_instances_to_update:
                 # This should be removed once support for django 3.2 is dropped
                 # pylint: disable=protected-access

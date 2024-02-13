@@ -22,6 +22,8 @@ from oscar_odin.mappings.constants import (
     STOCKRECORD_NUM_IN_STOCK,
     STOCKRECORD_NUM_ALLOCATED,
     PRODUCTIMAGE_ORIGINAL,
+    PRODUCT_TITLE,
+    PRODUCT_DESCRIPTION,
 )
 
 Product = get_model("catalogue", "Product")
@@ -701,7 +703,7 @@ class SingleProductFieldsToUpdateTest(TestCase):
             upc="1234323-2",
             title="asdf2",
             slug="asdf-asdfasdf2",
-            description="description",
+            description="old description",
             structure=Product.STANDALONE,
             price=D("20"),
             availability=2,
@@ -724,3 +726,50 @@ class SingleProductFieldsToUpdateTest(TestCase):
         )
         _, errors = products_to_db(product_resource)
         self.assertEqual(len(errors), 0)
+
+        product_resource = ProductResource(
+            upc="1234323-2",
+            title="asdf2",
+            description="updated description",
+            structure=Product.STANDALONE,
+            product_class=product_class,
+        )
+        _, errors = products_to_db(product_resource)
+        prd = Product.objects.get(upc="1234323-2")
+        self.assertEqual(len(errors), 1)
+        self.assertEqual(
+            errors[0].message_dict["slug"][0], "This field cannot be null.",
+        )
+        self.assertEqual(prd.categories.count(), 1)
+        self.assertEqual(prd.images.count(), 2)
+        self.assertEqual(prd.stockrecords.count(), 1)
+
+        product_resource = ProductResource(
+            upc="1234323-2",
+            title="asdf2",
+            description="This description is not updated",
+            structure=Product.STANDALONE,
+            product_class=product_class,
+        )
+        _, errors = products_to_db(product_resource, fields_to_update=[PRODUCT_TITLE])
+        # Slug error doesn't appear because it is not included in fields_to_update
+        self.assertEqual(len(errors), 0)
+        prd.refresh_from_db()
+        # Description is not updated it is not included in fields_to_update
+        self.assertEqual(prd.description, "old description")
+
+        product_resource = ProductResource(
+            upc="1234323-2",
+            title="target",
+            description="This description is updated",
+            structure=Product.STANDALONE,
+            product_class=product_class,
+        )
+        _, errors = products_to_db(product_resource, fields_to_update=[PRODUCT_DESCRIPTION])
+        self.assertEqual(len(errors), 0)
+        prd.refresh_from_db()
+        # Description is not updated it is not included in fields_to_update
+        self.assertEqual(prd.description, "This description is updated")
+        # Likewise title is also not updated since we did not include
+        # it in fields_to_update.
+        self.assertNotEqual(prd.title, "target")
