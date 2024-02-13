@@ -296,7 +296,7 @@ class ProductToModel(ModelMapping):
 
     @odin.map_field
     def product_class(self, value) -> ProductClassModel:
-        if not value and self.source.structure == ProductModel.CHILD:
+        if not value or self.source.structure == ProductModel.CHILD:
             return None
 
         return ProductClassToModel.apply(value)

@@ -24,6 +24,7 @@ from oscar_odin.mappings.constants import (
     PRODUCTIMAGE_ORIGINAL,
     PRODUCT_TITLE,
     PRODUCT_DESCRIPTION,
+    PRODUCTCLASS_REQUIRESSHIPPING,
 )
 
 Product = get_model("catalogue", "Product")
@@ -59,7 +60,7 @@ class SingleProductReverseTest(TestCase):
             product_class=product_class,
         )
 
-        product_class = ProductClassResource(slug="klaas", name="Klaas")
+        product_class = ProductClassResource(slug="klaas")
 
         partner = Partner.objects.create(name="klaas")
 
@@ -226,7 +227,7 @@ class SingleProductReverseTest(TestCase):
             product_class=product_class,
         )
 
-        product_class = ProductClassResource(slug="klaas", name="Klaas")
+        product_class = ProductClassResource(slug="klaas")
 
         partner = Partner.objects.create(name="klaas")
 
@@ -345,7 +346,7 @@ class MultipleProductReverseTest(TestCase):
             name="Klaas", slug="klaas", requires_shipping=True, track_stock=True
         )
         Product.objects.create(upc="1234323asd", title="")
-        product_class = ProductClassResource(slug="klaas", name="Klaas")
+        product_class = ProductClassResource(slug="klaas")
 
         product_resources = [
             ProductResource(
@@ -389,7 +390,7 @@ class MultipleProductReverseTest(TestCase):
             product_class=product_class,
         )
 
-        product_class = ProductClassResource(slug="klaas", name="Klaas")
+        product_class = ProductClassResource(slug="klaas")
 
         product_resources = [
             ProductResource(
@@ -682,6 +683,15 @@ class SingleProductErrorHandlingTest(TestCase):
 
 
 class SingleProductFieldsToUpdateTest(TestCase):
+    def setUp(self):
+        super().setUp()
+        ProductClass.objects.create(
+            name="Klaas", slug="klaas", requires_shipping=False, track_stock=True
+        )
+        Partner.objects.create(name="klaas")
+        Category.add_root(name="Hatsie", slug="batsie", is_public=True, code="1")
+        Category.add_root(name="henk", slug="klaas", is_public=True, code="2")
+
     @property
     def image(self):
         img = PIL.Image.new(mode="RGB", size=(200, 200))
@@ -690,14 +700,8 @@ class SingleProductFieldsToUpdateTest(TestCase):
         return output
 
     def test_fields_to_update_on_product_operations(self):
-        product_class = ProductClassResource(
-            slug="klaas", name="Klaas", requires_shipping=True, track_stock=True
-        )
-
-        partner = Partner.objects.create(name="klaas")
-
-        Category.add_root(name="Hatsie", slug="batsie", is_public=True, code="1")
-        Category.add_root(name="henk", slug="klaas", is_public=True, code="2")
+        product_class = ProductClassResource(slug="klaas")
+        partner = Partner.objects.get(name="klaas")
 
         product_resource = ProductResource(
             upc="1234323-2",
@@ -765,7 +769,9 @@ class SingleProductFieldsToUpdateTest(TestCase):
             structure=Product.STANDALONE,
             product_class=product_class,
         )
-        _, errors = products_to_db(product_resource, fields_to_update=[PRODUCT_DESCRIPTION])
+        _, errors = products_to_db(
+            product_resource, fields_to_update=[PRODUCT_DESCRIPTION]
+        )
         self.assertEqual(len(errors), 0)
         prd.refresh_from_db()
         # Description is not updated it is not included in fields_to_update
@@ -773,3 +779,62 @@ class SingleProductFieldsToUpdateTest(TestCase):
         # Likewise title is also not updated since we did not include
         # it in fields_to_update.
         self.assertNotEqual(prd.title, "target")
+
+    def test_product_class_fields_to_update(self):
+        product_resource = ProductResource(
+            upc="1234323-2",
+            title="asdf2",
+            slug="asdf-asdfasdf2",
+            structure=Product.STANDALONE,
+        )
+        _, errors = products_to_db(product_resource)
+        self.assertEqual(len(errors), 1)
+        self.assertEqual(
+            errors[0].message_dict["__all__"][0],
+            "Your product must have a product class."
+        )
+
+        product_resource = ProductResource(
+            upc="1234323-2",
+            title="asdf2",
+            slug="asdf-asdfasdf2",
+            structure=Product.STANDALONE,
+            product_class=ProductClassResource(
+                name="Better", slug="better", requires_shipping=False, track_stock=True
+            ),
+        )
+        _, errors = products_to_db(product_resource)
+        self.assertEqual(len(errors), 0)
+
+        product_resource = ProductResource(
+            upc="1234323-2",
+            title="asdf2",
+            structure=Product.STANDALONE,
+        )
+        _, errors = products_to_db(product_resource, fields_to_update=[PRODUCT_TITLE])
+        # Removing product_class from product resource produces error
+        self.assertEqual(len(errors), 1)
+        self.assertEqual(
+            errors[0].message_dict["__all__"][0],
+            "Your product must have a product class."
+        )
+
+        product_resource = ProductResource(
+            upc="1234323-2",
+            title="asdf2",
+            structure=Product.STANDALONE,
+            product_class=ProductClassResource(slug="better", requires_shipping=True)
+        )
+        _, errors = products_to_db(product_resource, fields_to_update=[PRODUCT_TITLE])
+        self.assertEqual(len(errors), 0)
+        prd = Product.objects.get(upc="1234323-2")
+        # Product class is not updated since it wasn't added in fields_to_update
+        self.assertNotEqual(prd.product_class.requires_shipping, True)
+
+        _, errors = products_to_db(
+            product_resource, fields_to_update=[PRODUCTCLASS_REQUIRESSHIPPING]
+        )
+        self.assertEqual(len(errors), 0)
+        prd.refresh_from_db()
+        # Product class is updated as it was added in fields_to_update
+        self.assertEqual(prd.product_class.requires_shipping, True)

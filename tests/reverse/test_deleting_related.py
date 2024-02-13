@@ -61,6 +61,10 @@ class DeleteRelatedModelReverseTest(TestCase):
 
     def test_deleting_product_related_models(self):
         partner, _ = Partner.objects.get_or_create(name="klass")
+        # If an attribute is present in product class and not included in the product
+        # resource, oscar's ProductAttributeContainer would require product class name
+        # in the __str__ method. Hence its important to include name in the following
+        # product class resource.
         product_class = ProductClassResource(slug="klaas", name="Klaas")
 
         product_resources = [
@@ -236,7 +240,7 @@ class DeleteRelatedModelReverseTest(TestCase):
 
     def test_deleting_all_related_models(self):
         partner, _ = Partner.objects.get_or_create(name="klass")
-        product_class = ProductClassResource(slug="klaas", name="Klaas")
+        product_class = ProductClassResource(slug="klaas")
 
         product_resource = ProductResource(
             upc="1234323-2",

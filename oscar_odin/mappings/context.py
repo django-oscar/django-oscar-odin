@@ -79,7 +79,7 @@ class ModelMapperContext(dict):
         exclude = ()
         if fields and instances:
             all_fields = instances[0]._meta.fields
-            exclude = (f.name for f in all_fields if f.name not in fields)
+            exclude = [f.name for f in all_fields if f.name not in fields]
 
         for instance in instances:
             try:
@@ -183,7 +183,9 @@ class ModelMapperContext(dict):
             Model = field.related_model
             fields = self.get_fields_to_update(Model)
             if fields is not None:
-                validated_instances_to_update = self.validate_instances(instances)
+                validated_instances_to_update = self.validate_instances(
+                    instances, fields=fields
+                )
                 Model.objects.bulk_update(validated_instances_to_update, fields=fields)
 
     def bulk_update_or_create_instances(self, instances):
