@@ -180,6 +180,11 @@ class ModelMapperContext(dict):
             field.related_model.objects.bulk_create(validated_fk_instances)
 
         for field, instances in instances_to_update.items():
+            # We don't update parent details. If we want this then we will have to
+            # provide other product fields in the ParentProductResource too along with
+            # the upc, which is not useful in most cases.
+            if field.name == "parent":
+                continue
             Model = field.related_model
             fields = self.get_fields_to_update(Model)
             if fields is not None:

@@ -209,7 +209,8 @@ class RealLifeTest(TestCase):
             product_resources = CSVProductMapping.apply(products)
 
             # Map the product resources to products and save in DB
-            products_to_db(product_resources)
+            _, errors = products_to_db(product_resources)
+            self.assertEqual(len(errors), 0)
 
             self.assertEqual(Product.objects.all().count(), 59)
             self.assertEqual(ProductAttributeValue.objects.all().count(), 257)

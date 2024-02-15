@@ -6,7 +6,7 @@ from decimal import Decimal
 from typing import Any, Dict, Iterable, List, Optional, Tuple, Union
 
 from django.contrib.auth.models import AbstractUser
-from django.db.models import QuerySet, Model, ManyToManyField, ForeignKey
+from django.db.models import QuerySet
 from django.db.models.fields.files import ImageFieldFile
 from django.http import HttpRequest
 from oscar.apps.partner.strategy import Default as DefaultStrategy
@@ -18,6 +18,7 @@ from .. import resources
 from ..resources.catalogue import Structure
 from ._common import map_queryset, OscarBaseMapping
 from ._model_mapper import ModelMapping
+from ..utils import validate_resources
 
 from .context import ProductModelMapperContext
 from .constants import ALL_CATALOGUE_FIELDS, MODEL_IDENTIFIERS_MAPPING
@@ -142,11 +143,6 @@ class ProductToResource(OscarBaseMapping):
 
     from_obj = ProductModel
     to_obj = resources.catalogue.Product
-
-    @odin.map_field
-    def structure(self, value: str) -> Structure:
-        """Map structure to enum."""
-        return Structure(value)
 
     @odin.assign_field
     def title(self) -> str:
@@ -418,6 +414,9 @@ def products_to_db(
     After that all the products will be bulk saved.
     At last all related models like images, stockrecords, and related_products can will be saved and set on the product.
     """
+    errors = validate_resources(products)
+    if errors:
+        return [], errors
     instances, context = products_to_model(
         products,
         product_mapper=product_mapper,

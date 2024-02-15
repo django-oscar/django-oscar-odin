@@ -16,7 +16,7 @@ from oscar_odin.resources.catalogue import (
     Category as CategoryResource,
 )
 from oscar_odin.mappings.constants import (
-    ALL_CATEGORY_FIELDS,
+    CATEGORY_CODE,
     ALL_PRODUCTIMAGE_FIELDS,
     ALL_STOCKRECORD_FIELDS,
 )
@@ -60,11 +60,12 @@ class DeleteRelatedModelReverseTest(TestCase):
         return output
 
     def test_deleting_product_related_models(self):
-        partner, _ = Partner.objects.get_or_create(name="klass")
+        partner = Partner.objects.get(name="klaas")
         # If an attribute is present in product class and not included in the product
         # resource, oscar's ProductAttributeContainer would require product class name
         # in the __str__ method. Hence its important to include name in the following
-        # product class resource.
+        # product class resource. This is not needed for oscar version greater than
+        # 3.2.4.
         product_class = ProductClassResource(slug="klaas", name="Klaas")
 
         product_resources = [
@@ -122,7 +123,8 @@ class DeleteRelatedModelReverseTest(TestCase):
             ),
         ]
 
-        products_to_db(product_resources)
+        _, errors = products_to_db(product_resources)
+        self.assertEqual(len(errors), 0)
         prd = Product.objects.get(upc="1234323-2")
         prd_563 = Product.objects.get(upc="563-2")
 
@@ -155,6 +157,8 @@ class DeleteRelatedModelReverseTest(TestCase):
         product_resources = [
             ProductResource(
                 upc="1234323-2",
+                title="asdf2",
+                structure=Product.STANDALONE,
                 price=D("20"),
                 availability=2,
                 currency="EUR",
@@ -172,6 +176,8 @@ class DeleteRelatedModelReverseTest(TestCase):
             ),
             ProductResource(
                 upc="563-2",
+                title="bat",
+                structure=Product.STANDALONE,
                 price=D("20"),
                 availability=2,
                 currency="EUR",
@@ -191,9 +197,10 @@ class DeleteRelatedModelReverseTest(TestCase):
         ]
 
         fields_to_update = ALL_PRODUCTIMAGE_FIELDS + ALL_STOCKRECORD_FIELDS
-        products_to_db(
+        _, errors = products_to_db(
             product_resources, delete_related=True, fields_to_update=fields_to_update
         )
+        self.assertEqual(len(errors), 0)
 
         # Related models are successfully deleted
         self.assertEqual(prd.images.count(), 1)
@@ -218,18 +225,21 @@ class DeleteRelatedModelReverseTest(TestCase):
         product_resources = [
             ProductResource(
                 upc="1234323-2",
-                product_class=product_class,
-                categories=[CategoryResource(code="1")],
+                title="asdf2",
+                structure=Product.STANDALONE,
+                categories=[CategoryResource(code="1")]
             ),
             ProductResource(
                 upc="563-2",
-                product_class=product_class,
-                categories=[],
+                title="bat",
+                structure=Product.STANDALONE,
+                categories=[]
             ),
         ]
-        products_to_db(
-            product_resources, delete_related=True, fields_to_update=ALL_CATEGORY_FIELDS
+        _, errors = products_to_db(
+            product_resources, delete_related=True, fields_to_update=[CATEGORY_CODE]
         )
+        self.assertEqual(len(errors), 0)
         # Categories of prd_563 are deleted since it is set to an empty array
         self.assertEqual(prd_563.categories.count(), 0)
         self.assertEqual(prd.categories.count(), 1)
@@ -239,8 +249,7 @@ class DeleteRelatedModelReverseTest(TestCase):
         self.assertEqual(prd.attribute_values.count(), 1)
 
     def test_deleting_all_related_models(self):
-        partner, _ = Partner.objects.get_or_create(name="klass")
-        product_class = ProductClassResource(slug="klaas")
+        partner = Partner.objects.get(name="klaas")
 
         product_resource = ProductResource(
             upc="1234323-2",
@@ -253,7 +262,7 @@ class DeleteRelatedModelReverseTest(TestCase):
             availability=2,
             currency="EUR",
             partner=partner,
-            product_class=product_class,
+            product_class=ProductClassResource(slug="klaas"),
             images=[
                 ImageResource(
                     caption="gekke caption",
@@ -272,7 +281,8 @@ class DeleteRelatedModelReverseTest(TestCase):
             attributes={"henk": "Klaas", "harrie": 1},
         )
 
-        products_to_db(product_resource)
+        _, errors = products_to_db(product_resource)
+        self.assertEqual(len(errors), 0)
         prd = Product.objects.get(upc="1234323-2")
 
         self.assertEqual(prd.images.count(), 2)
@@ -282,12 +292,15 @@ class DeleteRelatedModelReverseTest(TestCase):
 
         product_resource = ProductResource(
             upc="1234323-2",
+            title="asdf2",
+            slug="asdf-asdfasdf2",
             structure=Product.STANDALONE,
-            product_class=product_class,
+            product_class=ProductClassResource(slug="klaas"),
             categories=[],
             attributes={"henk": None, "harrie": None},
         )
-        products_to_db(product_resource, delete_related=True)
+        _, errors = products_to_db(product_resource, delete_related=True)
+        self.assertEqual(len(errors), 0)
 
         self.assertEqual(prd.images.count(), 0)
         self.assertEqual(prd.stockrecords.count(), 0)
@@ -295,7 +308,7 @@ class DeleteRelatedModelReverseTest(TestCase):
         self.assertEqual(prd.attribute_values.count(), 0)
 
     def test_partial_deletion_of_one_to_many_related_models(self):
-        partner, _ = Partner.objects.get_or_create(name="klass")
+        partner = Partner.objects.get(name="klaas")
         product_class = ProductClassResource(slug="klaas", name="Klaas")
         product_resources = [
             ProductResource(
