@@ -166,6 +166,7 @@ class SingleProductReverseTest(TestCase):
 
     def test_create_productclass_with_product(self):
         partner = Partner.objects.get(name="klaas")
+        product_class = ProductClassResource(slug="klaas", name="Klaas")
 
         product_resource = ProductResource(
             upc="1234323-2",
@@ -178,7 +179,7 @@ class SingleProductReverseTest(TestCase):
             availability=2,
             currency="EUR",
             partner=partner,
-            product_class=ProductClassResource(slug="klaas"),
+            product_class=product_class,
             images=[
                 ImageResource(
                     caption="gekke caption",
@@ -216,12 +217,13 @@ class SingleProductReverseTest(TestCase):
         self.assertEqual(prd.images.count(), 2)
 
     def test_resource_default_value(self):
+        product_class = ProductClassResource(slug="klaas", name="Klaas")
         product_resource = ProductResource(
             upc="1234",
             title="bat",
             slug="asdf",
             structure=Product.STANDALONE,
-            product_class=ProductClassResource(slug="klaas"),
+            product_class=product_class,
             is_discountable=False,
         )
         _, errors = products_to_db(product_resource)
@@ -234,7 +236,7 @@ class SingleProductReverseTest(TestCase):
             title="bat",
             slug="asdf",
             structure=Product.STANDALONE,
-            product_class=ProductClassResource(slug="klaas"),
+            product_class=product_class,
         )
         _, errors = products_to_db(product_resource)
         self.assertEqual(len(errors), 0)
@@ -244,6 +246,7 @@ class SingleProductReverseTest(TestCase):
 
     def test_idempotent(self):
         partner = Partner.objects.get(name="klaas")
+        product_class = ProductClassResource(slug="klaas", name="Klaas")
 
         product_resource = ProductResource(
             upc="1234323-2",
@@ -256,7 +259,7 @@ class SingleProductReverseTest(TestCase):
             availability=2,
             currency="EUR",
             partner=partner,
-            product_class=ProductClassResource(slug="klaas"),
+            product_class=product_class,
             images=[
                 ImageResource(
                     caption="gekke caption",
@@ -306,7 +309,7 @@ class SingleProductReverseTest(TestCase):
             availability=2,
             currency="EUR",
             partner=partner,
-            product_class=ProductClassResource(slug="klaas"),
+            product_class=product_class,
             images=[
                 ImageResource(
                     caption="gekke caption",
@@ -373,6 +376,7 @@ class MultipleProductReverseTest(TestCase):
         return output
 
     def test_create_simple_product(self):
+        product_class = ProductClassResource(slug="klaas", name="Klaas")
         product_resources = [
             ProductResource(
                 upc="1234323asd",
@@ -381,7 +385,7 @@ class MultipleProductReverseTest(TestCase):
                 description="description",
                 structure=Product.STANDALONE,
                 is_discountable=True,
-                product_class=ProductClassResource(slug="klaas"),
+                product_class=product_class,
             ),
             ProductResource(
                 upc="1234323-2",
@@ -390,7 +394,7 @@ class MultipleProductReverseTest(TestCase):
                 description="description",
                 structure=Product.STANDALONE,
                 is_discountable=True,
-                product_class=ProductClassResource(slug="klaas"),
+                product_class=product_class,
             ),
         ]
 
