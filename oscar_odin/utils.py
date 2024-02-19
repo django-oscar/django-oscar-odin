@@ -74,7 +74,7 @@ def querycounter(*labels, print_queries=False):
             print("   ", q)
 
 
-def validate_resources(resources, fail_fast=False):
+def validate_resources(resources):
     errors = []
     if not resources:
         return
@@ -87,7 +87,5 @@ def validate_resources(resources, fail_fast=False):
         try:
             resource.full_clean()
         except ValidationError as error:
-            if fail_fast:
-                return [error]
             errors.append(error)
     return errors
