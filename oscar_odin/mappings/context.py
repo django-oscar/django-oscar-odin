@@ -183,15 +183,16 @@ class ModelMapperContext(dict):
             # We don't update parent details. If we want this then we will have to
             # provide other product fields in the ParentProductResource too along with
             # the upc, which is not useful in most cases.
-            if field.name == "parent":
-                continue
-            Model = field.related_model
-            fields = self.get_fields_to_update(Model)
-            if fields is not None:
-                validated_instances_to_update = self.validate_instances(
-                    instances, fields=fields
-                )
-                Model.objects.bulk_update(validated_instances_to_update, fields=fields)
+            if not field.name == "parent":
+                Model = field.related_model
+                fields = self.get_fields_to_update(Model)
+                if fields is not None:
+                    validated_instances_to_update = self.validate_instances(
+                        instances, fields=fields
+                    )
+                    Model.objects.bulk_update(
+                        validated_instances_to_update, fields=fields
+                    )
 
     def bulk_update_or_create_instances(self, instances):
         (
@@ -253,24 +254,23 @@ class ModelMapperContext(dict):
             product_identity = self.identifier_mapping.get(Product)[0]
             for relation, keys in identities.items():
                 fields = self.get_fields_to_update(relation.related_model)
-                if fields is None:
-                    continue
-                conditions = Q()
-                identifiers = self.identifier_mapping[relation.related_model]
-                for key in keys:
-                    if isinstance(key, (list, tuple)):
-                        conditions |= Q(**dict(list(zip(identifiers, key))))
-                    else:
-                        conditions |= Q(**{f"{identifiers[0]}": key})
-                field_name = relation.remote_field.attname.replace("_", "__").replace(
-                    "id", product_identity
-                )
-                # Delete all related one_to_many instances where product is in the
-                # given list of resources and excluding any instances present in those
-                # resources
-                relation.related_model.objects.filter(
-                    **{f"{field_name}__in": self.product_identity_list}
-                ).exclude(conditions).delete()
+                if fields is not None:
+                    conditions = Q()
+                    identifiers = self.identifier_mapping[relation.related_model]
+                    for key in keys:
+                        if isinstance(key, (list, tuple)):
+                            conditions |= Q(**dict(list(zip(identifiers, key))))
+                        else:
+                            conditions |= Q(**{f"{identifiers[0]}": key})
+                    field_name = relation.remote_field.attname.replace(
+                        "_", "__"
+                    ).replace("id", product_identity)
+                    # Delete all related one_to_many instances where product is in the
+                    # given list of resources and excluding any instances present in
+                    # those resources
+                    relation.related_model.objects.filter(
+                        **{f"{field_name}__in": self.product_identity_list}
+                    ).exclude(conditions).delete()
 
     def bulk_update_or_create_many_to_many(self):
         m2m_to_create, m2m_to_update, _ = self.get_all_m2m_relations
@@ -295,54 +295,55 @@ class ModelMapperContext(dict):
 
         for relation, values in self.many_to_many_items.items():
             fields = self.get_fields_to_update(relation.related_model)
-            if fields is None:
-                continue
+            if fields is not None:
+                Through = getattr(self.Model, relation.name).through
 
-            Through = getattr(self.Model, relation.name).through
+                # Create all through models that are needed for the products and
+                # many to many
+                throughs = defaultdict(Through)
+                to_delete_throughs_product_ids = []
+                for product, instances in values:
+                    if not instances:
+                        # Delete throughs if no instances are passed for the field
+                        to_delete_throughs_product_ids.append(product.id)
+                    for instance in instances:
+                        throughs[(product.pk, instance.pk)] = Through(
+                            **{
+                                relation.m2m_field_name(): product,
+                                relation.m2m_reverse_field_name(): instance,
+                            }
+                        )
 
-            # Create all through models that are needed for the products and many to many
-            throughs = defaultdict(Through)
-            through_product_ids = []
-            for product, instances in values:
-                if not instances and self.delete_related:
-                    through_product_ids.append(product.id)
-                    continue
-                for instance in instances:
-                    throughs[(product.pk, instance.pk)] = Through(
-                        **{
-                            relation.m2m_field_name(): product,
-                            relation.m2m_reverse_field_name(): instance,
-                        }
+                # Delete throughs if no instances are passed for the field
+                if self.delete_related:
+                    Through.objects.filter(
+                        product_id__in=to_delete_throughs_product_ids
+                    ).all().delete()
+
+                if throughs:
+                    # Bulk query the through models to see if some already exist
+                    bulk_troughs = in_bulk(
+                        Through.objects,
+                        instances=list(throughs.values()),
+                        field_names=(
+                            relation.m2m_field_name(),
+                            relation.m2m_reverse_field_name(),
+                        ),
                     )
 
-            # Delete throughs if no instances are passed for the field
-            Through.objects.filter(product_id__in=through_product_ids).all().delete()
-            if not throughs:
-                continue
+                    # Remove existing through models
+                    for b in bulk_troughs.keys():
+                        if b in throughs:
+                            throughs.pop(b)
 
-            # Bulk query the through models to see if some already exist
-            bulk_troughs = in_bulk(
-                Through.objects,
-                instances=list(throughs.values()),
-                field_names=(
-                    relation.m2m_field_name(),
-                    relation.m2m_reverse_field_name(),
-                ),
-            )
+                    # Delete remaining non-existing through models
+                    if self.delete_related:
+                        Through.objects.filter(
+                            product_id__in=[item[0] for item in bulk_troughs.keys()]
+                        ).exclude(id__in=bulk_troughs.values()).delete()
 
-            # Remove existing through models
-            for b in bulk_troughs.keys():
-                if b in throughs:
-                    throughs.pop(b)
-
-            # Delete remaining non-existing through models
-            if self.delete_related:
-                Through.objects.filter(
-                    product_id__in=[item[0] for item in bulk_troughs.keys()]
-                ).exclude(id__in=bulk_troughs.values()).delete()
-
-            # Save only new through models
-            Through.objects.bulk_create(throughs.values())
+                    # Save only new through models
+                    Through.objects.bulk_create(throughs.values())
 
     def bulk_save(self, instances, fields_to_update, identifier_mapping):
         self.fields_to_update = fields_to_update
