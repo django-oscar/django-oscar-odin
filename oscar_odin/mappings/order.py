@@ -103,6 +103,8 @@ class OrderToResource(odin.Mapping):
     from_obj = OrderModel
     to_obj = resources.order.Order
 
+    register_mapping = False
+
     @odin.assign_field
     def user(self) -> Optional[resources.auth.User]:
         """Map user."""
