@@ -6,7 +6,7 @@ from django.http import HttpRequest
 from oscar.core.loading import get_model
 
 from .. import resources
-from ._common import map_queryset
+from ._common import map_queryset, OscarBaseMapping
 from .address import BillingAddressToResource, ShippingAddressToResource
 from .auth import UserToResource
 
@@ -26,14 +26,14 @@ OrderDiscountModel = get_model("order", "OrderDiscount")
 SurchargeModel = get_model("order", "Surcharge")
 
 
-class SurchargeToResource(odin.Mapping):
+class SurchargeToResource(OscarBaseMapping):
     """Mapping from a surcharge model to a resource."""
 
     from_obj = SurchargeModel
     to_obj = resources.order.Surcharge
 
 
-class DiscountToResource(odin.Mapping):
+class DiscountToResource(OscarBaseMapping):
     """Mapping from an order discount model to a resource."""
 
     from_obj = OrderDiscountModel
@@ -45,28 +45,28 @@ class DiscountToResource(odin.Mapping):
         return resources.order.DiscountCategory(value)
 
 
-class ShippingEventToResource(odin.Mapping):
+class ShippingEventToResource(OscarBaseMapping):
     """Mapping from a shipping event model to a resource."""
 
     from_obj = ShippingEventModel
     to_obj = resources.order.ShippingEvent
 
 
-class PaymentEventToResource(odin.Mapping):
+class PaymentEventToResource(OscarBaseMapping):
     """Mapping from a payment event model to a resource."""
 
     from_obj = PaymentEventModel
     to_obj = resources.order.PaymentEvent
 
 
-class LinePriceToResource(odin.Mapping):
+class LinePriceToResource(OscarBaseMapping):
     """Mapping from Line price to resource."""
 
     from_obj = LinePriceModel
     to_obj = resources.order.LinePrice
 
 
-class LineToResource(odin.Mapping):
+class LineToResource(OscarBaseMapping):
     """Mapping from Line model to resource."""
 
     from_obj = LineModel
@@ -83,21 +83,21 @@ class LineToResource(odin.Mapping):
         """Map attributes."""
 
 
-class StatusChangeToResource(odin.Mapping):
+class StatusChangeToResource(OscarBaseMapping):
     """Mapping from order status change model to resource."""
 
     from_obj = OrderStatusChangeModel
     to_obj = resources.order.StatusChange
 
 
-class NoteToResource(odin.Mapping):
+class NoteToResource(OscarBaseMapping):
     """Mapping from order note model to resource."""
 
     from_obj = OrderNoteModel
     to_obj = resources.order.Note
 
 
-class OrderToResource(odin.Mapping):
+class OrderToResource(OscarBaseMapping):
     """Mapping from order model to resource."""
 
     from_obj = OrderModel

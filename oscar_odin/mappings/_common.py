@@ -3,7 +3,7 @@ from typing import Any, Dict, Optional, Type
 
 import odin
 from django.db.models import QuerySet
-from odin.mapping import ImmediateResult
+from odin.mapping import ImmediateResult, MappingBase, MappingMeta
 
 
 def map_queryset(
@@ -29,3 +29,7 @@ def map_queryset(
     return list(
         mapping.apply(queryset.all(), context=context, mapping_result=ImmediateResult)
     )
+
+
+class OscarBaseMapping(MappingBase, metaclass=MappingMeta):
+    register_mapping = False
