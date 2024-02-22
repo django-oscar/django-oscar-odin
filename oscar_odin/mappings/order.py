@@ -104,6 +104,11 @@ class OrderToResource(odin.Mapping):
     to_obj = resources.order.Order
 
     @odin.assign_field
+    def email(self) -> str:
+        """Map order email."""
+        return self.source.email
+
+    @odin.assign_field
     def user(self) -> Optional[resources.auth.User]:
         """Map user."""
         if self.source.user:
