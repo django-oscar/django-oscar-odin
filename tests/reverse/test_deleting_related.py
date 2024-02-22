@@ -227,13 +227,10 @@ class DeleteRelatedModelReverseTest(TestCase):
                 upc="1234323-2",
                 title="asdf2",
                 structure=Product.STANDALONE,
-                categories=[CategoryResource(code="1")]
+                categories=[CategoryResource(code="1")],
             ),
             ProductResource(
-                upc="563-2",
-                title="bat",
-                structure=Product.STANDALONE,
-                categories=[]
+                upc="563-2", title="bat", structure=Product.STANDALONE, categories=[]
             ),
         ]
         _, errors = products_to_db(
