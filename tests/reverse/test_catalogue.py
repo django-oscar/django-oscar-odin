@@ -601,8 +601,8 @@ class SingleProductErrorHandlingTest(TestCase):
         _, errors = products_to_db(product_resource)
         self.assertEqual(len(errors), 1)
         self.assertEqual(
-            errors[0].message_dict['display_order'][0],
-            "“top” value must be an integer."
+            errors[0].message_dict["display_order"][0],
+            "“top” value must be an integer.",
         )
 
         # Correct Data for creating product
@@ -666,14 +666,14 @@ class SingleProductErrorHandlingTest(TestCase):
 
         self.assertEqual(len(errors), 3)
         self.assertEqual(
-            errors[0].message_dict['is_discountable'][0],
-            "“53” value must be either True or False."
+            errors[0].message_dict["is_discountable"][0],
+            "“53” value must be either True or False.",
         )
         self.assertEqual(
-            errors[1].message_dict['display_order'][0],
-            "“Alphabet” value must be an integer."
+            errors[1].message_dict["display_order"][0],
+            "“Alphabet” value must be an integer.",
         )
         self.assertEqual(
-            errors[2].message_dict['price'][0],
-            "“expensive” value must be a decimal number."
+            errors[2].message_dict["price"][0],
+            "“expensive” value must be a decimal number.",
         )

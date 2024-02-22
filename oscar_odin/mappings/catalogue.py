@@ -16,7 +16,7 @@ from datetime import datetime
 
 from .. import resources
 from ..resources.catalogue import Structure
-from ._common import map_queryset
+from ._common import map_queryset, OscarBaseMapping
 from ._model_mapper import ModelMapping
 
 from .context import ProductModelMapperContext
@@ -40,7 +40,7 @@ StockRecordModel = get_model("partner", "StockRecord")
 ProductAttributeValueModel = get_model("catalogue", "ProductAttributeValue")
 
 
-class ProductImageToResource(odin.Mapping):
+class ProductImageToResource(OscarBaseMapping):
     """Map from an image model to a resource."""
 
     from_obj = ProductImageModel
@@ -53,7 +53,7 @@ class ProductImageToResource(odin.Mapping):
         return value.url
 
 
-class ProductImageToModel(odin.Mapping):
+class ProductImageToModel(OscarBaseMapping):
     """Map from an image resource to a model."""
 
     from_obj = resources.catalogue.Image
@@ -67,7 +67,7 @@ class ProductImageToModel(odin.Mapping):
         return datetime.now()
 
 
-class CategoryToResource(odin.Mapping):
+class CategoryToResource(OscarBaseMapping):
     """Map from a category model to a resource."""
 
     from_obj = CategoryModel
@@ -86,7 +86,7 @@ class CategoryToResource(odin.Mapping):
             return value.url
 
 
-class CategoryToModel(odin.Mapping):
+class CategoryToModel(OscarBaseMapping):
     """Map from a category resource to a model."""
 
     from_obj = resources.catalogue.Category
@@ -123,21 +123,21 @@ class CategoryToModel(odin.Mapping):
         return None
 
 
-class ProductClassToResource(odin.Mapping):
+class ProductClassToResource(OscarBaseMapping):
     """Map from a product class model to a resource."""
 
     from_obj = ProductClassModel
     to_obj = resources.catalogue.ProductClass
 
 
-class ProductClassToModel(odin.Mapping):
+class ProductClassToModel(OscarBaseMapping):
     """Map from a product class resource to a model."""
 
     from_obj = resources.catalogue.ProductClass
     to_obj = ProductClassModel
 
 
-class ProductToResource(odin.Mapping):
+class ProductToResource(OscarBaseMapping):
     """Map from a product model to a resource."""
 
     from_obj = ProductModel
@@ -302,7 +302,7 @@ class ProductToModel(ModelMapping):
         return ProductClassToModel.apply(value)
 
 
-class ParentToModel(odin.Mapping):
+class ParentToModel(OscarBaseMapping):
     from_obj = resources.catalogue.ParentProduct
     to_obj = ProductModel
 

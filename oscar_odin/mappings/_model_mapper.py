@@ -55,6 +55,8 @@ class ModelMapping(MappingBase, metaclass=ModelMappingMeta):
     many_to_many_fields: Sequence[ManyToManyRel] = []
     foreign_key_fields: Sequence[ForeignKey] = []
 
+    register_mapping = False
+
     def create_object(self, **field_values):
         """Create a new product model."""
         related_field_values = self.get_related_field_values(field_values)
