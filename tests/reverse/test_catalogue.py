@@ -534,9 +534,9 @@ class ProductRecommendationTest(TestCase):
 
         prd = Product.objects.get(upc="harses")
 
-        self.assertEquals(ProductRecommendation.objects.count(), 2)
-        self.assertEquals(prd.recommended_products.count(), 2)
-        self.assertEquals(
+        self.assertEqual(ProductRecommendation.objects.count(), 2)
+        self.assertEqual(prd.recommended_products.count(), 2)
+        self.assertEqual(
             sorted(list(prd.recommended_products.values_list("upc", flat=True))),
             sorted(["recommended_product1", "recommended_product2"]),
         )
