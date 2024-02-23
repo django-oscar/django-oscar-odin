@@ -15,7 +15,6 @@ from oscar.core.loading import get_class, get_model
 from datetime import datetime
 
 from .. import resources
-from ..resources.catalogue import Structure
 from ._common import map_queryset, OscarBaseMapping
 from ._model_mapper import ModelMapping
 from ..utils import validate_resources
