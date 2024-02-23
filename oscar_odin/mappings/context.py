@@ -278,21 +278,23 @@ class ModelMapperContext(dict):
         m2m_to_create, m2m_to_update, _ = self.get_all_m2m_relations
 
         # Create many to many's
-        for relation, instances in m2m_to_create.items():
+        for relation, instances_to_create in m2m_to_create.items():
             fields = self.get_fields_to_update(relation.related_model)
             if fields is not None:
-                validated_m2m_instances = self.validate_instances(instances)
-                relation.related_model.objects.bulk_create(validated_m2m_instances)
+                if relation.related_model != self.Model:
+                    instances_to_create = self.validate_instances(instances_to_create)
+                relation.related_model.objects.bulk_create(instances_to_create)
 
         # Update many to many's
-        for relation, instances in m2m_to_update.items():
+        for relation, instances_to_update in m2m_to_update.items():
             fields = self.get_fields_to_update(relation.related_model)
             if fields is not None:
-                validated_instances_to_update = self.validate_instances(
-                    instances, fields=fields
-                )
+                if relation.related_model != self.Model:
+                    instances_to_update = self.validate_instances(
+                        instances_to_update, fields=fields
+                    )
                 relation.related_model.objects.bulk_update(
-                    validated_instances_to_update, fields=fields
+                    instances_to_update, fields=fields
                 )
 
         for relation, values in self.many_to_many_items.items():
@@ -319,7 +321,10 @@ class ModelMapperContext(dict):
                 # Delete throughs if no instances are passed for the field
                 if self.delete_related:
                     Through.objects.filter(
-                        product_id__in=to_delete_throughs_product_ids
+                        **{
+                            "%s_id__in"
+                            % relation.m2m_field_name(): to_delete_throughs_product_ids
+                        }
                     ).all().delete()
 
                 if throughs:
@@ -341,7 +346,12 @@ class ModelMapperContext(dict):
                     # Delete remaining non-existing through models
                     if self.delete_related:
                         Through.objects.filter(
-                            product_id__in=[item[0] for item in bulk_troughs.keys()]
+                            **{
+                                "%s_id__in"
+                                % relation.m2m_field_name(): [
+                                    item[0] for item in bulk_troughs.keys()
+                                ]
+                            }
                         ).exclude(id__in=bulk_troughs.values()).delete()
 
                     # Save only new through models

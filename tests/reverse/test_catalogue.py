@@ -15,6 +15,7 @@ from oscar_odin.resources.catalogue import (
     ProductClass as ProductClassResource,
     Category as CategoryResource,
     ParentProduct as ParentProductResource,
+    ProductRecommentation as ProductRecommentationResource,
 )
 from oscar_odin.exceptions import OscarOdinException
 from oscar_odin.mappings.constants import (
@@ -23,6 +24,7 @@ from oscar_odin.mappings.constants import (
     STOCKRECORD_NUM_ALLOCATED,
     PRODUCTIMAGE_ORIGINAL,
     PRODUCT_TITLE,
+    PRODUCT_UPC,
     PRODUCT_DESCRIPTION,
     PRODUCTCLASS_REQUIRESSHIPPING,
 )
@@ -33,6 +35,7 @@ ProductAttribute = get_model("catalogue", "ProductAttribute")
 ProductImage = get_model("catalogue", "ProductImage")
 Category = get_model("catalogue", "Category")
 Partner = get_model("partner", "Partner")
+ProductRecommendation = get_model("catalogue", "ProductRecommendation")
 
 
 class SingleProductReverseTest(TestCase):
@@ -480,6 +483,63 @@ class MultipleProductReverseTest(TestCase):
 
         self.assertEqual(prd2.attr.henk, "Klaas")
         self.assertEqual(prd2.attr.harrie, 1)
+
+
+class ProductRecommendationTest(TestCase):
+    def setUp(self):
+        super().setUp()
+        ProductClass.objects.create(
+            name="Klaas", slug="klaas", requires_shipping=True, track_stock=True
+        )
+        Partner.objects.create(name="klaas")
+
+    def test_recommendation(self):
+        product_resource = [
+            ProductResource(
+                upc="recommended_product1",
+                title="asdf2",
+                slug="asdf-asdfasdf2",
+                description="description",
+                structure=Product.STANDALONE,
+                product_class=ProductClassResource(slug="klaas"),
+            ),
+            ProductResource(
+                upc="recommended_product2",
+                title="asdf2",
+                slug="asdf-asdasdfasdf2",
+                description="description",
+                structure=Product.STANDALONE,
+                product_class=ProductClassResource(slug="klaas"),
+            ),
+        ]
+
+        _, errors = products_to_db(product_resource)
+        self.assertEqual(len(errors), 0)
+
+        product_resource = ProductResource(
+            upc="harses",
+            title="asdf2",
+            slug="asdf-asdfas23df2",
+            description="description",
+            structure=Product.STANDALONE,
+            product_class=ProductClassResource(slug="klaas"),
+            recommended_products=[
+                ProductRecommentationResource(upc="recommended_product1"),
+                ProductRecommentationResource(upc="recommended_product2"),
+            ],
+        )
+
+        _, errors = products_to_db(product_resource, fields_to_update=[PRODUCT_UPC])
+        self.assertEqual(len(errors), 0)
+
+        prd = Product.objects.get(upc="harses")
+
+        self.assertEquals(ProductRecommendation.objects.count(), 2)
+        self.assertEquals(prd.recommended_products.count(), 2)
+        self.assertEquals(
+            sorted(list(prd.recommended_products.values_list("upc", flat=True))),
+            sorted(["recommended_product1", "recommended_product2"]),
+        )
 
 
 class ParentChildTest(TestCase):

@@ -85,6 +85,10 @@ class ParentProduct(OscarCatalogue):
     upc: str
 
 
+class ProductRecommentation(OscarCatalogue):
+    upc: str
+
+
 class Product(OscarCatalogue):
     """A product within Django Oscar."""
 
@@ -110,6 +114,8 @@ class Product(OscarCatalogue):
     product_class: Optional[ProductClass] = None
     attributes: Dict[str, Union[Any, None]]
     categories: List[Category]
+
+    recommended_products: List[ProductRecommentation]
 
     date_created: Optional[datetime]
     date_updated: Optional[datetime]
