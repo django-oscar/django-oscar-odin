@@ -14,7 +14,6 @@ from oscar_odin.resources.catalogue import (
     Image as ImageResource,
     ProductClass as ProductClassResource,
     Category as CategoryResource,
-    ProductAttributeValue as ProductAttributeValueResource,
     ParentProduct as ParentProductResource,
 )
 from oscar_odin.exceptions import OscarOdinException
@@ -23,6 +22,9 @@ from oscar_odin.mappings.constants import (
     STOCKRECORD_NUM_IN_STOCK,
     STOCKRECORD_NUM_ALLOCATED,
     PRODUCTIMAGE_ORIGINAL,
+    PRODUCT_TITLE,
+    PRODUCT_DESCRIPTION,
+    PRODUCTCLASS_REQUIRESSHIPPING,
 )
 
 Product = get_model("catalogue", "Product")
@@ -31,18 +33,11 @@ ProductAttribute = get_model("catalogue", "ProductAttribute")
 ProductImage = get_model("catalogue", "ProductImage")
 Category = get_model("catalogue", "Category")
 Partner = get_model("partner", "Partner")
-ProductAttributeValue = get_model("catalogue", "ProductAttributeValue")
 
 
 class SingleProductReverseTest(TestCase):
-    @property
-    def image(self):
-        img = PIL.Image.new(mode="RGB", size=(200, 200))
-        output = io.BytesIO()
-        img.save(output, "jpeg")
-        return output
-
-    def test_create_product_with_related_fields(self):
+    def setUp(self):
+        super().setUp()
         product_class = ProductClass.objects.create(
             name="Klaas", slug="klaas", requires_shipping=True, track_stock=True
         )
@@ -59,12 +54,19 @@ class SingleProductReverseTest(TestCase):
             product_class=product_class,
         )
 
-        product_class = ProductClassResource(slug="klaas", name="Klaas")
-
-        partner = Partner.objects.create(name="klaas")
-
+        Partner.objects.create(name="klaas")
         Category.add_root(name="Hatsie", slug="batsie", is_public=True, code="1")
         Category.add_root(name="henk", slug="klaas", is_public=True, code="2")
+
+    @property
+    def image(self):
+        img = PIL.Image.new(mode="RGB", size=(200, 200))
+        output = io.BytesIO()
+        img.save(output, "jpeg")
+        return output
+
+    def test_create_product_with_related_fields(self):
+        partner = Partner.objects.get(name="klaas")
 
         product_resource = ProductResource(
             upc="1234323-2",
@@ -77,16 +79,18 @@ class SingleProductReverseTest(TestCase):
             availability=2,
             currency="EUR",
             partner=partner,
-            product_class=product_class,
+            product_class=ProductClassResource(slug="klaas"),
             images=[
                 ImageResource(
                     caption="gekke caption",
                     display_order=0,
+                    code="harrie",
                     original=File(self.image, name="harrie.jpg"),
                 ),
                 ImageResource(
                     caption="gekke caption 2",
                     display_order=1,
+                    code="vats",
                     original=File(self.image, name="vats.jpg"),
                 ),
             ],
@@ -94,7 +98,8 @@ class SingleProductReverseTest(TestCase):
             attributes={"henk": "Klaas", "harrie": 1},
         )
 
-        prd = products_to_db(product_resource)
+        _, errors = products_to_db(product_resource)
+        self.assertEqual(len(errors), 0)
 
         prd = Product.objects.get(upc="1234323-2")
 
@@ -115,20 +120,24 @@ class SingleProductReverseTest(TestCase):
 
         product_resource = ProductResource(
             upc="1234323-2",
+            title="asdf2",
+            structure=Product.STANDALONE,
             price=D("21.50"),
             availability=3,
             currency="EUR",
             partner=partner,
-            product_class=product_class,
+            product_class=ProductClassResource(slug="klaas"),
             images=[
                 ImageResource(
                     caption="gekke caption",
                     display_order=0,
+                    code="harriebatsie",
                     original=File(self.image, name="harriebatsie.jpg"),
                 ),
                 ImageResource(
                     caption="gekke caption 2",
                     display_order=1,
+                    code="vatsie",
                     original=File(self.image, name="vatsie.jpg"),
                 ),
             ],
@@ -141,26 +150,23 @@ class SingleProductReverseTest(TestCase):
             STOCKRECORD_NUM_ALLOCATED,
             PRODUCTIMAGE_ORIGINAL,
         ]
-        products_to_db(product_resource, fields_to_update=fields_to_update)
+        _, errors = products_to_db(product_resource, fields_to_update=fields_to_update)
+        self.assertEqual(len(errors), 0)
 
         prd = Product.objects.get(upc="1234323-2")
         self.assertEqual(prd.stockrecords.count(), 1)
         stockrecord = prd.stockrecords.first()
         self.assertEqual(stockrecord.price, D("21.50"))
         self.assertEqual(stockrecord.num_in_stock, 3)
-        self.assertEqual(prd.categories.count(), 2)
+        # Category was not included in fields_to_update
+        self.assertEqual(prd.categories.count(), 1)
+        self.assertFalse(prd.categories.filter(code="1").exists())
 
         self.assertEqual(prd.images.count(), 4)
 
     def test_create_productclass_with_product(self):
-        product_class = ProductClassResource(
-            slug="klaas", name="Klaas", requires_shipping=True, track_stock=True
-        )
-
-        partner = Partner.objects.create(name="klaas")
-
-        Category.add_root(name="Hatsie", slug="batsie", is_public=True, code="1")
-        Category.add_root(name="henk", slug="klaas", is_public=True, code="2")
+        partner = Partner.objects.get(name="klaas")
+        product_class = ProductClassResource(slug="klaas", name="Klaas")
 
         product_resource = ProductResource(
             upc="1234323-2",
@@ -178,18 +184,21 @@ class SingleProductReverseTest(TestCase):
                 ImageResource(
                     caption="gekke caption",
                     display_order=0,
+                    code="harrie",
                     original=File(self.image, name="harrie.jpg"),
                 ),
                 ImageResource(
                     caption="gekke caption 2",
                     display_order=1,
+                    code="vats",
                     original=File(self.image, name="vats.jpg"),
                 ),
             ],
             categories=[CategoryResource(code="2")],
         )
 
-        prd = products_to_db(product_resource)
+        _, errors = products_to_db(product_resource)
+        self.assertEqual(len(errors), 0)
 
         prd = Product.objects.get(upc="1234323-2")
 
@@ -207,29 +216,37 @@ class SingleProductReverseTest(TestCase):
 
         self.assertEqual(prd.images.count(), 2)
 
-    def test_idempotent(self):
-        product_class = ProductClass.objects.create(
-            name="Klaas", slug="klaas", requires_shipping=True, track_stock=True
-        )
-        ProductAttribute.objects.create(
-            name="Henk",
-            code="henk",
-            type=ProductAttribute.TEXT,
-            product_class=product_class,
-        )
-        ProductAttribute.objects.create(
-            name="Harrie",
-            code="harrie",
-            type=ProductAttribute.INTEGER,
-            product_class=product_class,
-        )
-
+    def test_resource_default_value(self):
         product_class = ProductClassResource(slug="klaas", name="Klaas")
+        product_resource = ProductResource(
+            upc="1234",
+            title="bat",
+            slug="asdf",
+            structure=Product.STANDALONE,
+            product_class=product_class,
+            is_discountable=False,
+        )
+        _, errors = products_to_db(product_resource)
+        self.assertEqual(len(errors), 0)
+        prd = Product.objects.get(upc="1234")
+        self.assertEqual(prd.is_discountable, False)
 
-        partner = Partner.objects.create(name="klaas")
+        product_resource = ProductResource(
+            upc="1234",
+            title="bat",
+            slug="asdf",
+            structure=Product.STANDALONE,
+            product_class=product_class,
+        )
+        _, errors = products_to_db(product_resource)
+        self.assertEqual(len(errors), 0)
+        prd.refresh_from_db()
+        # Default value of is_discountable is considered from the ProductResource
+        self.assertEqual(prd.is_discountable, True)
 
-        Category.add_root(name="Hatsie", slug="batsie", is_public=True, code="1")
-        Category.add_root(name="henk", slug="klaas", is_public=True, code="2")
+    def test_idempotent(self):
+        partner = Partner.objects.get(name="klaas")
+        product_class = ProductClassResource(slug="klaas", name="Klaas")
 
         product_resource = ProductResource(
             upc="1234323-2",
@@ -261,7 +278,8 @@ class SingleProductReverseTest(TestCase):
             attributes={"henk": "Klaas", "harrie": 1},
         )
 
-        prd = products_to_db(product_resource)
+        _, errors = products_to_db(product_resource)
+        self.assertEqual(len(errors), 0)
 
         prd = Product.objects.get(upc="1234323-2")
 
@@ -286,7 +304,7 @@ class SingleProductReverseTest(TestCase):
             slug="asdf-asdfasdf2",
             description="description",
             structure=Product.STANDALONE,
-            is_discountable=True,
+            # is_discountable=True,
             price=D("20"),
             availability=2,
             currency="EUR",
@@ -310,7 +328,8 @@ class SingleProductReverseTest(TestCase):
             attributes={"henk": "Klaas", "harrie": 1},
         )
 
-        products_to_db(product_resource)
+        _, errors = products_to_db(product_resource)
+        self.assertEqual(len(errors), 0)
 
         prd = Product.objects.get(upc="1234323-2")
 
@@ -331,6 +350,24 @@ class SingleProductReverseTest(TestCase):
 
 
 class MultipleProductReverseTest(TestCase):
+    def setUp(self):
+        super().setUp()
+        product_class = ProductClass.objects.create(
+            name="Klaas", slug="klaas", requires_shipping=True, track_stock=True
+        )
+        ProductAttribute.objects.create(
+            name="Henk",
+            code="henk",
+            type=ProductAttribute.TEXT,
+            product_class=product_class,
+        )
+        ProductAttribute.objects.create(
+            name="Harrie",
+            code="harrie",
+            type=ProductAttribute.INTEGER,
+            product_class=product_class,
+        )
+
     @property
     def image(self):
         img = PIL.Image.new(mode="RGB", size=(200, 200))
@@ -339,12 +376,7 @@ class MultipleProductReverseTest(TestCase):
         return output
 
     def test_create_simple_product(self):
-        product_class = ProductClass.objects.create(
-            name="Klaas", slug="klaas", requires_shipping=True, track_stock=True
-        )
-        Product.objects.create(upc="1234323asd", title="")
         product_class = ProductClassResource(slug="klaas", name="Klaas")
-
         product_resources = [
             ProductResource(
                 upc="1234323asd",
@@ -366,29 +398,12 @@ class MultipleProductReverseTest(TestCase):
             ),
         ]
 
-        prd = products_to_db(product_resources)
+        _, errors = products_to_db(product_resources)
+        self.assertEqual(len(errors), 0)
 
         self.assertEqual(Product.objects.count(), 2)
 
     def test_create_product_with_related_fields(self):
-        product_class = ProductClass.objects.create(
-            name="Klaas", slug="klaas", requires_shipping=True, track_stock=True
-        )
-        ProductAttribute.objects.create(
-            name="Henk",
-            code="henk",
-            type=ProductAttribute.TEXT,
-            product_class=product_class,
-        )
-        ProductAttribute.objects.create(
-            name="Harrie",
-            code="harrie",
-            type=ProductAttribute.INTEGER,
-            product_class=product_class,
-        )
-
-        product_class = ProductClassResource(slug="klaas", name="Klaas")
-
         product_resources = [
             ProductResource(
                 upc="1234323",
@@ -400,16 +415,18 @@ class MultipleProductReverseTest(TestCase):
                 price=D("20"),
                 availability=2,
                 currency="EUR",
-                product_class=product_class,
+                product_class=ProductClassResource(slug="klaas"),
                 images=[
                     ImageResource(
                         caption="gekke caption",
                         display_order=0,
+                        code="klaas",
                         original=File(self.image, name="klaas.jpg"),
                     ),
                     ImageResource(
                         caption="gekke caption 2",
                         display_order=1,
+                        code="harrie",
                         original=File(self.image, name="harrie.jpg"),
                     ),
                 ],
@@ -426,16 +443,18 @@ class MultipleProductReverseTest(TestCase):
                 availability=2,
                 currency="EUR",
                 partner=Partner.objects.create(name="klaas"),
-                product_class=product_class,
+                product_class=ProductClassResource(slug="klaas"),
                 images=[
                     ImageResource(
                         caption="gekke caption",
                         display_order=0,
+                        code="klass-2",
                         original=File(self.image, name="klaas.jpg"),
                     ),
                     ImageResource(
                         caption="gekke caption 2",
                         display_order=1,
+                        code="harrie-2",
                         original=File(self.image, name="harrie.jpg"),
                     ),
                 ],
@@ -443,7 +462,8 @@ class MultipleProductReverseTest(TestCase):
             ),
         ]
 
-        products_to_db(product_resources)
+        _, errors = products_to_db(product_resources)
+        self.assertEqual(len(errors), 0)
 
         self.assertEqual(ProductImage.objects.all().count(), 4)
         self.assertEqual(ProductClass.objects.all().count(), 1)
@@ -463,25 +483,27 @@ class MultipleProductReverseTest(TestCase):
 
 
 class ParentChildTest(TestCase):
-    def test_parent_childs(self):
+    def setUp(self):
+        super().setUp()
         Category.add_root(name="henk", slug="klaas", is_public=True, code="2")
         ProductClass.objects.create(
             name="Klaas", slug="klaas", requires_shipping=True, track_stock=True
         )
-        product_class = ProductClassResource(slug="klaas")
-        partner = Partner.objects.create(name="klaas")
+        Partner.objects.create(name="klaas")
 
-        prds = ProductResource(
+    def test_parent_childs(self):
+        product_resource = ProductResource(
             upc="1234323-2",
             title="asdf2",
             slug="asdf-asdfasdf2",
             description="description",
             structure=Product.PARENT,
-            product_class=product_class,
+            product_class=ProductClassResource(slug="klaas"),
             categories=[CategoryResource(code="2")],
         )
 
-        products_to_db(prds)
+        _, errors = products_to_db(product_resource)
+        self.assertEqual(len(errors), 0)
 
         prd = Product.objects.get(upc="1234323-2")
 
@@ -500,7 +522,8 @@ class ParentChildTest(TestCase):
             partner=Partner.objects.create(name="klaas"),
         )
 
-        products_to_db(child_product)
+        _, errors = products_to_db(child_product)
+        self.assertEqual(len(errors), 0)
 
         prd = Product.objects.get(upc="1234323-2")
 
@@ -513,24 +536,18 @@ class ParentChildTest(TestCase):
         self.assertEqual(child.parent.pk, prd.pk)
 
     def test_non_existing_parent_childs(self):
-        Category.add_root(name="henk", slug="klaas", is_public=True, code="2")
-        ProductClass.objects.create(
-            name="Klaas", slug="klaas", requires_shipping=True, track_stock=True
-        )
-        product_class = ProductClassResource(slug="klaas")
-        partner = Partner.objects.create(name="klaas")
-
-        prds = ProductResource(
+        product_resource = ProductResource(
             upc="1234323-2",
             title="asdf2",
             slug="asdf-asdfasdf2",
             description="description",
             structure=Product.PARENT,
-            product_class=product_class,
+            product_class=ProductClassResource(slug="klaas"),
             categories=[CategoryResource(code="2")],
         )
 
-        products_to_db(prds)
+        _, errors = products_to_db(product_resource)
+        self.assertEqual(len(errors), 0)
 
         prd = Product.objects.get(upc="1234323-2")
 
@@ -554,6 +571,12 @@ class ParentChildTest(TestCase):
 
 
 class SingleProductErrorHandlingTest(TestCase):
+    def setUp(self):
+        super().setUp()
+        Partner.objects.create(name="klaas")
+        Category.add_root(name="Hatsie", slug="batsie", is_public=True, code="1")
+        Category.add_root(name="henk", slug="klaas", is_public=True, code="2")
+
     @property
     def image(self):
         img = PIL.Image.new(mode="RGB", size=(200, 200))
@@ -565,11 +588,7 @@ class SingleProductErrorHandlingTest(TestCase):
         product_class = ProductClassResource(
             slug="klaas", name="Klaas", requires_shipping=True, track_stock=True
         )
-
-        partner = Partner.objects.create(name="klaas")
-
-        Category.add_root(name="Hatsie", slug="batsie", is_public=True, code="1")
-        Category.add_root(name="henk", slug="klaas", is_public=True, code="2")
+        partner = Partner.objects.get(name="klaas")
 
         # Incorrect data for creating product
         product_resource = ProductResource(
@@ -588,11 +607,13 @@ class SingleProductErrorHandlingTest(TestCase):
                 ImageResource(
                     caption="gekke caption",
                     display_order="top",
+                    code="harrie",
                     original=File(self.image, name="harrie.jpg"),
                 ),
                 ImageResource(
                     caption="gekke caption 2",
                     display_order=1,
+                    code="vats",
                     original=File(self.image, name="vats.jpg"),
                 ),
             ],
@@ -601,8 +622,8 @@ class SingleProductErrorHandlingTest(TestCase):
         _, errors = products_to_db(product_resource)
         self.assertEqual(len(errors), 1)
         self.assertEqual(
-            errors[0].message_dict["display_order"][0],
-            "“top” value must be an integer.",
+            errors[0].message_dict["images"][0]["0"]["display_order"][0],
+            "'top' value must be a integer.",
         )
 
         # Correct Data for creating product
@@ -622,11 +643,13 @@ class SingleProductErrorHandlingTest(TestCase):
                 ImageResource(
                     caption="gekke caption",
                     display_order=0,
+                    code="harrie",
                     original=File(self.image, name="harrie.jpg"),
                 ),
                 ImageResource(
                     caption="gekke caption 2",
                     display_order=1,
+                    code="vats",
                     original=File(self.image, name="vats.jpg"),
                 ),
             ],
@@ -641,9 +664,73 @@ class SingleProductErrorHandlingTest(TestCase):
             title="asdf2",
             slug="asdf-asdfasdf2",
             description="description",
-            structure=Product.STANDALONE,
+            structure="new",
             is_discountable=53,
             price="expensive",
+            availability=2,
+            currency="EUR",
+            partner=partner,
+            product_class=product_class,
+            images=[
+                ImageResource(code="harrie"),
+                ImageResource(
+                    caption="gekke caption 2",
+                    display_order="Alphabet",
+                    code="vats",
+                    original=File(self.image, name="vats.jpg"),
+                ),
+            ],
+            categories=[CategoryResource(code="2")],
+        )
+        _, errors = products_to_db(product_resource)
+
+        self.assertEqual(len(errors), 1)
+        self.assertEqual(
+            errors[0].message_dict["structure"][0],
+            "Value 'new' is not a valid choice.",
+        )
+        self.assertEqual(
+            errors[0].message_dict["is_discountable"][0],
+            "'53' value must be either True or False.",
+        )
+        self.assertEqual(
+            errors[0].message_dict["images"][0]["1"]["display_order"][0],
+            "'Alphabet' value must be a integer.",
+        )
+        self.assertEqual(
+            errors[0].message_dict["price"][0],
+            "'expensive' value must be a decimal.",
+        )
+
+
+class SingleProductFieldsToUpdateTest(TestCase):
+    def setUp(self):
+        super().setUp()
+        ProductClass.objects.create(
+            name="Klaas", slug="klaas", requires_shipping=False, track_stock=True
+        )
+        Partner.objects.create(name="klaas")
+        Category.add_root(name="Hatsie", slug="batsie", is_public=True, code="1")
+        Category.add_root(name="henk", slug="klaas", is_public=True, code="2")
+
+    @property
+    def image(self):
+        img = PIL.Image.new(mode="RGB", size=(200, 200))
+        output = io.BytesIO()
+        img.save(output, "jpeg")
+        return output
+
+    def test_fields_to_update_on_product_operations(self):
+        product_class = ProductClassResource(slug="klaas")
+        partner = Partner.objects.get(name="klaas")
+
+        product_resource = ProductResource(
+            upc="1234323-2",
+            title="asdf2",
+            slug="asdf-asdfasdf2",
+            description="old description",
+            structure=Product.STANDALONE,
+            price=D("20"),
             availability=2,
             currency="EUR",
             partner=partner,
@@ -652,28 +739,126 @@ class SingleProductErrorHandlingTest(TestCase):
                 ImageResource(
                     caption="gekke caption",
                     display_order=0,
+                    code="harrie",
                     original=File(self.image, name="harrie.jpg"),
                 ),
                 ImageResource(
                     caption="gekke caption 2",
-                    display_order="Alphabet",
+                    display_order=1,
+                    code="vats",
                     original=File(self.image, name="vats.jpg"),
                 ),
             ],
             categories=[CategoryResource(code="2")],
         )
         _, errors = products_to_db(product_resource)
+        self.assertEqual(len(errors), 0)
 
-        self.assertEqual(len(errors), 3)
-        self.assertEqual(
-            errors[0].message_dict["is_discountable"][0],
-            "“53” value must be either True or False.",
+        product_resource = ProductResource(
+            upc="1234323-2",
+            title="asdf2",
+            description="updated description",
+            structure=Product.STANDALONE,
+            product_class=product_class,
         )
+        _, errors = products_to_db(product_resource)
+        prd = Product.objects.get(upc="1234323-2")
+        self.assertEqual(len(errors), 1)
         self.assertEqual(
-            errors[1].message_dict["display_order"][0],
-            "“Alphabet” value must be an integer.",
+            errors[0].message_dict["slug"][0],
+            "This field cannot be null.",
         )
+        self.assertEqual(prd.categories.count(), 1)
+        self.assertEqual(prd.images.count(), 2)
+        self.assertEqual(prd.stockrecords.count(), 1)
+
+        product_resource = ProductResource(
+            upc="1234323-2",
+            title="asdf2",
+            description="This description is not updated",
+            structure=Product.STANDALONE,
+            product_class=product_class,
+        )
+        _, errors = products_to_db(product_resource, fields_to_update=[PRODUCT_TITLE])
+        # Slug error doesn't appear because it is not included in fields_to_update
+        self.assertEqual(len(errors), 0)
+        prd.refresh_from_db()
+        # Description is not updated it is not included in fields_to_update
+        self.assertEqual(prd.description, "old description")
+
+        product_resource = ProductResource(
+            upc="1234323-2",
+            title="target",
+            description="This description is updated",
+            structure=Product.STANDALONE,
+            product_class=product_class,
+        )
+        _, errors = products_to_db(
+            product_resource, fields_to_update=[PRODUCT_DESCRIPTION]
+        )
+        self.assertEqual(len(errors), 0)
+        prd.refresh_from_db()
+        # Description is not updated it is not included in fields_to_update
+        self.assertEqual(prd.description, "This description is updated")
+        # Likewise title is also not updated since we did not include
+        # it in fields_to_update.
+        self.assertNotEqual(prd.title, "target")
+
+    def test_product_class_fields_to_update(self):
+        product_resource = ProductResource(
+            upc="1234323-2",
+            title="asdf2",
+            slug="asdf-asdfasdf2",
+            structure=Product.STANDALONE,
+        )
+        _, errors = products_to_db(product_resource)
+        self.assertEqual(len(errors), 1)
         self.assertEqual(
-            errors[2].message_dict["price"][0],
-            "“expensive” value must be a decimal number.",
+            errors[0].message_dict["__all__"][0],
+            "Your product must have a product class.",
         )
+
+        product_resource = ProductResource(
+            upc="1234323-2",
+            title="asdf2",
+            slug="asdf-asdfasdf2",
+            structure=Product.STANDALONE,
+            product_class=ProductClassResource(
+                name="Better", slug="better", requires_shipping=False, track_stock=True
+            ),
+        )
+        _, errors = products_to_db(product_resource)
+        self.assertEqual(len(errors), 0)
+
+        product_resource = ProductResource(
+            upc="1234323-2",
+            title="asdf2",
+            structure=Product.STANDALONE,
+        )
+        _, errors = products_to_db(product_resource, fields_to_update=[PRODUCT_TITLE])
+        # Update fails, removing product_class from product resource produces error
+        self.assertEqual(len(errors), 1)
+        self.assertEqual(
+            errors[0].message_dict["__all__"][0],
+            "Your product must have a product class.",
+        )
+
+        product_resource = ProductResource(
+            upc="1234323-2",
+            title="asdf2",
+            structure=Product.STANDALONE,
+            product_class=ProductClassResource(slug="better", requires_shipping=True),
+        )
+        _, errors = products_to_db(product_resource, fields_to_update=[PRODUCT_TITLE])
+        self.assertEqual(len(errors), 0)
+        prd = Product.objects.get(upc="1234323-2")
+        # Product class is not updated since it wasn't added in fields_to_update
+        self.assertNotEqual(prd.product_class.requires_shipping, True)
+
+        _, errors = products_to_db(
+            product_resource, fields_to_update=[PRODUCTCLASS_REQUIRESSHIPPING]
+        )
+        self.assertEqual(len(errors), 0)
+        prd.refresh_from_db()
+        # Product class is updated as it was added in fields_to_update
+        self.assertEqual(prd.product_class.requires_shipping, True)

@@ -16,9 +16,13 @@ PRODUCT_SLUG = "Product.slug"
 PRODUCT_DESCRIPTION = "Product.description"
 PRODUCT_META_TITLE = "Product.meta_title"
 PRODUCT_META_DESCRIPTION = "Product.meta_description"
-PRODUCT_PRODUCT_CLASS = "Product.product_class"
 PRODUCT_PARENT = "Product.parent"
 PRODUCT_IS_DISCOUNTABLE = "Product.is_discountable"
+
+PRODUCTCLASS_SLUG = "ProductClass.slug"
+PRODUCTCLASS_REQUIRESSHIPPING = "ProductClass.requires_shipping"
+PRODUCTCLASS_TRACKSTOCK = "ProductClass.track_stock"
+PRODUCTCLASS_NAME = "ProductClass.name"
 
 CATEGORY_NAME = "Category.name"
 CATEGORY_CODE = "Category.code"
@@ -51,9 +55,15 @@ ALL_PRODUCT_FIELDS = [
     PRODUCT_DESCRIPTION,
     PRODUCT_META_TITLE,
     PRODUCT_META_DESCRIPTION,
-    PRODUCT_PRODUCT_CLASS,
     PRODUCT_IS_DISCOUNTABLE,
     PRODUCT_PARENT,
+]
+
+ALL_PRODUCTCLASS_FIELDS = [
+    PRODUCTCLASS_SLUG,
+    PRODUCTCLASS_REQUIRESSHIPPING,
+    PRODUCTCLASS_TRACKSTOCK,
+    PRODUCTCLASS_NAME,
 ]
 
 ALL_CATEGORY_FIELDS = [
@@ -85,13 +95,16 @@ ALL_STOCKRECORD_FIELDS = [
 
 
 ALL_CATALOGUE_FIELDS = (
-    ALL_PRODUCT_FIELDS + ALL_PRODUCTIMAGE_FIELDS + ALL_STOCKRECORD_FIELDS
+    ALL_PRODUCT_FIELDS
+    + ALL_PRODUCTIMAGE_FIELDS
+    + ALL_STOCKRECORD_FIELDS
+    + [PRODUCTCLASS_SLUG, CATEGORY_CODE]
 )
 
 MODEL_IDENTIFIERS_MAPPING = {
     Category: ("code",),
     Product: ("upc",),
-    StockRecord: ("product_id",),
+    StockRecord: ("partner_id", "partner_sku"),
     ProductClass: ("slug",),
     ProductImage: ("code",),
     Partner: ("slug",),

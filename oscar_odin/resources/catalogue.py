@@ -1,13 +1,16 @@
 """Resources for Oscar categories."""
-import enum
 from datetime import datetime
 from decimal import Decimal
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Union
 
+from oscar.core.loading import get_model
 import odin
+from odin.fields import StringField
 
 from ..fields import DecimalField
 from ._base import OscarResource
+
+ProductModel = get_model("catalogue", "Product")
 
 
 class OscarCatalogue(OscarResource, abstract=True):
@@ -24,10 +27,10 @@ class Image(OscarCatalogue):
         verbose_name = "Product image"
         verbose_name_plural = "Product images"
 
-    id: int
+    id: Optional[int]
     code: str
-    original: Any
-    caption: str = odin.Options(empty=True)
+    original: Optional[Any]
+    caption: Optional[str] = odin.Options(empty=True)
     display_order: int = odin.Options(
         default=0,
         doc_text=(
@@ -35,50 +38,42 @@ class Image(OscarCatalogue):
             " image for a product"
         ),
     )
-    date_created: datetime
+    date_created: Optional[datetime]
 
 
 class Category(OscarCatalogue):
     """A category within Django Oscar."""
 
-    id: int
+    id: Optional[int]
     code: str
-    name: str
-    slug: str
-    description: str
+    name: Optional[str]
+    slug: Optional[str]
+    description: Optional[str]
     meta_title: Optional[str]
     meta_description: Optional[str]
     image: Optional[str]
-    is_public: bool
-    ancestors_are_public: bool
-    depth: int
-    path: str
+    is_public: Optional[bool]
+    ancestors_are_public: Optional[bool]
+    depth: Optional[int]
+    path: Optional[str]
 
 
 class ProductClass(OscarCatalogue):
     """A product class within Django Oscar."""
 
-    name: str
+    name: Optional[str]
     slug: str
-    requires_shipping: bool
-    track_stock: bool
-
-
-class Structure(str, enum.Enum):
-    """Structure of product."""
-
-    STANDALONE = "standalone"
-    PARENT = "parent"
-    CHILD = "child"
+    requires_shipping: Optional[bool]
+    track_stock: Optional[bool]
 
 
 class StockRecord(OscarCatalogue):
-    id: int
+    id: Optional[int]
     partner_sku: str
-    num_in_stock: int
-    num_allocated: int
+    num_in_stock: Optional[int]
+    num_allocated: Optional[int]
     price: Decimal = DecimalField()
-    currency: str
+    currency: Optional[str]
 
 
 class ProductAttributeValue(OscarCatalogue):
@@ -93,12 +88,12 @@ class ParentProduct(OscarCatalogue):
 class Product(OscarCatalogue):
     """A product within Django Oscar."""
 
-    id: int
+    id: Optional[int]
     upc: Optional[str]
-    structure: Structure
+    structure: str = StringField(choices=ProductModel.STRUCTURE_CHOICES)
     title: str
-    slug: str
-    description: str = ""
+    slug: Optional[str]
+    description: Optional[str] = ""
     meta_title: Optional[str]
     images: List[Image] = odin.Options(empty=True)
     rating: Optional[float]
@@ -107,17 +102,17 @@ class Product(OscarCatalogue):
     parent: Optional[ParentProduct]
 
     # Price information
-    price: Decimal = DecimalField()
-    currency: str
+    price: Decimal = DecimalField(null=True)
+    currency: Optional[str]
     availability: Optional[int]
     partner: Optional[Any]
 
     product_class: Optional[ProductClass] = None
-    attributes: Dict[str, Any]
+    attributes: Dict[str, Union[Any, None]]
     categories: List[Category]
 
-    date_created: datetime
-    date_updated: datetime
+    date_created: Optional[datetime]
+    date_updated: Optional[datetime]
 
     children: Optional[List["Product"]] = odin.ListOf.delayed(
         lambda: Product, null=True

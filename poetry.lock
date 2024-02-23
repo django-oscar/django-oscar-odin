@@ -1798,6 +1798,17 @@ files = [
 ]
 
 [[package]]
+name = "sorl-thumbnail"
+version = "12.10.0"
+description = "Thumbnails for Django"
+optional = true
+python-versions = ">=3.8"
+files = [
+    {file = "sorl-thumbnail-12.10.0.tar.gz", hash = "sha256:de95a49217fdfeced222fa3ceaa01d312ee2f8aad56ba34d6c70f2dee9a84938"},
+    {file = "sorl_thumbnail-12.10.0-py3-none-any.whl", hash = "sha256:733eb2eee392d4a874f88fb3ed6f0572fa9c361b06e0411b83e435ba69c51f52"},
+]
+
+[[package]]
 name = "sqlparse"
 version = "0.4.4"
 description = "A non-validating SQL parser."
@@ -2006,9 +2017,9 @@ testing = ["big-O", "jaraco.functools", "jaraco.itertools", "more-itertools", "p
 
 [extras]
 dev = ["isort", "pre-commit", "ruff"]
-test = ["black", "coverage", "poetry", "pylint", "pylint-django", "responses"]
+test = ["black", "coverage", "poetry", "pylint", "pylint-django", "responses", "sorl-thumbnail"]
 
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.8"
-content-hash = "176698b3afb8ff6e5faba98ad4562bfbccd67f62fe76c1a907ad693a09b32998"
+content-hash = "9785bcde89a1e449044d8351cf067df4a8d24b3f454db2e4157e8695049e12d3"

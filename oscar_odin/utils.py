@@ -6,6 +6,9 @@ import math
 from django.db import connection, connections, reset_queries
 from django.db.models import Q
 
+from odin.exceptions import ValidationError
+from odin.mapping import MappingResult
+
 
 def get_filters(instances, field_names):
     for ui in instances:
@@ -69,3 +72,20 @@ def querycounter(*labels, print_queries=False):
     if print_queries:
         for q in connection.queries:
             print("   ", q)
+
+
+def validate_resources(resources):
+    errors = []
+    if not resources:
+        return
+    if not isinstance(resources, (list, tuple)):
+        if isinstance(resources, MappingResult):
+            resources = resources.items
+        else:
+            resources = [resources]
+    for resource in resources:
+        try:
+            resource.full_clean()
+        except ValidationError as error:
+            errors.append(error)
+    return errors

@@ -6,7 +6,7 @@ from decimal import Decimal
 from typing import Any, Dict, Iterable, List, Optional, Tuple, Union
 
 from django.contrib.auth.models import AbstractUser
-from django.db.models import QuerySet, Model, ManyToManyField, ForeignKey
+from django.db.models import QuerySet
 from django.db.models.fields.files import ImageFieldFile
 from django.http import HttpRequest
 from oscar.apps.partner.strategy import Default as DefaultStrategy
@@ -15,9 +15,9 @@ from oscar.core.loading import get_class, get_model
 from datetime import datetime
 
 from .. import resources
-from ..resources.catalogue import Structure
 from ._common import map_queryset, OscarBaseMapping
 from ._model_mapper import ModelMapping
+from ..utils import validate_resources
 
 from .context import ProductModelMapperContext
 from .constants import ALL_CATALOGUE_FIELDS, MODEL_IDENTIFIERS_MAPPING
@@ -142,11 +142,6 @@ class ProductToResource(OscarBaseMapping):
 
     from_obj = ProductModel
     to_obj = resources.catalogue.Product
-
-    @odin.map_field
-    def structure(self, value: str) -> Structure:
-        """Map structure to enum."""
-        return Structure(value)
 
     @odin.assign_field
     def title(self) -> str:
@@ -296,7 +291,7 @@ class ProductToModel(ModelMapping):
 
     @odin.map_field
     def product_class(self, value) -> ProductClassModel:
-        if not value and self.source.structure == ProductModel.CHILD:
+        if not value or self.source.structure == ProductModel.CHILD:
             return None
 
         return ProductClassToModel.apply(value)
@@ -391,9 +386,11 @@ def product_queryset_to_resources(
 
 
 def products_to_model(
-    products: List[resources.catalogue.Product], product_mapper=ProductToModel
+    products: List[resources.catalogue.Product],
+    product_mapper=ProductToModel,
+    delete_related=False,
 ) -> Tuple[List[ProductModel], Dict]:
-    context = ProductModelMapperContext(ProductModel)
+    context = ProductModelMapperContext(ProductModel, delete_related=delete_related)
 
     result = product_mapper.apply(products, context=context)
 
@@ -408,6 +405,7 @@ def products_to_db(
     fields_to_update=ALL_CATALOGUE_FIELDS,
     identifier_mapping=MODEL_IDENTIFIERS_MAPPING,
     product_mapper=ProductToModel,
+    delete_related=False,
 ) -> Tuple[List[ProductModel], Dict]:
     """Map mulitple products to a model and store them in the database.
 
@@ -415,7 +413,14 @@ def products_to_db(
     After that all the products will be bulk saved.
     At last all related models like images, stockrecords, and related_products can will be saved and set on the product.
     """
-    instances, context = products_to_model(products, product_mapper=product_mapper)
+    errors = validate_resources(products)
+    if errors:
+        return [], errors
+    instances, context = products_to_model(
+        products,
+        product_mapper=product_mapper,
+        delete_related=delete_related,
+    )
 
     products, errors = context.bulk_save(
         instances, fields_to_update, identifier_mapping

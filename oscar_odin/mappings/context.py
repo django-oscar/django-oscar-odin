@@ -2,6 +2,7 @@ from collections import defaultdict
 from operator import attrgetter
 
 from django.db import transaction
+from django.db.models import Q
 from django.core.exceptions import ValidationError
 
 from oscar_odin.utils import in_bulk
@@ -16,16 +17,18 @@ ProductAttributeValue = get_model("catalogue", "ProductAttributeValue")
 def separate_instances_to_create_and_update(Model, instances, identifier_mapping):
     instances_to_create = []
     instances_to_update = []
+    identifiying_keys = []
 
     identifiers = identifier_mapping.get(Model, {})
 
-    if identifiers:
+    if identifiers and instances:
         # pylint: disable=protected-access
         id_mapping = in_bulk(Model._default_manager, instances, identifiers)
 
         get_key_values = attrgetter(*identifiers)
         for instance in instances:
             key = get_key_values(instance)
+            identifiying_keys.append(key)
 
             if not isinstance(key, tuple):
                 key = (key,)
@@ -39,9 +42,9 @@ def separate_instances_to_create_and_update(Model, instances, identifier_mapping
             else:
                 instances_to_create.append(instance)
 
-        return instances_to_create, instances_to_update
+        return instances_to_create, instances_to_update, identifiying_keys
     else:
-        return instances, []
+        return instances, [], []
 
 
 class ModelMapperContext(dict):
@@ -51,10 +54,11 @@ class ModelMapperContext(dict):
     one_to_many_items = None
     attribute_data = None
     identifier_mapping = None
+    instance_keys = None
     Model = None
     errors = None
 
-    def __init__(self, Model, *args, **kwargs):
+    def __init__(self, Model, *args, delete_related=False, **kwargs):
         super().__init__(*args, **kwargs)
         self.foreign_key_items = defaultdict(list)
         self.many_to_many_items = defaultdict(list)
@@ -64,17 +68,22 @@ class ModelMapperContext(dict):
         self.identifier_mapping = defaultdict(tuple)
         self.attribute_data = []
         self.errors = []
+        self.delete_related = delete_related
         self.Model = Model
 
     def __bool__(self):
         return True
 
-    def validate_instances(self, instances, validate_unique=True):
+    def validate_instances(self, instances, validate_unique=True, fields=None):
         validated_instances = []
+        exclude = ()
+        if fields and instances:
+            all_fields = instances[0]._meta.fields
+            exclude = [f.name for f in all_fields if f.name not in fields]
 
         for instance in instances:
             try:
-                instance.full_clean(validate_unique=validate_unique)
+                instance.full_clean(validate_unique=validate_unique, exclude=exclude)
             except ValidationError as e:
                 self.errors.append(e)
             else:
@@ -109,6 +118,7 @@ class ModelMapperContext(dict):
     def get_create_and_update_relations(self, related_instance_items):
         to_create = defaultdict(list)
         to_update = defaultdict(list)
+        identities = defaultdict(list)
 
         for relation in related_instance_items.keys():
             all_instances = []
@@ -118,14 +128,16 @@ class ModelMapperContext(dict):
             (
                 instances_to_create,
                 instances_to_update,
+                identifying_keys,
             ) = separate_instances_to_create_and_update(
                 relation.related_model, all_instances, self.identifier_mapping
             )
 
             to_create[relation].extend(instances_to_create)
             to_update[relation].extend(instances_to_update)
+            identities[relation].extend(identifying_keys)
 
-        return (to_create, to_update)
+        return (to_create, to_update, identities)
 
     @property
     def get_all_m2m_relations(self):
@@ -144,6 +156,7 @@ class ModelMapperContext(dict):
             (
                 instances_to_create,
                 instances_to_update,
+                _,
             ) = separate_instances_to_create_and_update(
                 relation.related_model, instances, self.identifier_mapping
             )
@@ -167,16 +180,25 @@ class ModelMapperContext(dict):
             field.related_model.objects.bulk_create(validated_fk_instances)
 
         for field, instances in instances_to_update.items():
-            Model = field.related_model
-            fields = self.get_fields_to_update(Model)
-            if fields is not None:
-                validated_instances_to_update = self.validate_instances(instances)
-                Model.objects.bulk_update(validated_instances_to_update, fields=fields)
+            # We don't update parent details. If we want this then we will have to
+            # provide other product fields in the ParentProductResource too along with
+            # the upc, which is not useful in most cases.
+            if not field.name == "parent":
+                Model = field.related_model
+                fields = self.get_fields_to_update(Model)
+                if fields is not None:
+                    validated_instances_to_update = self.validate_instances(
+                        instances, fields=fields
+                    )
+                    Model.objects.bulk_update(
+                        validated_instances_to_update, fields=fields
+                    )
 
     def bulk_update_or_create_instances(self, instances):
         (
             instances_to_create,
             instances_to_update,
+            self.instance_keys,
         ) = separate_instances_to_create_and_update(
             self.Model, instances, self.identifier_mapping
         )
@@ -194,7 +216,9 @@ class ModelMapperContext(dict):
 
         fields = self.get_fields_to_update(self.Model)
         if fields is not None:
-            validated_instances_to_update = self.validate_instances(instances_to_update)
+            validated_instances_to_update = self.validate_instances(
+                instances_to_update, fields=fields
+            )
             for instance in validated_instances_to_update:
                 # This should be removed once support for django 3.2 is dropped
                 # pylint: disable=protected-access
@@ -206,68 +230,122 @@ class ModelMapperContext(dict):
             for instance in instances:
                 setattr(instance, relation.field.name, product)
 
-        instances_to_create, instances_to_update = self.get_o2m_relations
+        instances_to_create, instances_to_update, identities = self.get_o2m_relations
 
         for relation, instances in instances_to_create.items():
-            validated_instances_to_create = self.validate_instances(instances)
-            relation.related_model.objects.bulk_create(validated_instances_to_create)
+            fields = self.get_fields_to_update(relation.related_model)
+            if fields is not None:
+                validated_instances_to_create = self.validate_instances(instances)
+                relation.related_model.objects.bulk_create(
+                    validated_instances_to_create
+                )
 
         for relation, instances in instances_to_update.items():
             fields = self.get_fields_to_update(relation.related_model)
             if fields is not None:
-                validated_instances_to_update = self.validate_instances(instances)
+                validated_instances_to_update = self.validate_instances(
+                    instances, fields=fields
+                )
                 relation.related_model.objects.bulk_update(
                     validated_instances_to_update, fields=fields
                 )
 
+        if self.delete_related:
+            for relation, keys in identities.items():
+                instance_identifier = self.identifier_mapping.get(
+                    relation.remote_field.related_model
+                )[0]
+                fields = self.get_fields_to_update(relation.related_model)
+                if fields is not None:
+                    conditions = Q()
+                    identifiers = self.identifier_mapping[relation.related_model]
+                    for key in keys:
+                        if isinstance(key, (list, tuple)):
+                            conditions |= Q(**dict(list(zip(identifiers, key))))
+                        else:
+                            conditions |= Q(**{f"{identifiers[0]}": key})
+                    field_name = relation.remote_field.attname.replace(
+                        "_", "__"
+                    ).replace("id", instance_identifier)
+                    # Delete all related one_to_many instances where product is in the
+                    # given list of resources and excluding any instances present in
+                    # those resources
+                    relation.related_model.objects.filter(
+                        **{f"{field_name}__in": self.instance_keys}
+                    ).exclude(conditions).delete()
+
     def bulk_update_or_create_many_to_many(self):
-        m2m_to_create, m2m_to_update = self.get_all_m2m_relations
+        m2m_to_create, m2m_to_update, _ = self.get_all_m2m_relations
 
         # Create many to many's
         for relation, instances in m2m_to_create.items():
-            validated_m2m_instances = self.validate_instances(instances)
-            relation.related_model.objects.bulk_create(validated_m2m_instances)
+            fields = self.get_fields_to_update(relation.related_model)
+            if fields is not None:
+                validated_m2m_instances = self.validate_instances(instances)
+                relation.related_model.objects.bulk_create(validated_m2m_instances)
 
         # Update many to many's
         for relation, instances in m2m_to_update.items():
             fields = self.get_fields_to_update(relation.related_model)
             if fields is not None:
-                validated_instances_to_update = self.validate_instances(instances)
+                validated_instances_to_update = self.validate_instances(
+                    instances, fields=fields
+                )
                 relation.related_model.objects.bulk_update(
                     validated_instances_to_update, fields=fields
                 )
 
         for relation, values in self.many_to_many_items.items():
-            Through = getattr(self.Model, relation.name).through
+            fields = self.get_fields_to_update(relation.related_model)
+            if fields is not None:
+                Through = getattr(self.Model, relation.name).through
 
-            # Create all through models that are needed for the products and many to many
-            throughs = defaultdict(Through)
-            for product, instances in values:
-                for instance in instances:
-                    throughs[(product.pk, instance.pk)] = Through(
-                        **{
-                            relation.m2m_field_name(): product,
-                            relation.m2m_reverse_field_name(): instance,
-                        }
+                # Create all through models that are needed for the products and
+                # many to many
+                throughs = defaultdict(Through)
+                to_delete_throughs_product_ids = []
+                for product, instances in values:
+                    if not instances:
+                        # Delete throughs if no instances are passed for the field
+                        to_delete_throughs_product_ids.append(product.id)
+                    for instance in instances:
+                        throughs[(product.pk, instance.pk)] = Through(
+                            **{
+                                relation.m2m_field_name(): product,
+                                relation.m2m_reverse_field_name(): instance,
+                            }
+                        )
+
+                # Delete throughs if no instances are passed for the field
+                if self.delete_related:
+                    Through.objects.filter(
+                        product_id__in=to_delete_throughs_product_ids
+                    ).all().delete()
+
+                if throughs:
+                    # Bulk query the through models to see if some already exist
+                    bulk_troughs = in_bulk(
+                        Through.objects,
+                        instances=list(throughs.values()),
+                        field_names=(
+                            relation.m2m_field_name(),
+                            relation.m2m_reverse_field_name(),
+                        ),
                     )
 
-            # Bulk query the through models to see if some already exist
-            bulk_troughs = in_bulk(
-                Through.objects,
-                instances=list(throughs.values()),
-                field_names=(
-                    relation.m2m_field_name(),
-                    relation.m2m_reverse_field_name(),
-                ),
-            )
+                    # Remove existing through models
+                    for b in bulk_troughs.keys():
+                        if b in throughs:
+                            throughs.pop(b)
 
-            # Remove existing through models
-            for b in bulk_troughs.keys():
-                if b in throughs:
-                    throughs.pop(b)
+                    # Delete remaining non-existing through models
+                    if self.delete_related:
+                        Through.objects.filter(
+                            product_id__in=[item[0] for item in bulk_troughs.keys()]
+                        ).exclude(id__in=bulk_troughs.values()).delete()
 
-            # Save only new through models
-            Through.objects.bulk_create(throughs.values())
+                    # Save only new through models
+                    Through.objects.bulk_create(throughs.values())
 
     def bulk_save(self, instances, fields_to_update, identifier_mapping):
         self.fields_to_update = fields_to_update
@@ -331,7 +409,7 @@ class ProductModelMapperContext(ModelMapperContext):
                 fields_to_be_updated.update(update_fields)
 
         # now save all the attributes in bulk
-        if attributes_to_delete:
+        if attributes_to_delete and self.delete_related:
             ProductAttributeValue.objects.filter(pk__in=attributes_to_delete).delete()
         if attributes_to_update:
             validated_attributes_to_update = self.validate_instances(
