@@ -182,18 +182,14 @@ class ModelMapperContext(dict):
             field.related_model.objects.bulk_create(validated_fk_instances)
 
         for field, instances in instances_to_update.items():
-            # We don't update parent details. If we want this then we will have to
-            # provide other product fields in the ParentProductResource too along with
-            # the upc, which is not useful in most cases.
-            if not field.name == "parent":
-                Model = field.related_model
+            Model = field.related_model
+            if self.update_related_models_same_type or Model != self.Model:
                 fields = self.get_fields_to_update(Model)
                 if fields is not None:
-                    if self.update_related_models_same_type or Model != self.Model:
-                        instances_to_update = self.validate_instances(
-                            instances, fields=fields
-                        )
-                        Model.objects.bulk_update(instances_to_update, fields=fields)
+                    instances_to_update = self.validate_instances(
+                        instances, fields=fields
+                    )
+                    Model.objects.bulk_update(instances_to_update, fields=fields)
 
     def bulk_update_or_create_instances(self, instances):
         (
@@ -234,22 +230,22 @@ class ModelMapperContext(dict):
         instances_to_create, instances_to_update, identities = self.get_o2m_relations
 
         for relation, instances_to_create in instances_to_create.items():
-            fields = self.get_fields_to_update(relation.related_model)
-            if fields is not None:
-                if (
-                    self.update_related_models_same_type
-                    or relation.related_model != self.Model
-                ):
+            if (
+                self.update_related_models_same_type
+                or relation.related_model != self.Model
+            ):
+                fields = self.get_fields_to_update(relation.related_model)
+                if fields is not None:
                     instances_to_create = self.validate_instances(instances_to_create)
                     relation.related_model.objects.bulk_create(instances_to_create)
 
         for relation, instances_to_update in instances_to_update.items():
-            fields = self.get_fields_to_update(relation.related_model)
-            if fields is not None:
-                if (
-                    self.update_related_models_same_type
-                    or relation.related_model != self.Model
-                ):
+            if (
+                self.update_related_models_same_type
+                or relation.related_model != self.Model
+            ):
+                fields = self.get_fields_to_update(relation.related_model)
+                if fields is not None:
                     instances_to_update = self.validate_instances(
                         instances_to_update, fields=fields
                     )
@@ -286,23 +282,23 @@ class ModelMapperContext(dict):
 
         # Create many to many's
         for relation, instances_to_create in m2m_to_create.items():
-            fields = self.get_fields_to_update(relation.related_model)
-            if fields is not None:
-                if (
-                    self.update_related_models_same_type
-                    or relation.related_model != self.Model
-                ):
+            if (
+                self.update_related_models_same_type
+                or relation.related_model != self.Model
+            ):
+                fields = self.get_fields_to_update(relation.related_model)
+                if fields is not None:
                     instances_to_create = self.validate_instances(instances_to_create)
                     relation.related_model.objects.bulk_create(instances_to_create)
 
         # Update many to many's
         for relation, instances_to_update in m2m_to_update.items():
-            fields = self.get_fields_to_update(relation.related_model)
-            if fields is not None:
-                if (
-                    self.update_related_models_same_type
-                    or relation.related_model != self.Model
-                ):
+            if (
+                self.update_related_models_same_type
+                or relation.related_model != self.Model
+            ):
+                fields = self.get_fields_to_update(relation.related_model)
+                if fields is not None:
                     instances_to_update = self.validate_instances(
                         instances_to_update, fields=fields
                     )
