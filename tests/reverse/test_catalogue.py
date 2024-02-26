@@ -541,6 +541,37 @@ class ProductRecommendationTest(TestCase):
             sorted(["recommended_product1", "recommended_product2"]),
         )
 
+    def test_recommendation_non_existing(self):
+        product_resource = [
+            ProductResource(
+                upc="recommended_product1",
+                title="asdf2",
+                slug="asdf-asdfasdf2",
+                description="description",
+                structure=Product.STANDALONE,
+                product_class=ProductClassResource(slug="klaas"),
+            ),
+        ]
+
+        _, errors = products_to_db(product_resource)
+        self.assertEqual(len(errors), 0)
+
+        product_resource = ProductResource(
+            upc="harses",
+            title="asdf2",
+            slug="asdf-asdfas23df2",
+            description="description",
+            structure=Product.STANDALONE,
+            product_class=ProductClassResource(slug="klaas"),
+            recommended_products=[
+                ProductRecommentationResource(upc="recommended_product1"),
+                ProductRecommentationResource(upc="recommended_product2"),
+            ],
+        )
+
+        with self.assertRaises(OscarOdinException):
+            products_to_db(product_resource)
+
 
 class ParentChildTest(TestCase):
     def setUp(self):

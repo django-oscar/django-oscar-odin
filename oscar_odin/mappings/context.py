@@ -363,8 +363,14 @@ class ModelMapperContext(dict):
                             }
                         ).exclude(id__in=bulk_troughs.values()).delete()
 
-                    # Save only new through models
-                    Through.objects.bulk_create(throughs.values())
+                    try:
+                        # Save only new through models
+                        Through.objects.bulk_create(throughs.values())
+                    except ValueError as e:
+                        raise OscarOdinException(
+                            "Failed creating Trough models for %s. Maybe the related model does NOT exist?"
+                            % relation.name
+                        ) from e
 
     def bulk_save(self, instances, fields_to_update, identifier_mapping):
         self.fields_to_update = fields_to_update
