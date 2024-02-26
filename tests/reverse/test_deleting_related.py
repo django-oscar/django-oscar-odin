@@ -14,6 +14,7 @@ from oscar_odin.resources.catalogue import (
     Image as ImageResource,
     ProductClass as ProductClassResource,
     Category as CategoryResource,
+    ProductRecommentation as ProductRecommentationResource,
 )
 from oscar_odin.mappings.constants import (
     CATEGORY_CODE,
@@ -247,6 +248,8 @@ class DeleteRelatedModelReverseTest(TestCase):
 
     def test_deleting_all_related_models(self):
         partner = Partner.objects.get(name="klaas")
+        
+        Product.objects.create(upc="recommended_product1")
 
         product_resource = ProductResource(
             upc="1234323-2",
@@ -274,6 +277,9 @@ class DeleteRelatedModelReverseTest(TestCase):
                     original=File(self.image, name="vats.jpg"),
                 ),
             ],
+            recommended_products=[
+                ProductRecommentationResource(upc="recommended_product1"),
+            ],
             categories=[CategoryResource(code="1"), CategoryResource(code="2")],
             attributes={"henk": "Klaas", "harrie": 1},
         )
@@ -286,6 +292,7 @@ class DeleteRelatedModelReverseTest(TestCase):
         self.assertEqual(prd.stockrecords.count(), 1)
         self.assertEqual(prd.categories.count(), 2)
         self.assertEqual(prd.attribute_values.count(), 2)
+        self.assertEqual(prd.recommended_products.count(), 1)
 
         product_resource = ProductResource(
             upc="1234323-2",
@@ -303,6 +310,7 @@ class DeleteRelatedModelReverseTest(TestCase):
         self.assertEqual(prd.stockrecords.count(), 0)
         self.assertEqual(prd.categories.count(), 0)
         self.assertEqual(prd.attribute_values.count(), 0)
+        self.assertEqual(prd.recommended_products.count(), 0)
 
     def test_partial_deletion_of_one_to_many_related_models(self):
         partner = Partner.objects.get(name="klaas")
