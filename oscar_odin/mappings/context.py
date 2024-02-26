@@ -58,6 +58,8 @@ class ModelMapperContext(dict):
     Model = None
     errors = None
 
+    update_related_models_same_type = True
+
     def __init__(self, Model, *args, delete_related=False, **kwargs):
         super().__init__(*args, **kwargs)
         self.foreign_key_items = defaultdict(list)
@@ -180,19 +182,14 @@ class ModelMapperContext(dict):
             field.related_model.objects.bulk_create(validated_fk_instances)
 
         for field, instances in instances_to_update.items():
-            # We don't update parent details. If we want this then we will have to
-            # provide other product fields in the ParentProductResource too along with
-            # the upc, which is not useful in most cases.
-            if not field.name == "parent":
-                Model = field.related_model
+            Model = field.related_model
+            if self.update_related_models_same_type or Model != self.Model:
                 fields = self.get_fields_to_update(Model)
                 if fields is not None:
-                    validated_instances_to_update = self.validate_instances(
+                    instances_to_update = self.validate_instances(
                         instances, fields=fields
                     )
-                    Model.objects.bulk_update(
-                        validated_instances_to_update, fields=fields
-                    )
+                    Model.objects.bulk_update(instances_to_update, fields=fields)
 
     def bulk_update_or_create_instances(self, instances):
         (
@@ -232,23 +229,29 @@ class ModelMapperContext(dict):
 
         instances_to_create, instances_to_update, identities = self.get_o2m_relations
 
-        for relation, instances in instances_to_create.items():
-            fields = self.get_fields_to_update(relation.related_model)
-            if fields is not None:
-                validated_instances_to_create = self.validate_instances(instances)
-                relation.related_model.objects.bulk_create(
-                    validated_instances_to_create
-                )
+        for relation, instances_to_create in instances_to_create.items():
+            if (
+                self.update_related_models_same_type
+                or relation.related_model != self.Model
+            ):
+                fields = self.get_fields_to_update(relation.related_model)
+                if fields is not None:
+                    instances_to_create = self.validate_instances(instances_to_create)
+                    relation.related_model.objects.bulk_create(instances_to_create)
 
-        for relation, instances in instances_to_update.items():
-            fields = self.get_fields_to_update(relation.related_model)
-            if fields is not None:
-                validated_instances_to_update = self.validate_instances(
-                    instances, fields=fields
-                )
-                relation.related_model.objects.bulk_update(
-                    validated_instances_to_update, fields=fields
-                )
+        for relation, instances_to_update in instances_to_update.items():
+            if (
+                self.update_related_models_same_type
+                or relation.related_model != self.Model
+            ):
+                fields = self.get_fields_to_update(relation.related_model)
+                if fields is not None:
+                    instances_to_update = self.validate_instances(
+                        instances_to_update, fields=fields
+                    )
+                    relation.related_model.objects.bulk_update(
+                        instances_to_update, fields=fields
+                    )
 
         if self.delete_related:
             for relation, keys in identities.items():
@@ -278,22 +281,30 @@ class ModelMapperContext(dict):
         m2m_to_create, m2m_to_update, _ = self.get_all_m2m_relations
 
         # Create many to many's
-        for relation, instances in m2m_to_create.items():
-            fields = self.get_fields_to_update(relation.related_model)
-            if fields is not None:
-                validated_m2m_instances = self.validate_instances(instances)
-                relation.related_model.objects.bulk_create(validated_m2m_instances)
+        for relation, instances_to_create in m2m_to_create.items():
+            if (
+                self.update_related_models_same_type
+                or relation.related_model != self.Model
+            ):
+                fields = self.get_fields_to_update(relation.related_model)
+                if fields is not None:
+                    instances_to_create = self.validate_instances(instances_to_create)
+                    relation.related_model.objects.bulk_create(instances_to_create)
 
         # Update many to many's
-        for relation, instances in m2m_to_update.items():
-            fields = self.get_fields_to_update(relation.related_model)
-            if fields is not None:
-                validated_instances_to_update = self.validate_instances(
-                    instances, fields=fields
-                )
-                relation.related_model.objects.bulk_update(
-                    validated_instances_to_update, fields=fields
-                )
+        for relation, instances_to_update in m2m_to_update.items():
+            if (
+                self.update_related_models_same_type
+                or relation.related_model != self.Model
+            ):
+                fields = self.get_fields_to_update(relation.related_model)
+                if fields is not None:
+                    instances_to_update = self.validate_instances(
+                        instances_to_update, fields=fields
+                    )
+                    relation.related_model.objects.bulk_update(
+                        instances_to_update, fields=fields
+                    )
 
         for relation, values in self.many_to_many_items.items():
             fields = self.get_fields_to_update(relation.related_model)
@@ -319,7 +330,10 @@ class ModelMapperContext(dict):
                 # Delete throughs if no instances are passed for the field
                 if self.delete_related:
                     Through.objects.filter(
-                        product_id__in=to_delete_throughs_product_ids
+                        **{
+                            "%s_id__in"
+                            % relation.m2m_field_name(): to_delete_throughs_product_ids
+                        }
                     ).all().delete()
 
                 if throughs:
@@ -341,11 +355,22 @@ class ModelMapperContext(dict):
                     # Delete remaining non-existing through models
                     if self.delete_related:
                         Through.objects.filter(
-                            product_id__in=[item[0] for item in bulk_troughs.keys()]
+                            **{
+                                "%s_id__in"
+                                % relation.m2m_field_name(): [
+                                    item[0] for item in bulk_troughs.keys()
+                                ]
+                            }
                         ).exclude(id__in=bulk_troughs.values()).delete()
 
-                    # Save only new through models
-                    Through.objects.bulk_create(throughs.values())
+                    try:
+                        # Save only new through models
+                        Through.objects.bulk_create(throughs.values())
+                    except ValueError as e:
+                        raise OscarOdinException(
+                            "Failed creating Trough models for %s. Maybe the related model does NOT exist?"
+                            % relation.name
+                        ) from e
 
     def bulk_save(self, instances, fields_to_update, identifier_mapping):
         self.fields_to_update = fields_to_update
@@ -364,6 +389,8 @@ class ModelMapperContext(dict):
 
 
 class ProductModelMapperContext(ModelMapperContext):
+    update_related_models_same_type = False
+
     @property
     def get_fk_relations(self):
         to_create, to_update = super().get_fk_relations

@@ -289,12 +289,24 @@ class ProductToModel(ModelMapping):
 
         return []
 
+    @odin.map_list_field
+    def recommended_products(self, values):
+        if values:
+            return RecommendedProductToModel.apply(values)
+
+        return []
+
     @odin.map_field
     def product_class(self, value) -> ProductClassModel:
         if not value or self.source.structure == ProductModel.CHILD:
             return None
 
         return ProductClassToModel.apply(value)
+
+
+class RecommendedProductToModel(OscarBaseMapping):
+    from_obj = resources.catalogue.ProductRecommentation
+    to_obj = ProductModel
 
 
 class ParentToModel(OscarBaseMapping):
