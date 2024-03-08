@@ -21,10 +21,10 @@ install: fail-if-no-virtualenv
 	pip install .[test]
 
 migrate:
-	manage.py migrate --no-input
+	./manage.py migrate --no-input
 
 collectstatic:
-	manage.py collectstatic --no-input
+	./manage.py collectstatic --no-input
 
 lint: fail-if-no-virtualenv
 	black --check oscar_odin/
@@ -32,7 +32,7 @@ lint: fail-if-no-virtualenv
 
 test: fail-if-no-virtualenv
 	pip install .[test]
-	@python3 manage.py test tests/
+	@python3 ./manage.py test tests/
 
 black:
 	@black oscar_odin/

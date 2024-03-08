@@ -1,0 +1,100 @@
+[
+{
+    "model": "partner.stockrecord",
+    "pk": 223,
+    "fields": {
+        "product": 239,
+        "partner": 3,
+        "partner_sku": "duur-boek",
+        "price_currency": "EUR",
+        "price": "34.99",
+        "num_allocated": 1,
+        "low_stock_threshold": null,
+        "date_created": "2024-03-07T10:32:55.724Z",
+        "date_updated": "2024-03-07T10:32:55.724Z",
+        "num_in_stock": 10000
+    }
+},
+{
+    "model": "partner.stockrecord",
+    "pk": 224,
+    "fields": {
+        "product": 238,
+        "partner": 3,
+        "partner_sku": "goedkoop-boek",
+        "price_currency": "EUR",
+        "price": "14.99",
+        "num_allocated": 1,
+        "low_stock_threshold": null,
+        "date_created": "2024-03-07T10:33:26.422Z",
+        "date_updated": "2024-03-07T10:33:26.422Z",
+        "num_in_stock": 100000
+    }
+},
+{
+    "model": "partner.stockrecord",
+    "pk": 225,
+    "fields": {
+        "product": 237,
+        "partner": 2,
+        "partner_sku": "horloge",
+        "price_currency": "EUR",
+        "price": "349.99",
+        "num_allocated": 1,
+        "low_stock_threshold": null,
+        "date_created": "2024-03-07T10:35:03.418Z",
+        "date_updated": "2024-03-07T10:35:03.418Z",
+        "num_in_stock": 1000
+    }
+},
+{
+    "model": "partner.stockrecord",
+    "pk": 226,
+    "fields": {
+        "product": 240,
+        "partner": 2,
+        "partner_sku": "normale-schoen",
+        "price_currency": "EUR",
+        "price": "69.99",
+        "num_allocated": 1,
+        "low_stock_threshold": null,
+        "date_created": "2024-03-07T10:54:41.689Z",
+        "date_updated": "2024-03-07T10:54:41.689Z",
+        "num_in_stock": 100000
+    }
+},
+{
+    "model": "partner.stockrecord",
+    "pk": 227,
+    "fields": {
+        "product": 241,
+        "partner": 2,
+        "partner_sku": "kleine-tas",
+        "price_currency": "EUR",
+        "price": "39.99",
+        "num_allocated": 1,
+        "low_stock_threshold": null,
+        "date_created": "2024-03-07T10:57:28.988Z",
+        "date_updated": "2024-03-07T10:57:28.988Z",
+        "num_in_stock": 9999
+    }
+},
+{
+    "model": "partner.partner",
+    "pk": 2,
+    "fields": {
+        "code": "clothing-partner",
+        "name": "Clothing partner",
+        "users": []
+    }
+},
+{
+    "model": "partner.partner",
+    "pk": 3,
+    "fields": {
+        "code": "book-partner",
+        "name": "Book partner",
+        "users": []
+    }
+}
+]

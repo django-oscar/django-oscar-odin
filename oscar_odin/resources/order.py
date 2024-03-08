@@ -124,9 +124,26 @@ class DiscountCategory(str, Enum):
     DEFERRED = "Deferred"
 
 
+class DiscountLine(OscarOrder):
+    """Line of a discount"""
+
+    line: Line
+    order_discount_id: int
+    is_incl_tax: bool
+    amount: Decimal = DecimalField()
+
+
+class DiscountPerTaxCodeResource(OscarOrder):
+    """Total discount for each tax code in a discount"""
+
+    amount: Decimal = DecimalField()
+    tax_code: str
+
+
 class Discount(OscarOrder):
     """A discount against an order."""
 
+    id: int
     category: DiscountCategory
     offer_id: Optional[int]
     offer_name: Optional[str]
@@ -135,6 +152,12 @@ class Discount(OscarOrder):
     frequency: Optional[int]
     amount: Decimal = DecimalField()
     message: str = odin.Options(empty=True)
+    discount_lines: List[DiscountLine]
+    is_basket_discount: bool
+    is_shipping_discount: bool
+    is_post_order_action: bool
+    description: str
+    discount_lines_per_tax_code: DiscountPerTaxCodeResource
 
 
 class Surcharge(OscarOrder):
