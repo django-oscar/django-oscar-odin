@@ -1,0 +1,293 @@
+[
+{
+    "model": "catalogue.product",
+    "pk": 237,
+    "fields": {
+        "structure": "standalone",
+        "is_public": true,
+        "upc": "horloge",
+        "parent": null,
+        "title": "Horloge",
+        "slug": "horloge",
+        "description": "",
+        "meta_title": null,
+        "meta_description": "",
+        "product_class": 4,
+        "rating": null,
+        "date_created": "2024-03-07T10:31:30.494Z",
+        "date_updated": "2024-03-07T10:51:10.411Z",
+        "is_discountable": true
+    }
+},
+{
+    "model": "catalogue.product",
+    "pk": 238,
+    "fields": {
+        "structure": "standalone",
+        "is_public": true,
+        "upc": "goedkoop-boek",
+        "parent": null,
+        "title": "Goedkoop boek",
+        "slug": "goedkoop-boek",
+        "description": "",
+        "meta_title": null,
+        "meta_description": "",
+        "product_class": 2,
+        "rating": null,
+        "date_created": "2024-03-07T10:32:02.006Z",
+        "date_updated": "2024-03-07T10:33:26.418Z",
+        "is_discountable": true
+    }
+},
+{
+    "model": "catalogue.product",
+    "pk": 239,
+    "fields": {
+        "structure": "standalone",
+        "is_public": true,
+        "upc": "duur-boek",
+        "parent": null,
+        "title": "Duur boek",
+        "slug": "duur-boek",
+        "description": "",
+        "meta_title": null,
+        "meta_description": "",
+        "product_class": 2,
+        "rating": null,
+        "date_created": "2024-03-07T10:32:14.994Z",
+        "date_updated": "2024-03-07T10:33:59.836Z",
+        "is_discountable": true
+    }
+},
+{
+    "model": "catalogue.product",
+    "pk": 240,
+    "fields": {
+        "structure": "standalone",
+        "is_public": true,
+        "upc": "normale-schoen",
+        "parent": null,
+        "title": "Normale Schoen",
+        "slug": "normale-schoen",
+        "description": "",
+        "meta_title": null,
+        "meta_description": "",
+        "product_class": 5,
+        "rating": null,
+        "date_created": "2024-03-07T10:54:41.677Z",
+        "date_updated": "2024-03-07T10:54:48.878Z",
+        "is_discountable": true
+    }
+},
+{
+    "model": "catalogue.product",
+    "pk": 241,
+    "fields": {
+        "structure": "standalone",
+        "is_public": true,
+        "upc": "kleine-tas",
+        "parent": null,
+        "title": "Kleine Tas",
+        "slug": "kleine-tas",
+        "description": "",
+        "meta_title": null,
+        "meta_description": "",
+        "product_class": 3,
+        "rating": null,
+        "date_created": "2024-03-07T10:57:28.973Z",
+        "date_updated": "2024-03-07T10:57:28.973Z",
+        "is_discountable": true
+    }
+},
+{
+    "model": "catalogue.productclass",
+    "pk": 2,
+    "fields": {
+        "name": "Book",
+        "requires_shipping": true,
+        "track_stock": true,
+        "slug": "book",
+        "options": []
+    }
+},
+{
+    "model": "catalogue.productclass",
+    "pk": 3,
+    "fields": {
+        "name": "Tassen",
+        "requires_shipping": true,
+        "track_stock": true,
+        "slug": "tassen",
+        "options": []
+    }
+},
+{
+    "model": "catalogue.productclass",
+    "pk": 4,
+    "fields": {
+        "name": "Accessoires",
+        "requires_shipping": true,
+        "track_stock": true,
+        "slug": "accessoires",
+        "options": []
+    }
+},
+{
+    "model": "catalogue.productclass",
+    "pk": 5,
+    "fields": {
+        "name": "Schoenen",
+        "requires_shipping": true,
+        "track_stock": true,
+        "slug": "schoenen",
+        "options": []
+    }
+},
+{
+    "model": "catalogue.category",
+    "pk": 1,
+    "fields": {
+        "path": "0001",
+        "depth": 1,
+        "numchild": 0,
+        "name": "Kleding",
+        "code": "",
+        "description": "",
+        "meta_title": null,
+        "meta_description": null,
+        "image": "",
+        "slug": "clothing",
+        "is_public": true,
+        "ancestors_are_public": true
+    }
+},
+{
+    "model": "catalogue.category",
+    "pk": 2,
+    "fields": {
+        "path": "0002",
+        "depth": 1,
+        "numchild": 0,
+        "name": "Boeken",
+        "code": "",
+        "description": "",
+        "meta_title": null,
+        "meta_description": null,
+        "image": "",
+        "slug": "books",
+        "is_public": true,
+        "ancestors_are_public": true
+    }
+},
+{
+    "model": "catalogue.category",
+    "pk": 8,
+    "fields": {
+        "path": "0003",
+        "depth": 1,
+        "numchild": 0,
+        "name": "Tassen",
+        "code": "",
+        "description": "",
+        "meta_title": null,
+        "meta_description": null,
+        "image": "",
+        "slug": "tassen",
+        "is_public": true,
+        "ancestors_are_public": true
+    }
+},
+{
+    "model": "catalogue.category",
+    "pk": 9,
+    "fields": {
+        "path": "0004",
+        "depth": 1,
+        "numchild": 0,
+        "name": "Accessoires",
+        "code": "",
+        "description": "",
+        "meta_title": null,
+        "meta_description": null,
+        "image": "",
+        "slug": "accessoires",
+        "is_public": true,
+        "ancestors_are_public": true
+    }
+},
+{
+    "model": "catalogue.productcategory",
+    "pk": 225,
+    "fields": {
+        "product": 237,
+        "category": 9
+    }
+},
+{
+    "model": "catalogue.productcategory",
+    "pk": 226,
+    "fields": {
+        "product": 238,
+        "category": 2
+    }
+},
+{
+    "model": "catalogue.productcategory",
+    "pk": 227,
+    "fields": {
+        "product": 239,
+        "category": 2
+    }
+},
+{
+    "model": "catalogue.productcategory",
+    "pk": 228,
+    "fields": {
+        "product": 240,
+        "category": 1
+    }
+},
+{
+    "model": "catalogue.productcategory",
+    "pk": 229,
+    "fields": {
+        "product": 241,
+        "category": 1
+    }
+},
+{
+    "model": "catalogue.attributeoptiongroup",
+    "pk": 1,
+    "fields": {
+        "name": "Sizes",
+        "code": ""
+    }
+},
+{
+    "model": "catalogue.attributeoption",
+    "pk": 1,
+    "fields": {
+        "group": 1,
+        "option": "Small",
+        "code": ""
+    }
+},
+{
+    "model": "catalogue.attributeoption",
+    "pk": 2,
+    "fields": {
+        "group": 1,
+        "option": "Medium",
+        "code": ""
+    }
+},
+{
+    "model": "catalogue.attributeoption",
+    "pk": 3,
+    "fields": {
+        "group": 1,
+        "option": "Large",
+        "code": ""
+    }
+}
+]

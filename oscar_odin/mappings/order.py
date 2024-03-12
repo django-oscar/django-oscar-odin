@@ -4,11 +4,16 @@ from typing import Any, Dict, Iterable, List, Optional, Union
 import odin
 from django.http import HttpRequest
 from oscar.core.loading import get_model
+from oscar_odin.resources.order import DiscountPerTaxCodeResource
 
 from .. import resources
 from ._common import map_queryset, OscarBaseMapping
 from .address import BillingAddressToResource, ShippingAddressToResource
 from .auth import UserToResource
+
+from decimal import Decimal
+from django.db.models import Sum
+from django.db.models.functions import Coalesce
 
 __all__ = (
     "OrderToResource",
@@ -23,6 +28,7 @@ LinePriceModel = get_model("order", "LinePrice")
 PaymentEventModel = get_model("order", "PaymentEvent")
 ShippingEventModel = get_model("order", "ShippingEvent")
 OrderDiscountModel = get_model("order", "OrderDiscount")
+OrderLineDiscountModel = get_model("order", "OrderLineDiscount")
 SurchargeModel = get_model("order", "Surcharge")
 
 
@@ -33,6 +39,18 @@ class SurchargeToResource(OscarBaseMapping):
     to_obj = resources.order.Surcharge
 
 
+class DiscountLineToResource(OscarBaseMapping):
+    """Mapping from an order discount line model to a resource"""
+
+    from_obj = OrderLineDiscountModel
+    to_obj = resources.order.DiscountLine
+
+    @odin.assign_field
+    def line(self):
+        """map line object as resource"""
+        return LineToResource.apply(self.source.line)
+
+
 class DiscountToResource(OscarBaseMapping):
     """Mapping from an order discount model to a resource."""
 
@@ -40,9 +58,54 @@ class DiscountToResource(OscarBaseMapping):
     to_obj = resources.order.Discount
 
     @odin.map_field
-    def category(self, value: str) -> resources.order.DiscountCategory:
+    def category(self, value: str):
         """Map category."""
         return resources.order.DiscountCategory(value)
+
+    @odin.assign_field
+    def is_basket_discount(self) -> bool:
+        """map is basket discount function"""
+        return self.source.is_basket_discount
+
+    @odin.assign_field
+    def is_shipping_discount(self) -> bool:
+        """map is shipping discount function"""
+        return self.source.is_shipping_discount
+
+    @odin.assign_field
+    def is_post_order_action(self) -> bool:
+        """map is post order action function"""
+        return self.source.is_post_order_action
+
+    @odin.assign_field
+    def description(self) -> str:
+        """map description function"""
+        return self.source.description()
+
+    @odin.assign_field(to_list=True)
+    def discount_lines(self):
+        """map discount lines"""
+        return map_queryset(
+            DiscountLineToResource, self.source.discount_lines, context=self.context
+        )
+
+    @odin.assign_field(to_list=True)
+    def discount_lines_per_tax_code(self):
+        """get the total discount of all lines for each tax code"""
+        discount_lines = []
+
+        for tax_code in sorted(
+            set(self.source.discount_lines.values_list("line__tax_code", flat=True))
+        ):
+            amount = self.source.discount_lines.filter(
+                line__tax_code=tax_code
+            ).aggregate(amount=Coalesce(Sum("amount"), Decimal(0)))["amount"]
+
+            discount_lines.append(
+                DiscountPerTaxCodeResource(amount=amount, tax_code=tax_code)
+            )
+
+        return discount_lines
 
 
 class ShippingEventToResource(OscarBaseMapping):
