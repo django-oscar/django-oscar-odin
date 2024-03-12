@@ -16,6 +16,7 @@ class OscarOrder(OscarResource, abstract=True):
     """Base resource for Oscar order application."""
 
     class Meta:
+        allow_field_shadowing = True
         namespace = "oscar.order"
 
 
@@ -207,6 +208,7 @@ class Order(OscarOrder):
     """An order within Django Oscar."""
 
     class Meta:
+        allow_field_shadowing = True
         verbose_name = "Order"
 
     number: str = odin.Options(

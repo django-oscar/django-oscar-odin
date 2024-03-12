@@ -6,4 +6,5 @@ class OscarResource(odin.AnnotatedResource, abstract=True):
     """Base resource for Oscar models."""
 
     class Meta:
+        allow_field_shadowing = True
         namespace = "oscar"

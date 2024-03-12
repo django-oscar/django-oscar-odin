@@ -17,6 +17,7 @@ class OscarCatalogue(OscarResource, abstract=True):
     """Base resource for Oscar catalogue application."""
 
     class Meta:
+        allow_field_shadowing = True
         namespace = "oscar.catalogue"
 
 
@@ -24,6 +25,7 @@ class Image(OscarCatalogue):
     """An image for a product."""
 
     class Meta:
+        allow_field_shadowing = True
         verbose_name = "Product image"
         verbose_name_plural = "Product images"
 
