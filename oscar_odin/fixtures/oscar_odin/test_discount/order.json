@@ -112,6 +112,28 @@
     }
 },
 {
+    "model": "order.order",
+    "pk": 22,
+    "fields": {
+        "number": "100023",
+        "site": 1,
+        "basket": null,
+        "user": 4,
+        "billing_address": null,
+        "currency": "EUR",
+        "total_incl_tax": "349.99",
+        "total_excl_tax": "289.25",
+        "shipping_incl_tax": "349.99",
+        "shipping_excl_tax": "289.25",
+        "shipping_tax_code": "high",
+        "shipping_address": 21,
+        "shipping_method": "Standaard verzending",
+        "shipping_code": "standaard-verzending",
+        "status": "paid",
+        "date_placed": "2024-03-07T11:07:19.159Z"
+    }
+},
+{
     "model": "order.line",
     "pk": 37,
     "fields": {
@@ -233,6 +255,31 @@
         "unit_price_incl_tax": "14.99",
         "unit_price_excl_tax": "13.75",
         "tax_code": "low",
+        "status": "paid"
+    }
+},
+{
+    "model": "order.line",
+    "pk": 37,
+    "fields": {
+        "order": 22,
+        "partner": 2,
+        "partner_name": "Clothing partner",
+        "partner_sku": "horloge",
+        "partner_line_reference": "",
+        "partner_line_notes": "",
+        "stockrecord": 225,
+        "product": 237,
+        "title": "Horloge",
+        "upc": "horloge",
+        "quantity": 1,
+        "line_price_incl_tax": "349.99",
+        "line_price_excl_tax": "289.25",
+        "line_price_before_discounts_incl_tax": "349.99",
+        "line_price_before_discounts_excl_tax": "289.25",
+        "unit_price_incl_tax": "349.99",
+        "unit_price_excl_tax": "289.25",
+        "tax_code": "high",
         "status": "paid"
     }
 },
