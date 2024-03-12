@@ -62,20 +62,20 @@ class DiscountToResource(OscarBaseMapping):
         """Map category."""
         return resources.order.DiscountCategory(value)
 
-    @odin.map_field(from_field="category")
-    def is_basket_discount(self, category) -> bool:
+    @odin.assign_field
+    def is_basket_discount(self) -> bool:
         """map is basket discount function"""
-        return category == "Basket"
+        return self.source.is_basket_discount
 
-    @odin.map_field(from_field="category")
-    def is_shipping_discount(self, category) -> bool:
+    @odin.assign_field
+    def is_shipping_discount(self) -> bool:
         """map is shipping discount function"""
-        return category == "Shipping"
+        return self.source.is_shipping_discount
 
-    @odin.map_field(from_field="category")
-    def is_post_order_action(self, category) -> bool:
+    @odin.assign_field
+    def is_post_order_action(self) -> bool:
         """map is post order action function"""
-        return category == "Deferred"
+        return self.source.is_post_order_action
 
     @odin.assign_field
     def description(self) -> str:
@@ -91,12 +91,12 @@ class DiscountToResource(OscarBaseMapping):
 
     @odin.assign_field(to_list=True)
     def discount_lines_per_tax_code(self):
-        """get the total of all lines for each tax code"""
+        """get the total discount of all lines for each tax code"""
         discount_lines = []
 
-        for tax_code in self.source.discount_lines.values_list(
-            "line__tax_code", flat=True
-        ).distinct():
+        for tax_code in sorted(
+            set(self.source.discount_lines.values_list("line__tax_code", flat=True))
+        ):
             amount = self.source.discount_lines.filter(
                 line__tax_code=tax_code
             ).aggregate(amount=Coalesce(Sum("amount"), Decimal(0)))["amount"]
@@ -105,15 +105,7 @@ class DiscountToResource(OscarBaseMapping):
                 DiscountPerTaxCodeResource(amount=amount, tax_code=tax_code)
             )
 
-        # remove items with duplicate tax codes
-        tax_codes = []
-        discount_lines_per_tax_code = []
-        for line in discount_lines:
-            if line.tax_code not in tax_codes:
-                discount_lines_per_tax_code.append(line)
-                tax_codes.append(line.tax_code)
-
-        return discount_lines_per_tax_code
+        return discount_lines
 
 
 class ShippingEventToResource(OscarBaseMapping):
