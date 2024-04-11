@@ -41,7 +41,7 @@ def in_bulk(self, instances, field_names):
     if max_query_params is not None:
         batch_size = math.floor(max_query_params / len(field_names)) - 1
     else:
-        batch_size = None
+        batch_size = 500
 
     if batch_size and batch_size < len(instances):
         qs = ()
