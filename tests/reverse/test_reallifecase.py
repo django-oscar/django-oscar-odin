@@ -209,7 +209,7 @@ class RealLifeTest(TestCase):
             # Map the csv resources to product resources
             product_resources = CSVProductMapping.apply(products)
 
-            with self.assertNumQueries(10):
+            with self.assertNumQueries(59 * 4 + 10):
                 # Map the product resources to products and save in DB
                 _, errors = products_to_db(product_resources)
                 self.assertEqual(len(errors), 0)
@@ -218,6 +218,22 @@ class RealLifeTest(TestCase):
             self.assertEqual(ProductAttributeValue.objects.all().count(), 257)
             self.assertEqual(ProductImage.objects.all().count(), 52)
 
+
+        with open(csv_file) as f:
+            products_2 = csv_codec.reader(f, CSVProductResource, includes_header=True)
+            
+            # The seocnd time, the querycount should be lower
+            product_resources_2 = CSVProductMapping.apply(products_2)
+
+            with self.assertNumQueries(59 + 10):
+                # Map the product resources to products and save in DB
+                _, errors = products_to_db(product_resources_2)
+                self.assertEqual(len(errors), 0)
+
+            self.assertEqual(Product.objects.all().count(), 59)
+            self.assertEqual(ProductAttributeValue.objects.all().count(), 257)
+            self.assertEqual(ProductImage.objects.all().count(), 52)
+    
     def get_csv_fixture(self, filename):
         return path.realpath(
             path.join(
