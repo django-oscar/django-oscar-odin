@@ -10,6 +10,7 @@ from os import path
 from decimal import Decimal as D
 
 from django.core.files import File
+from django.db import connection, reset_queries
 from django.test import TestCase
 
 from oscar.core.loading import get_model, get_class
@@ -208,9 +209,10 @@ class RealLifeTest(TestCase):
             # Map the csv resources to product resources
             product_resources = CSVProductMapping.apply(products)
 
-            # Map the product resources to products and save in DB
-            _, errors = products_to_db(product_resources)
-            self.assertEqual(len(errors), 0)
+            with self.assertNumQueries(10):
+                # Map the product resources to products and save in DB
+                _, errors = products_to_db(product_resources)
+                self.assertEqual(len(errors), 0)
 
             self.assertEqual(Product.objects.all().count(), 59)
             self.assertEqual(ProductAttributeValue.objects.all().count(), 257)
