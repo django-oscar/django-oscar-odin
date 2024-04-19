@@ -5,6 +5,7 @@ import math
 
 from django.db import connection, connections, reset_queries
 from django.db.models import Q
+from django.conf import settings
 
 from odin.exceptions import ValidationError
 from odin.mapping import MappingResult
@@ -41,7 +42,7 @@ def in_bulk(self, instances, field_names):
     if max_query_params is not None:
         batch_size = math.floor(max_query_params / len(field_names)) - 1
     else:
-        batch_size = None
+        batch_size = getattr(settings, "ODIN_BATCH_SIZE", 500)
 
     if batch_size and batch_size < len(instances):
         qs = ()
