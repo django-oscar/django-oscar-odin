@@ -6,6 +6,7 @@ class _User(OscarResource, abstract=True):
     """Base resource for Oscar user application."""
 
     class Meta:
+        allow_field_shadowing = True
         namespace = "oscar.user"
 
 

@@ -11,6 +11,7 @@ class OscarAddress(OscarResource, abstract=True):
     """Base resource for Oscar order application."""
 
     class Meta:
+        allow_field_shadowing = True
         namespace = "oscar.address"
 
 
@@ -70,6 +71,7 @@ class BillingAddress(Address):
     """Address for billing."""
 
     class Meta:
+        allow_field_shadowing = True
         verbose_name = "Billing address"
         verbose_name_plural = "Billing addresses"
 
@@ -78,6 +80,7 @@ class ShippingAddress(Address):
     """Address for shipping."""
 
     class Meta:
+        allow_field_shadowing = True
         verbose_name = "Shipping address"
         verbose_name_plural = "Shipping addresses"
 
