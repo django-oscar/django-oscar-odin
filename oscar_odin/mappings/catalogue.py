@@ -218,19 +218,21 @@ class ProductToResource(OscarBaseMapping):
             )
         return (None,)
 
-    @odin.assign_field(to_field=("price", "currency", "availability"))
+    @odin.assign_field(to_field=("price", "currency", "availability", "is_available_to_buy"))
     def map_stock_price(self) -> Tuple[Decimal, str, int]:
         """Resolve stock price using strategy and decompose into price/currency/availability."""
         stock_strategy: DefaultStrategy = self.context["stock_strategy"]
 
-        # Switch here based on if this is a parent or child product
-        price, availability, _ = stock_strategy.fetch_for_product(self.source)
+        if self.source.is_parent:
+            price, availability, _ = stock_strategy.fetch_for_parent(self.source)
+        else:
+            price, availability, _ = stock_strategy.fetch_for_product(self.source)
 
         if availability.is_available_to_buy:
-            return price.excl_tax, price.currency, availability.num_available
+            return price.excl_tax, price.currency, getattr(availability, "num_available", 0), True
         else:
             # There is no stock record for this product.
-            return Decimal(0), "", 0
+            return Decimal(0), "", 0, False
 
 
 class ProductToModel(ModelMapping):
