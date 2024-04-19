@@ -109,7 +109,7 @@ class Product(OscarCatalogue):
     price: Decimal = DecimalField(null=True)
     currency: Optional[str]
     availability: Optional[int]
-    is_available_to_buy: bool
+    is_available_to_buy: Optional[bool]
     partner: Optional[Any]
 
     product_class: Optional[ProductClass] = None
