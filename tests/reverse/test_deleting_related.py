@@ -248,7 +248,7 @@ class DeleteRelatedModelReverseTest(TestCase):
 
     def test_deleting_all_related_models(self):
         partner = Partner.objects.get(name="klaas")
-        
+
         Product.objects.create(upc="recommended_product1")
 
         product_resource = ProductResource(
