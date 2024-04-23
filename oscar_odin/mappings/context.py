@@ -12,6 +12,7 @@ from oscar.core.loading import get_model
 
 Product = get_model("catalogue", "Product")
 ProductAttributeValue = get_model("catalogue", "ProductAttributeValue")
+ProductAttribute = get_model("catalogue", "ProductAttribute")
 
 
 def separate_instances_to_create_and_update(Model, instances, identifier_mapping):
@@ -55,6 +56,7 @@ class ModelMapperContext(dict):
     attribute_data = None
     identifier_mapping = None
     instance_keys = None
+    attributes = None
     Model = None
     errors = None
 
@@ -78,18 +80,25 @@ class ModelMapperContext(dict):
 
     def validate_instances(self, instances, validate_unique=True, fields=None):
         validated_instances = []
+        instance_ids = []
         exclude = ()
         if fields and instances:
             all_fields = instances[0]._meta.fields
             exclude = [f.name for f in all_fields if f.name not in fields]
 
         for instance in instances:
-            try:
-                instance.full_clean(validate_unique=validate_unique, exclude=exclude)
-            except ValidationError as e:
-                self.errors.append(e)
-            else:
-                validated_instances.append(instance)
+            if instance.id not in instance_ids:
+                instance_ids.append(instance.id)
+                try:
+                    if hasattr(instance, "attr") and self.attributes:
+                        instance.attr.cache.set_attributes(self.attributes)
+                    instance.full_clean(
+                        validate_unique=validate_unique, exclude=exclude
+                    )
+                except ValidationError as e:
+                    self.errors.append(e)
+                else:
+                    validated_instances.append(instance)
 
         return validated_instances
 
@@ -372,9 +381,15 @@ class ModelMapperContext(dict):
                             % relation.name
                         ) from e
 
-    def bulk_save(self, instances, fields_to_update, identifier_mapping):
+    def bulk_save(
+        self, instances, fields_to_update, identifier_mapping, product_class=None
+    ):
         self.fields_to_update = fields_to_update
         self.identifier_mapping = identifier_mapping
+        if product_class:
+            self.attributes = ProductAttribute.objects.filter(
+                product_class=product_class
+            )
 
         with transaction.atomic():
             self.bulk_update_or_create_foreign_keys()
@@ -416,6 +431,8 @@ class ProductModelMapperContext(ModelMapperContext):
 
         for product in instances:
             product.attr.invalidate()
+            if self.attributes:
+                product.attr.cache.set_attributes(self.attributes)
             (
                 to_be_updated,
                 to_be_created,

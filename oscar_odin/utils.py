@@ -22,7 +22,7 @@ def get_filters(instances, field_names):
 
 
 def get_query(instances, field_names):
-    filters = list(get_filters(instances, field_names))
+    filters = set((get_filters(instances, field_names)))
 
     query = filters.pop()
     for query_filter in filters:
