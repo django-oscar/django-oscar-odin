@@ -12,17 +12,20 @@ from odin.mapping import MappingResult
 
 
 def get_filters(instances, field_names):
+    filters = []
     for ui in instances:
         klaas = {}
         for field_name in field_names:
             field_value = getattr(ui, field_name)
-            klaas[field_name] = field_value
-
-        yield Q(**klaas)
+            if field_value not in filters:
+                filters.append(field_value)
+                klaas[field_name] = field_value
+        if klaas:
+            yield Q(**klaas)
 
 
 def get_query(instances, field_names):
-    filters = set((get_filters(instances, field_names)))
+    filters = list((get_filters(instances, field_names)))
 
     query = filters.pop()
     for query_filter in filters:
