@@ -80,15 +80,21 @@ class ModelMapperContext(dict):
 
     def validate_instances(self, instances, validate_unique=True, fields=None):
         validated_instances = []
-        instance_ids = []
+        identities = []
         exclude = ()
         if fields and instances:
             all_fields = instances[0]._meta.fields
             exclude = [f.name for f in all_fields if f.name not in fields]
 
+        try:
+            identifier = self.identifier_mapping.get(instances[0].__class__)[0]
+        except (IndexError, TypeError):
+            identifier = None
+
         for instance in instances:
-            if instance.id not in instance_ids:
-                instance_ids.append(instance.id)
+            if identifier is None or getattr(instance, identifier) not in identities:
+                if identifier is not None:
+                    identities.append(getattr(instance, identifier))
                 try:
                     if hasattr(instance, "attr") and self.attributes:
                         instance.attr.cache.set_attributes(self.attributes)
