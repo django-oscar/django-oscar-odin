@@ -5,12 +5,15 @@ from django.db import transaction
 from django.db.models import Q
 from django.core.exceptions import ValidationError
 
-from oscar_odin.utils import in_bulk
-from oscar_odin.exceptions import OscarOdinException
-
 from oscar.core.loading import get_model
+from oscar.apps.catalogue.product_attributes import QuerysetCache
+
+from ..utils import in_bulk
+from ..exceptions import OscarOdinException
+from .constants import MODEL_IDENTIFIERS_MAPPING
 
 Product = get_model("catalogue", "Product")
+ProductClass = get_model("catalogue", "ProductClass")
 ProductAttributeValue = get_model("catalogue", "ProductAttributeValue")
 ProductAttribute = get_model("catalogue", "ProductAttribute")
 
@@ -56,7 +59,6 @@ class ModelMapperContext(dict):
     attribute_data = None
     identifier_mapping = None
     instance_keys = None
-    attributes = None
     Model = None
     errors = None
 
@@ -96,8 +98,6 @@ class ModelMapperContext(dict):
                 if identifier is not None:
                     identities.append(getattr(instance, identifier))
                 try:
-                    if hasattr(instance, "attr") and self.attributes:
-                        instance.attr.cache.set_attributes(self.attributes)
                     instance.full_clean(
                         validate_unique=validate_unique, exclude=exclude
                     )
@@ -387,15 +387,9 @@ class ModelMapperContext(dict):
                             % relation.name
                         ) from e
 
-    def bulk_save(
-        self, instances, fields_to_update, identifier_mapping, product_class=None
-    ):
+    def bulk_save(self, instances, fields_to_update, identifier_mapping):
         self.fields_to_update = fields_to_update
         self.identifier_mapping = identifier_mapping
-        if product_class:
-            self.attributes = ProductAttribute.objects.filter(
-                product_class=product_class
-            )
 
         with transaction.atomic():
             self.bulk_update_or_create_foreign_keys()
@@ -411,6 +405,52 @@ class ModelMapperContext(dict):
 
 class ProductModelMapperContext(ModelMapperContext):
     update_related_models_same_type = False
+    product_class_identifier = MODEL_IDENTIFIERS_MAPPING[ProductClass][0]
+    product_class_keys = set()
+    attributes = defaultdict(list)
+
+    def set_product_class_attributes(self, instance):
+        key = getattr(instance.product_class, self.product_class_identifier)
+        if key and key in self.attributes:
+            instance.attr.cache.set_attributes(self.attributes[key])
+
+    def validate_instances(self, instances, validate_unique=True, fields=None):
+        validated_instances = []
+        identities = []
+        exclude = ()
+        if fields and instances:
+            all_fields = instances[0]._meta.fields
+            exclude = [f.name for f in all_fields if f.name not in fields]
+
+        try:
+            identifier = self.identifier_mapping.get(instances[0].__class__)[0]
+        except (IndexError, TypeError):
+            identifier = None
+
+        for instance in instances:
+            if identifier is None or getattr(instance, identifier) not in identities:
+                if identifier is not None:
+                    identities.append(getattr(instance, identifier))
+                try:
+                    if hasattr(instance, "attr"):
+                        self.set_product_class_attributes(instance)
+                    instance.full_clean(
+                        validate_unique=validate_unique, exclude=exclude
+                    )
+                except ValidationError as e:
+                    self.errors.append(e)
+                else:
+                    validated_instances.append(instance)
+
+        return validated_instances
+
+    def add_instance_to_fk_items(self, field, instance):
+        if instance is not None and not instance.pk:
+            self.foreign_key_items[field] += [instance]
+            if instance.__class__ == ProductClass:
+                self.product_class_keys.add(
+                    getattr(instance, self.product_class_identifier)
+                )
 
     @property
     def get_fk_relations(self):
@@ -437,8 +477,7 @@ class ProductModelMapperContext(ModelMapperContext):
 
         for product in instances:
             product.attr.invalidate()
-            if self.attributes:
-                product.attr.cache.set_attributes(self.attributes)
+            self.set_product_class_attributes(product)
             (
                 to_be_updated,
                 to_be_created,
@@ -476,7 +515,18 @@ class ProductModelMapperContext(ModelMapperContext):
                 validated_attributes_to_create, batch_size=500, ignore_conflicts=False
             )
 
+    def fetch_product_class_attributes(self):
+        product_classes = ProductClass.objects.filter(
+            **{f"{self.product_class_identifier}__in": self.product_class_keys}
+        )
+
+        for product_class in product_classes:
+            self.attributes[
+                getattr(product_class, self.product_class_identifier)
+            ] = QuerysetCache(product_class.attributes.all())
+
     def bulk_update_or_create_instances(self, instances):
+        self.fetch_product_class_attributes()
         super().bulk_update_or_create_instances(instances)
 
         self.bulk_update_or_create_product_attributes(instances)
