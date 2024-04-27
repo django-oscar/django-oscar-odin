@@ -410,9 +410,10 @@ class ProductModelMapperContext(ModelMapperContext):
     attributes = defaultdict(list)
 
     def set_product_class_attributes(self, instance):
-        key = getattr(instance.product_class, self.product_class_identifier)
-        if key and key in self.attributes:
-            instance.attr.cache.set_attributes(self.attributes[key])
+        if instance.product_class:
+            key = getattr(instance.product_class, self.product_class_identifier)
+            if key and key in self.attributes:
+                instance.attr.cache.set_attributes(self.attributes[key])
 
     def validate_instances(self, instances, validate_unique=True, fields=None):
         validated_instances = []
