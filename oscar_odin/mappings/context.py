@@ -61,6 +61,7 @@ class ModelMapperContext(dict):
     instance_keys = None
     Model = None
     errors = None
+    clean_instances = True
 
     update_related_models_same_type = True
 
@@ -80,7 +81,12 @@ class ModelMapperContext(dict):
     def __bool__(self):
         return True
 
+    def prepare_instance_for_validation(self, instance):
+        return instance
+
     def validate_instances(self, instances, validate_unique=True, fields=None):
+        if not self.clean_instances:
+            return instances
         validated_instances = []
         identities = []
         exclude = ()
@@ -98,6 +104,7 @@ class ModelMapperContext(dict):
                 if identifier is not None:
                     identities.append(getattr(instance, identifier))
                 try:
+                    instance = self.prepare_instance_for_validation(instance)
                     instance.full_clean(
                         validate_unique=validate_unique, exclude=exclude
                     )
@@ -387,9 +394,12 @@ class ModelMapperContext(dict):
                             % relation.name
                         ) from e
 
-    def bulk_save(self, instances, fields_to_update, identifier_mapping):
+    def bulk_save(
+        self, instances, fields_to_update, identifier_mapping, clean_instances
+    ):
         self.fields_to_update = fields_to_update
         self.identifier_mapping = identifier_mapping
+        self.clean_instances = clean_instances
 
         with transaction.atomic():
             self.bulk_update_or_create_foreign_keys()
@@ -409,41 +419,16 @@ class ProductModelMapperContext(ModelMapperContext):
     product_class_keys = set()
     attributes = defaultdict(list)
 
+    def prepare_instance_for_validation(self, instance):
+        if hasattr(instance, "attr"):
+            self.set_product_class_attributes(instance)
+        return super().prepare_instance_for_validation(instance)
+
     def set_product_class_attributes(self, instance):
         if instance.product_class:
             key = getattr(instance.product_class, self.product_class_identifier)
             if key and key in self.attributes:
                 instance.attr.cache.set_attributes(self.attributes[key])
-
-    def validate_instances(self, instances, validate_unique=True, fields=None):
-        validated_instances = []
-        identities = []
-        exclude = ()
-        if fields and instances:
-            all_fields = instances[0]._meta.fields
-            exclude = [f.name for f in all_fields if f.name not in fields]
-
-        try:
-            identifier = self.identifier_mapping.get(instances[0].__class__)[0]
-        except (IndexError, TypeError):
-            identifier = None
-
-        for instance in instances:
-            if identifier is None or getattr(instance, identifier) not in identities:
-                if identifier is not None:
-                    identities.append(getattr(instance, identifier))
-                try:
-                    if hasattr(instance, "attr"):
-                        self.set_product_class_attributes(instance)
-                    instance.full_clean(
-                        validate_unique=validate_unique, exclude=exclude
-                    )
-                except ValidationError as e:
-                    self.errors.append(e)
-                else:
-                    validated_instances.append(instance)
-
-        return validated_instances
 
     def add_instance_to_fk_items(self, field, instance):
         if instance is not None and not instance.pk:

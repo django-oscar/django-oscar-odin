@@ -427,6 +427,7 @@ def products_to_db(
     identifier_mapping=MODEL_IDENTIFIERS_MAPPING,
     product_mapper=ProductToModel,
     delete_related=False,
+    clean_instances=True,
 ) -> Tuple[List[ProductModel], Dict]:
     """Map mulitple products to a model and store them in the database.
 
@@ -444,7 +445,10 @@ def products_to_db(
     )
 
     products, errors = context.bulk_save(
-        instances, fields_to_update, identifier_mapping
+        instances,
+        fields_to_update,
+        identifier_mapping,
+        clean_instances,
     )
 
     return products, errors
