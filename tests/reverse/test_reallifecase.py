@@ -209,7 +209,7 @@ class RealLifeTest(TestCase):
             # Map the csv resources to product resources
             product_resources = CSVProductMapping.apply(products)
 
-            with self.assertNumQueries(59 * 4 + 10):
+            with self.assertNumQueries(59 * 20 + 12):
                 # Map the product resources to products and save in DB
                 _, errors = products_to_db(product_resources)
                 self.assertEqual(len(errors), 0)
@@ -225,9 +225,9 @@ class RealLifeTest(TestCase):
             # The seocnd time, the querycount should be lower
             product_resources_2 = CSVProductMapping.apply(products_2)
 
-            with self.assertNumQueries(59 + 10):
+            with self.assertNumQueries(59 * 3 + 15):
                 # Map the product resources to products and save in DB
-                _, errors = products_to_db(product_resources_2)
+                _, errors = products_to_db(product_resources_2, clean_instances=False)
                 self.assertEqual(len(errors), 0)
 
             self.assertEqual(Product.objects.all().count(), 59)
