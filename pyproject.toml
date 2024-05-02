@@ -27,7 +27,7 @@ classifiers = [
 
 [tool.poetry.dependencies]
 python = "^3.8"
-django-oscar = {version = "^3.2.5", allow-prereleases = true}
+django-oscar = {version = "^3.2.4", allow-prereleases = true}
 coverage = { version = "^7.3", optional = true }
 pylint = { version = "^3.0.2", optional = true }
 black = { version = "^23.11.0", optional = true }
