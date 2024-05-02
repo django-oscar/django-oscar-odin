@@ -600,13 +600,13 @@ elasticsearch = ["elasticsearch (>=5,<8)"]
 
 [[package]]
 name = "django-oscar"
-version = "3.2.4"
+version = "3.2.5a2"
 description = "A domain-driven e-commerce framework for Django"
 optional = false
 python-versions = ">=3.8"
 files = [
-    {file = "django-oscar-3.2.4.tar.gz", hash = "sha256:79a48dfd3cd9a6d93636e55bc7cba25abb56c05c200fcd0c0f30face9566a998"},
-    {file = "django_oscar-3.2.4-py3-none-any.whl", hash = "sha256:22d2f2725ba273335f12f28bf7ed79f49a63ee2d16bd842e103c90b2a65bb504"},
+    {file = "django-oscar-3.2.5a2.tar.gz", hash = "sha256:7748d142751c312c515a8fd71dd67a0db48d0eceb078edf4af53c66973da28eb"},
+    {file = "django_oscar-3.2.5a2-py3-none-any.whl", hash = "sha256:c54d80c939bd8fa840970653f364014d8decc4ef5a91e79a33a9a6fed2eb1cff"},
 ]
 
 [package.dependencies]
@@ -1530,6 +1530,7 @@ files = [
     {file = "PyYAML-6.0.1-cp311-cp311-win_amd64.whl", hash = "sha256:bf07ee2fef7014951eeb99f56f39c9bb4af143d8aa3c21b1677805985307da34"},
     {file = "PyYAML-6.0.1-cp312-cp312-macosx_10_9_x86_64.whl", hash = "sha256:855fb52b0dc35af121542a76b9a84f8d1cd886ea97c84703eaa6d88e37a2ad28"},
     {file = "PyYAML-6.0.1-cp312-cp312-macosx_11_0_arm64.whl", hash = "sha256:40df9b996c2b73138957fe23a16a4f0ba614f4c0efce1e9406a184b6d07fa3a9"},
+    {file = "PyYAML-6.0.1-cp312-cp312-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:a08c6f0fe150303c1c6b71ebcd7213c2858041a7e01975da3a99aed1e7a378ef"},
     {file = "PyYAML-6.0.1-cp312-cp312-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:6c22bec3fbe2524cde73d7ada88f6566758a8f7227bfbf93a408a9d86bcc12a0"},
     {file = "PyYAML-6.0.1-cp312-cp312-musllinux_1_1_x86_64.whl", hash = "sha256:8d4e9c88387b0f5c7d5f281e55304de64cf7f9c0021a3525bd3b1c542da3b0e4"},
     {file = "PyYAML-6.0.1-cp312-cp312-win32.whl", hash = "sha256:d483d2cdf104e7c9fa60c544d92981f12ad66a457afae824d146093b8c294c54"},
@@ -2012,4 +2013,4 @@ test = ["black", "coverage", "poetry", "pylint", "pylint-django", "responses", "
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.8"
-content-hash = "74ba7f8e38f299b88cdd0ec80aa408ea03c58a3b2b6ea5f6dd591635b8f42d62"
+content-hash = "b51b0fd2bd39059cec5d7732f5c2c91cf30da653bfa9d94dea898095647b177f"
