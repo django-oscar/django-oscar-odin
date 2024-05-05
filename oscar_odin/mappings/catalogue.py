@@ -174,27 +174,30 @@ class ProductToResource(OscarBaseMapping):
     @staticmethod
     def _attribute_value_to_native_type(item):
         """Handle ProductAttributeValue to native type conversion."""
-        obj_type = item.attribute.type
-        if obj_type == item.attribute.OPTION:
-            return item.value.option
+        try:
+            obj_type = item.attribute.type
+            if obj_type == item.attribute.OPTION:
+                return item.value.option
 
-        elif obj_type == item.attribute.MULTI_OPTION:
-            return item.value.values_list("option", flat=True)
+            elif obj_type == item.attribute.MULTI_OPTION:
+                return item.value.values_list("option", flat=True)
 
-        elif obj_type == item.attribute.FILE:
-            return item.value.url
+            elif obj_type == item.attribute.FILE:
+                return item.value.url
 
-        elif obj_type == item.attribute.IMAGE:
-            return item.value.url
+            elif obj_type == item.attribute.IMAGE:
+                return item.value.url
 
-        elif obj_type == item.attribute.ENTITY:
-            if hasattr(item.value, "json"):
-                return item.value.json()
-            else:
-                return f"{repr(item.value)} has no json method, can not convert to json"
+            elif obj_type == item.attribute.ENTITY:
+                if hasattr(item.value, "json"):
+                    return item.value.json()
+                else:
+                    return f"{repr(item.value)} has no json method, can not convert to json"
 
-        # return the value as stored on ProductAttributeValue in the correct type
-        return item.value
+            # return the value as stored on ProductAttributeValue in the correct type
+            return item.value
+        except AttributeError:
+            return item.value_as_text
 
     @odin.assign_field
     def attributes(self) -> Dict[str, Any]:
