@@ -32,7 +32,10 @@ lint: fail-if-no-virtualenv
 
 test: fail-if-no-virtualenv
 	pip install .[test]
-	@python3 ./manage.py test tests/
+	@coverage run --source='oscar_odin' ./manage.py test tests/
+	@coverage report
+	@coverage xml
+	@coverage html
 
 black:
 	@black oscar_odin/
