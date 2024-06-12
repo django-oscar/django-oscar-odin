@@ -104,7 +104,7 @@ ALL_CATALOGUE_FIELDS = (
 MODEL_IDENTIFIERS_MAPPING = {
     Category: ("code",),
     Product: ("upc",),
-    StockRecord: ("partner_id", "partner_sku"),
+    StockRecord: ("partner_sku",),
     ProductClass: ("slug",),
     ProductImage: ("code",),
     Partner: ("slug",),
