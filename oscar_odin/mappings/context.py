@@ -84,25 +84,28 @@ class ModelMapperContext(dict):
     def prepare_instance_for_validation(self, instance):
         return instance
 
+    def get_identity(self, instance, identifiers):
+        if not identifiers:
+            return
+        return attrgetter(*identifiers)(instance)
+
     def validate_instances(self, instances, validate_unique=True, fields=None):
-        if not self.clean_instances:
+        if not self.clean_instances or not instances:
             return instances
         validated_instances = []
         identities = []
         exclude = ()
-        if fields and instances:
+        if fields:
             all_fields = instances[0]._meta.fields
             exclude = [f.name for f in all_fields if f.name not in fields]
 
-        try:
-            identifier = self.identifier_mapping.get(instances[0].__class__)[0]
-        except (IndexError, TypeError):
-            identifier = None
+        identifiers = self.identifier_mapping.get(instances[0].__class__)
 
         for instance in instances:
-            if identifier is None or getattr(instance, identifier) not in identities:
-                if identifier is not None:
-                    identities.append(getattr(instance, identifier))
+            identity = self.get_identity(instance, identifiers)
+            if identifiers is None or identity not in identities:
+                if identifiers is not None:
+                    identities.append(identity)
                 try:
                     instance = self.prepare_instance_for_validation(instance)
                     instance.full_clean(
@@ -277,6 +280,8 @@ class ModelMapperContext(dict):
 
         if self.delete_related:
             for relation, keys in identities.items():
+                # instance_identifier here is product upc, if multiple identifiers for
+                # a product are used, then the following code must be updated.
                 instance_identifier = self.identifier_mapping.get(
                     relation.remote_field.related_model
                 )[0]

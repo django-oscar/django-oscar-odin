@@ -77,7 +77,7 @@ class DeleteRelatedModelReverseTest(TestCase):
                 description="description",
                 structure=Product.STANDALONE,
                 is_discountable=True,
-                price=D("20"),
+                price=D("10"),
                 availability=2,
                 currency="EUR",
                 partner=partner,
@@ -124,7 +124,9 @@ class DeleteRelatedModelReverseTest(TestCase):
             ),
         ]
 
+        self.assertEqual(Stockrecord.objects.count(), 0)
         _, errors = products_to_db(product_resources)
+        self.assertEqual(Stockrecord.objects.count(), 2)
         self.assertEqual(len(errors), 0)
         prd = Product.objects.get(upc="1234323-2")
         prd_563 = Product.objects.get(upc="563-2")
@@ -135,6 +137,10 @@ class DeleteRelatedModelReverseTest(TestCase):
 
         self.assertEqual(prd.stockrecords.count(), 1)
         self.assertTrue(prd.stockrecords.filter(partner=partner).exists())
+        self.assertEqual(prd.stockrecords.first().price, D("10"))
+        self.assertEqual(prd_563.stockrecords.count(), 1)
+        self.assertTrue(prd_563.stockrecords.filter(partner=partner).exists())
+        self.assertEqual(prd_563.stockrecords.first().price, D("20"))
 
         self.assertEqual(prd.categories.count(), 2)
         self.assertTrue(prd.categories.filter(code="1").exists())
