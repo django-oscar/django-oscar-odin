@@ -211,8 +211,9 @@ class ModelMapperContext(dict):
             for instance in validated_instances
         }
         for instance in instances:
-            if instance.pk is None:
-                instance.pk = pk_identity_map[self.get_identity(instance, identifiers)]
+            identity = self.get_identity(instance, identifiers)
+            if instance.pk is None and identity in pk_identity_map:
+                instance.pk = pk_identity_map[identity]
 
     def bulk_update_or_create_foreign_keys(self):
         instances_to_create, instances_to_update = self.get_fk_relations

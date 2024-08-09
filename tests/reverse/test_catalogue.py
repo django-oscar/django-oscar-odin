@@ -983,3 +983,25 @@ class ProductFieldsToUpdateTest(TestCase):
         ]
         _, errors = products_to_db(product_resources)
         self.assertEqual(len(errors), 0)
+
+    def test_product_import_with_non_existent_product_class(self):
+        product_resources = [
+            ProductResource(
+                upc="checking",
+                title="Checking",
+                slug="checking",
+                structure=Product.STANDALONE,
+                product_class=ProductClassResource(
+                    slug="better",
+                ),
+            ),
+        ]
+        with self.assertRaises(ValueError) as context:
+            products_to_db(product_resources, clean_instances=True)
+
+        # i.e, ProductClass with slug="better" not found.
+        self.assertEqual(
+            context.exception.args[0],
+            "'ProductClass' instance needs to have a primary key value before "
+            "this relationship can be used."
+        )
