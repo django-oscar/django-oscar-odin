@@ -794,7 +794,7 @@ class SingleProductErrorHandlingTest(TestCase):
         )
 
 
-class SingleProductFieldsToUpdateTest(TestCase):
+class ProductFieldsToUpdateTest(TestCase):
     def setUp(self):
         super().setUp()
         ProductClass.objects.create(
@@ -953,3 +953,33 @@ class SingleProductFieldsToUpdateTest(TestCase):
         prd.refresh_from_db()
         # Product class is updated as it was added in fields_to_update
         self.assertEqual(prd.product_class.requires_shipping, True)
+
+    def test_check_multiple_products_with_same_new_product_class(self):
+        product_resources = [
+            ProductResource(
+                upc="checking",
+                title="Checking",
+                slug="checking",
+                structure=Product.STANDALONE,
+                product_class=ProductClassResource(
+                    name="Better",
+                    slug="better",
+                    requires_shipping=False,
+                    track_stock=True,
+                ),
+            ),
+            ProductResource(
+                upc="testing",
+                title="Testing",
+                slug="testing",
+                structure=Product.STANDALONE,
+                product_class=ProductClassResource(
+                    name="Better",
+                    slug="better",
+                    requires_shipping=False,
+                    track_stock=True,
+                ),
+            ),
+        ]
+        _, errors = products_to_db(product_resources)
+        self.assertEqual(len(errors), 0)
