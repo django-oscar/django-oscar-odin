@@ -997,5 +997,5 @@ class ProductFieldsToUpdateTest(TestCase):
             ),
         ]
         # i.e, ProductClass with slug="better" not found.
-        with self.assertRaises(Exception) as context:
+        with self.assertRaises(Exception):
             products_to_db(product_resources, clean_instances=True)
