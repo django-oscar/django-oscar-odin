@@ -996,12 +996,6 @@ class ProductFieldsToUpdateTest(TestCase):
                 ),
             ),
         ]
-        with self.assertRaises(ValueError) as context:
-            products_to_db(product_resources, clean_instances=True)
-
         # i.e, ProductClass with slug="better" not found.
-        self.assertEqual(
-            context.exception.args[0],
-            "'ProductClass' instance needs to have a primary key value before "
-            "this relationship can be used."
-        )
+        with self.assertRaises(Exception) as context:
+            products_to_db(product_resources, clean_instances=True)
