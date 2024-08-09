@@ -199,12 +199,29 @@ class ModelMapperContext(dict):
             for product, instances in self.one_to_many_items[relation]:
                 yield (relation, product, instances)
 
+    def assign_pk_to_duplicate_instances(self, instances, validated_instances):
+        """
+        Assign pk to instances if it is None, based on the identity.
+        e.g, instances contain two product classes, one with pk=2 and one with pk=None,
+        both have same slug. This method will assign both pk=2 to both instances.
+        """
+        identifiers = self.identifier_mapping.get(instances[0].__class__)
+        pk_identity_map = {
+            self.get_identity(instance, identifiers): instance.pk
+            for instance in validated_instances
+        }
+        for instance in instances:
+            if instance.pk is None:
+                instance.pk = pk_identity_map[self.get_identity(instance, identifiers)]
+
     def bulk_update_or_create_foreign_keys(self):
         instances_to_create, instances_to_update = self.get_fk_relations
 
         for field, instances in instances_to_create.items():
             validated_fk_instances = self.validate_instances(instances)
             field.related_model.objects.bulk_create(validated_fk_instances)
+            if len(instances) != len(validated_fk_instances):
+                self.assign_pk_to_duplicate_instances(instances, validated_fk_instances)
 
         for field, instances in instances_to_update.items():
             Model = field.related_model
