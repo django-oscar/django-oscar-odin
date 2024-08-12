@@ -995,6 +995,18 @@ class ProductFieldsToUpdateTest(TestCase):
                     slug="better",
                 ),
             ),
+            ProductResource(
+                upc="testing",
+                title="Testing",
+                slug="testing",
+                structure=Product.STANDALONE,
+                product_class=ProductClassResource(
+                    name="Nice",
+                    slug="nice",
+                    requires_shipping=True,
+                    track_stock=True,
+                ),
+            ),
         ]
         # i.e, ProductClass with slug="better" not found.
         with self.assertRaises(Exception):
