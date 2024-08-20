@@ -237,7 +237,7 @@ class ProductToResource(OscarBaseMapping):
             getattr(price, "excl_tax", Decimal(0)),
             getattr(price, "currency", ""),
             getattr(availability, "num_available", 0),
-            availability.is_available_to_buy
+            availability.is_available_to_buy,
         )
 
 
