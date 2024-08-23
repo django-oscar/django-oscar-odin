@@ -33,10 +33,8 @@ def map_queryset(
 
 class OscarBaseMapping(MappingBase, metaclass=MappingMeta):
     def create_object(self, **field_values):
-        """Create an instance of target object, this method can be customised to handle
-        custom object initialisation.
-
-        :param field_values: Dictionary of values for creating the target object.
+        """
+        When subclassing a mapping and resource sometimes the overidden map will somehow result in the values beign None
         """
         try:
             new_obj = self.to_obj()  # pylint: disable=E1102
