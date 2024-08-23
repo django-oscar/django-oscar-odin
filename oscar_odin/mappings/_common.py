@@ -32,4 +32,20 @@ def map_queryset(
 
 
 class OscarBaseMapping(MappingBase, metaclass=MappingMeta):
+    def create_object(self, **field_values):
+        """Create an instance of target object, this method can be customised to handle
+        custom object initialisation.
+
+        :param field_values: Dictionary of values for creating the target object.
+        """
+        try:
+            new_obj = self.to_obj()  # pylint: disable=E1102
+
+            for key, field_value in field_values.items():
+                setattr(new_obj, key, field_value)
+
+            return new_obj
+        except AttributeError:
+            return super().create_object(**field_value)
+
     register_mapping = False
