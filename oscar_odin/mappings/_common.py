@@ -32,4 +32,18 @@ def map_queryset(
 
 
 class OscarBaseMapping(MappingBase, metaclass=MappingMeta):
+    def create_object(self, **field_values):
+        """
+        When subclassing a mapping and resource sometimes the overidden map will somehow result in the values being None
+        """
+        try:
+            new_obj = self.to_obj()  # pylint: disable=E1102
+
+            for key, field_value in field_values.items():
+                setattr(new_obj, key, field_value)
+
+            return new_obj
+        except AttributeError:
+            return super().create_object(**field_value)
+
     register_mapping = False
