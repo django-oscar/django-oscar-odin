@@ -434,7 +434,7 @@ def products_to_db(
     After that all the products will be bulk saved.
     At last all related models like images, stockrecords, and related_products can will be saved and set on the product.
     """
-    errors = validate_resources(products)
+    _, errors = validate_resources(products)
     if errors:
         return [], errors
     instances, context = products_to_model(

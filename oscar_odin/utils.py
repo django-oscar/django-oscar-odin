@@ -77,6 +77,7 @@ def querycounter(*labels, print_queries=False):
 
 def validate_resources(resources):
     errors = []
+    valid_resources = []
     if not resources:
         return
     if not isinstance(resources, (list, tuple)):
@@ -87,6 +88,7 @@ def validate_resources(resources):
     for resource in resources:
         try:
             resource.full_clean()
+            valid_resources.append(resource)
         except ValidationError as error:
             errors.append(error)
-    return errors
+    return valid_resources, errors
