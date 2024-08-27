@@ -79,7 +79,7 @@ def validate_resources(resources):
     errors = []
     valid_resources = []
     if not resources:
-        return
+        return [], []
     if not isinstance(resources, (list, tuple)):
         if isinstance(resources, MappingResult):
             resources = resources.items
