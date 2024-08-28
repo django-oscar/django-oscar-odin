@@ -232,7 +232,6 @@ class ProductToResource(OscarBaseMapping):
             price, availability, _ = stock_strategy.fetch_for_parent(self.source)
         else:
             price, availability, _ = stock_strategy.fetch_for_product(self.source)
-
         return (
             getattr(price, "excl_tax", Decimal(0)),
             getattr(price, "currency", ""),
@@ -410,7 +409,7 @@ def product_queryset_to_resources(
         request,
         user,
         include_children,
-        product_mapper=product_mapper,
+        product_mapper,
         **kwargs,
     )
 
