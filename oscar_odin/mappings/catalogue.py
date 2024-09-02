@@ -232,7 +232,6 @@ class ProductToResource(OscarBaseMapping):
             price, availability, _ = stock_strategy.fetch_for_parent(self.source)
         else:
             price, availability, _ = stock_strategy.fetch_for_product(self.source)
-
         return (
             getattr(price, "excl_tax", Decimal(0)),
             getattr(price, "currency", ""),
@@ -330,6 +329,7 @@ def product_to_resource_with_strategy(
     product: Union[ProductModel, Iterable[ProductModel]],
     stock_strategy: DefaultStrategy,
     include_children: bool = False,
+    product_mapper: OscarBaseMapping = ProductToResource,
 ):
     """Map a product model to a resource.
 
@@ -342,7 +342,7 @@ def product_to_resource_with_strategy(
     :param stock_strategy: The current HTTP request
     :param include_children: Include children of parent products.
     """
-    return ProductToResource.apply(
+    return product_mapper.apply(
         product,
         context={
             "stock_strategy": stock_strategy,
@@ -356,6 +356,7 @@ def product_to_resource(
     request: Optional[HttpRequest] = None,
     user: Optional[AbstractUser] = None,
     include_children: bool = False,
+    product_mapper: OscarBaseMapping = ProductToResource,
     **kwargs,
 ) -> Union[resources.catalogue.Product, Iterable[resources.catalogue.Product]]:
     """Map a product model to a resource.
@@ -371,10 +372,12 @@ def product_to_resource(
     :param include_children: Include children of parent products.
     :param kwargs: Additional keyword arguments to pass to the strategy selector.
     """
+
     selector_type = get_class("partner.strategy", "Selector")
     stock_strategy = selector_type().strategy(request=request, user=user, **kwargs)
-
-    return product_to_resource_with_strategy(product, stock_strategy, include_children)
+    return product_to_resource_with_strategy(
+        product, stock_strategy, include_children, product_mapper=product_mapper
+    )
 
 
 def product_queryset_to_resources(
@@ -382,6 +385,7 @@ def product_queryset_to_resources(
     request: Optional[HttpRequest] = None,
     user: Optional[AbstractUser] = None,
     include_children: bool = False,
+    product_mapper=ProductToResource,
     **kwargs,
 ) -> Iterable[resources.catalogue.Product]:
     """Map a queryset of product models to a list of resources.
@@ -401,7 +405,12 @@ def product_queryset_to_resources(
     )
 
     return product_to_resource(
-        query_set, request, user, include_children=include_children, **kwargs
+        query_set,
+        request,
+        user,
+        include_children,
+        product_mapper,
+        **kwargs,
     )
 
 
