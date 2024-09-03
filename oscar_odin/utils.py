@@ -75,19 +75,21 @@ def querycounter(*labels, print_queries=False):
             print("   ", q)
 
 
-def set_error_identifiers(error, record, error_identifiers):
-    all_identifier_values = []
-    for identifier in error_identifiers:
-        value = ""
-        if hasattr(record, identifier):
-            value = getattr(record, identifier)
-        all_identifier_values.append(str(value))
-    error.identifier_values = all_identifier_values
-    return error
+class ErrorLog(list):
+    def __init__(self, identifiers=None):
+        self.identifiers = identifiers
+
+    def add_error(self, error, record):
+        if self.identifiers is not None:
+            # Add details to identify the instance that produced this error
+            error.identifier_values = [
+                str(getattr(record, identifier, "")) for identifier in self.identifiers
+            ]
+        self.append(error)
 
 
 def validate_resources(resources, error_identifiers=None):
-    errors = []
+    errors = ErrorLog(identifiers=error_identifiers)
     valid_resources = []
     if not resources:
         return [], []
@@ -101,7 +103,5 @@ def validate_resources(resources, error_identifiers=None):
             resource.full_clean()
             valid_resources.append(resource)
         except ValidationError as error:
-            if error_identifiers is not None:
-                error = set_error_identifiers(error, resource, error_identifiers)
-            errors.append(error)
+            errors.add_error(error, resource)
     return valid_resources, errors

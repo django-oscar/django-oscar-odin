@@ -8,7 +8,7 @@ from django.core.exceptions import ValidationError
 from oscar.core.loading import get_model
 from oscar.apps.catalogue.product_attributes import QuerysetCache
 
-from ..utils import in_bulk, set_error_identifiers
+from ..utils import ErrorLog, in_bulk
 from ..exceptions import OscarOdinException
 from .constants import MODEL_IDENTIFIERS_MAPPING
 
@@ -62,7 +62,6 @@ class ModelMapperContext(dict):
     Model = None
     errors = None
     delete_related = False
-    error_identifiers = None
     clean_instances = True
 
     update_related_models_same_type = True
@@ -78,9 +77,8 @@ class ModelMapperContext(dict):
         self.fields_to_update = defaultdict(list)
         self.identifier_mapping = defaultdict(tuple)
         self.attribute_data = []
-        self.errors = []
+        self.errors = ErrorLog(identifiers=error_identifiers)
         self.delete_related = delete_related
-        self.error_identifiers = error_identifiers
         self.Model = Model
 
     def __bool__(self):
@@ -117,10 +115,7 @@ class ModelMapperContext(dict):
                         validate_unique=validate_unique, exclude=exclude
                     )
                 except ValidationError as e:
-                    # Add details to identify the instance that produced this error
-                    if self.error_identifiers:
-                        set_error_identifiers(e, instance, self.error_identifiers)
-                    self.errors.append(e)
+                    self.errors.add_error(e, instance)
                 else:
                     validated_instances.append(instance)
 
