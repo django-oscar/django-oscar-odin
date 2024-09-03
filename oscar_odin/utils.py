@@ -75,7 +75,18 @@ def querycounter(*labels, print_queries=False):
             print("   ", q)
 
 
-def validate_resources(resources):
+def set_error_identifiers(error, record, error_identifiers):
+    all_identifier_values = []
+    for identifier in error_identifiers:
+        value = ""
+        if hasattr(record, identifier):
+            value = getattr(record, identifier)
+        all_identifier_values.append(str(value))
+    error.identifier_values = all_identifier_values
+    return error
+
+
+def validate_resources(resources, error_identifiers=None):
     errors = []
     valid_resources = []
     if not resources:
@@ -90,5 +101,7 @@ def validate_resources(resources):
             resource.full_clean()
             valid_resources.append(resource)
         except ValidationError as error:
+            if error_identifiers is not None:
+                error = set_error_identifiers(error, resource, error_identifiers)
             errors.append(error)
     return valid_resources, errors
