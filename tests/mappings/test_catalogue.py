@@ -1,4 +1,7 @@
+from odin.codecs import dict_codec
+
 from django.test import TestCase
+
 from oscar.core.loading import get_model
 
 from oscar_odin.mappings import catalogue
@@ -41,3 +44,16 @@ class TestProduct(TestCase):
         self.assertEqual(product.title, actual.title)
         self.assertIsNotNone(actual.children)
         self.assertEqual(3, len(actual.children))
+
+    def test_queryset_to_resources(self):
+        queryset = Product.objects.all()
+        product_resources = catalogue.product_queryset_to_resources(queryset)
+
+        self.assertEqual(queryset.count(), len(product_resources))
+
+    def test_queryset_to_resources_num_queries(self):
+        queryset = Product.objects.all()
+
+        with self.assertNumQueries(1):
+            resources = catalogue.product_queryset_to_resources(queryset)
+            dict_codec.dump(resources, include_type_field=False)

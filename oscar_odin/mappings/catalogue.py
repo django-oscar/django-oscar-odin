@@ -162,10 +162,12 @@ class ProductToResource(OscarBaseMapping):
     @odin.assign_field(to_list=True)
     def categories(self):
         """Map related categories."""
-        # todo: make this work with prefetch
-        # items = self.source.get_categories()
-        items = self.source.categories.all()
-        return map_queryset(CategoryToResource, items, context=self.context)
+        if self.source.is_child:
+            items = self.source.parent.parent_browsable_categories
+        else:
+            items = self.source.browsable_categories
+
+        return list(CategoryToResource.apply(items, context=self.context))
 
     @odin.assign_field
     def product_class(self) -> str:
@@ -404,27 +406,65 @@ def product_queryset_to_resources(
 
     # To improve performance, all related fields that are used in the mapping are prefetched
     # in a single query. Whenever you add a new related field to the mapping, make sure to
-    # add it here as well. This will improve performance significantly. If done correctly,
-    # it should be able to index 1 million products into elasticsearch in less than 10 minutes.
-    query_set = queryset.prefetch_related(
-        "images",
-        "parent__images",
+    # add it here as well, and document the origin of that query like the other. This will
+    # improve performance significantly.
+    #
+    # ToDo: Move this to a seperate file, so it can be loaded with class and be overidden per project?
+    queryset = queryset.select_related(
+        # ProductToResource.product_class -> get_product_class()
         "product_class",
+        # ProductToResource.product_class -> get_product_class()
+        "parent",
         "parent__product_class",
-        "product_class__options",
-        "stockrecords",
-        "attribute_values",
-        "parent__attribute_values",
-        "children",
-
-        # categories should be prefetched as well, however, the get_categories accesses a manager method
-        # for the categories (categories.browsable()), so when get_categories is called, it should still be prefetched.
-        Prefetch("categories", queryset=CategoryModel.objects.browsable()),
-        Prefetch("parent__categories", queryset=CategoryModel.objects.browsable()),
+    ).prefetch_related(
+        # ProductToResource.images -> get_all_images
+        Prefetch("images"),
+        Prefetch("parent__images"),
+        # ProducToResource.map_stock_price -> fetch_for_product
+        Prefetch("stockrecords"),
+        # ProducToResource.attributes -> get_attribute_values
+        Prefetch(
+            "attribute_values",
+            queryset=ProductAttributeValueModel.objects.select_related(
+                "attribute", "value_option"
+            ),
+        ),
+        Prefetch(
+            "parent__attribute_values",
+            queryset=ProductAttributeValueModel.objects.select_related(
+                "attribute", "value_option"
+            ),
+        ),
+        # ALL categories prefetching (this is used somewhere, find out where cause we dont really need it?)
+        Prefetch("categories"),
+        Prefetch("parent__categories"),
+        # Prefetching manager methods in Django does not work, as Django thinks this is a seperate query
+        # So instead, we prefetch it manually and save it as attribute on each instance (to_attr).
+        # This can then be accessed within oding by doing; self.source.<to_attr>
+        Prefetch(
+            "categories",
+            queryset=CategoryModel.objects.browsable(),
+            to_attr="browsable_categories",
+        ),
+        Prefetch(
+            "parent__categories",
+            queryset=CategoryModel.objects.browsable(),
+            to_attr="parent_browsable_categories",
+        ),
+        # ToDo: Figure out a way for children stockrecords (fetch_for_parent).
+        # This does a product.children.public(), and thus Django does not support that.
+        # ToDo: Try prefetching child get_attribute_values() , as this does the following;
+        #   parent_attribute_values = self.parent.attribute_values.exclude(
+        #       attribute__code__in=attribute_values.values("attribute__code")
+        #   )
+        #   return attribute_values | parent_attribute_values
+        #
+        # It would be nice to be able to prefetch this, especially when a shop has a lot of
+        # variants, cause of the n+1 queries. However, not sure how easy it would be.
     )
 
     return product_to_resource(
-        query_set,
+        queryset,
         request,
         user,
         include_children,
