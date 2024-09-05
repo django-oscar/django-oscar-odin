@@ -14,8 +14,9 @@ def map_queryset(
 ) -> list:
     """Map a queryset to a list of resources.
 
-    This method will call ``QuerySet.all()`` to ensure that the queryset can
-    be directly iterated.
+    This method will call ``list(queryset)`` to ensure that the queryset can
+    be directly iterated. We do not call ``queryset.all()`` because it may
+    trigger a database query, which we don't want.
 
     :param mapping: The mapping type to use.
     :param queryset: The queryset to map.
@@ -27,7 +28,7 @@ def map_queryset(
             f"Mapping {mapping} cannot map queryset of type {queryset.model}"
         )
     return list(
-        mapping.apply(queryset.all(), context=context, mapping_result=ImmediateResult)
+        mapping.apply(list(queryset), context=context, mapping_result=ImmediateResult)
     )
 
 

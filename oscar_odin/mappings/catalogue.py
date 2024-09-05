@@ -6,7 +6,7 @@ from decimal import Decimal
 from typing import Any, Dict, Iterable, List, Optional, Tuple, Union
 
 from django.contrib.auth.models import AbstractUser
-from django.db.models import QuerySet
+from django.db.models import QuerySet, Prefetch
 from django.db.models.fields.files import ImageFieldFile
 from django.http import HttpRequest
 from oscar.apps.partner.strategy import Default as DefaultStrategy
@@ -162,7 +162,9 @@ class ProductToResource(OscarBaseMapping):
     @odin.assign_field(to_list=True)
     def categories(self):
         """Map related categories."""
-        items = self.source.get_categories()
+        # todo: make this work with prefetch
+        # items = self.source.get_categories()
+        items = self.source.categories.all()
         return map_queryset(CategoryToResource, items, context=self.context)
 
     @odin.assign_field
@@ -400,8 +402,25 @@ def product_queryset_to_resources(
     :param kwargs: Additional keyword arguments to pass to the strategy selector.
     """
 
+    # To improve performance, all related fields that are used in the mapping are prefetched
+    # in a single query. Whenever you add a new related field to the mapping, make sure to
+    # add it here as well. This will improve performance significantly. If done correctly,
+    # it should be able to index 1 million products into elasticsearch in less than 10 minutes.
     query_set = queryset.prefetch_related(
-        "images", "product_class", "product_class__options"
+        "images",
+        "parent__images",
+        "product_class",
+        "parent__product_class",
+        "product_class__options",
+        "stockrecords",
+        "attribute_values",
+        "parent__attribute_values",
+        "children",
+
+        # categories should be prefetched as well, however, the get_categories accesses a manager method
+        # for the categories (categories.browsable()), so when get_categories is called, it should still be prefetched.
+        Prefetch("categories", queryset=CategoryModel.objects.browsable()),
+        Prefetch("parent__categories", queryset=CategoryModel.objects.browsable()),
     )
 
     return product_to_resource(
