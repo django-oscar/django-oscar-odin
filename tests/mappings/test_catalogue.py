@@ -54,6 +54,12 @@ class TestProduct(TestCase):
     def test_queryset_to_resources_num_queries(self):
         queryset = Product.objects.all()
 
-        with self.assertNumQueries(1):
+        resources = catalogue.product_queryset_to_resources(queryset)
+        dict_codec.dump(resources, include_type_field=False)
+
+        self.assertEqual(queryset.count(), 210)
+
+        # Without all the prefetching, the queries would be 1000+
+        with self.assertNumQueries(19):
             resources = catalogue.product_queryset_to_resources(queryset)
             dict_codec.dump(resources, include_type_field=False)

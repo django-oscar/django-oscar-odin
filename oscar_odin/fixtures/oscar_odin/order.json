@@ -67,7 +67,8 @@
         "unit_price_incl_tax": "10.00",
         "unit_price_excl_tax": "10.00",
         "tax_code": null,
-        "status": "Pending"
+        "status": "Pending",
+        "num_allocated": 0
     }
 },
 {
@@ -92,7 +93,8 @@
         "unit_price_incl_tax": "10.00",
         "unit_price_excl_tax": "10.00",
         "tax_code": null,
-        "status": "Pending"
+        "status": "Pending",
+        "num_allocated": 0
     }
 },
 {

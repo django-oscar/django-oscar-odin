@@ -6,9 +6,10 @@ from decimal import Decimal
 from typing import Any, Dict, Iterable, List, Optional, Tuple, Union
 
 from django.contrib.auth.models import AbstractUser
-from django.db.models import QuerySet, Prefetch
+from django.db.models import QuerySet
 from django.db.models.fields.files import ImageFieldFile
 from django.http import HttpRequest
+from odin.mapping import ImmediateResult
 from oscar.apps.partner.strategy import Default as DefaultStrategy
 from oscar.core.loading import get_class, get_model
 
@@ -18,6 +19,7 @@ from .. import resources
 from ._common import map_queryset, OscarBaseMapping
 from ._model_mapper import ModelMapping
 from ..utils import validate_resources
+from ..settings import get_prefetch_product_queryset
 
 from .context import ProductModelMapperContext
 from .constants import ALL_CATALOGUE_FIELDS, MODEL_IDENTIFIERS_MAPPING
@@ -30,6 +32,8 @@ __all__ = (
     "product_to_resource",
     "product_queryset_to_resources",
 )
+
+prefetch_product_queryset = get_prefetch_product_queryset()
 
 
 ProductImageModel = get_model("catalogue", "ProductImage")
@@ -162,12 +166,13 @@ class ProductToResource(OscarBaseMapping):
     @odin.assign_field(to_list=True)
     def categories(self):
         """Map related categories."""
-        if self.source.is_child:
-            items = self.source.parent.parent_browsable_categories
-        else:
-            items = self.source.browsable_categories
-
-        return list(CategoryToResource.apply(items, context=self.context))
+        items = self.source.get_categories()
+        # Note: categories are prefetched with the 'to_attr' method, this means it's a list and not a queryset.
+        return list(
+            CategoryToResource.apply(
+                items, context=self.context, mapping_result=ImmediateResult
+            )
+        )
 
     @odin.assign_field
     def product_class(self) -> str:
@@ -337,7 +342,7 @@ def product_to_resource_with_strategy(
 ):
     """Map a product model to a resource.
 
-    This method will except either a single product or an iterable of product
+    This method will accept either a single product or an iterable of product
     models (eg a QuerySet), and will return the corresponding resource(s).
     The request and user are optional, but if provided they are supplied to the
     partner strategy selector.
@@ -365,7 +370,7 @@ def product_to_resource(
 ) -> Union[resources.catalogue.Product, Iterable[resources.catalogue.Product]]:
     """Map a product model to a resource.
 
-    This method will except either a single product or an iterable of product
+    This method will accept either a single product or an iterable of product
     models (eg a QuerySet), and will return the corresponding resource(s).
     The request and user are optional, but if provided they are supplied to the
     partner strategy selector.
@@ -404,64 +409,7 @@ def product_queryset_to_resources(
     :param kwargs: Additional keyword arguments to pass to the strategy selector.
     """
 
-    # To improve performance, all related fields that are used in the mapping are prefetched
-    # in a single query. Whenever you add a new related field to the mapping, make sure to
-    # add it here as well, and document the origin of that query like the other. This will
-    # improve performance significantly.
-    #
-    # ToDo: Move this to a seperate file, so it can be loaded with class and be overidden per project?
-    queryset = queryset.select_related(
-        # ProductToResource.product_class -> get_product_class()
-        "product_class",
-        # ProductToResource.product_class -> get_product_class()
-        "parent",
-        "parent__product_class",
-    ).prefetch_related(
-        # ProductToResource.images -> get_all_images
-        Prefetch("images"),
-        Prefetch("parent__images"),
-        # ProducToResource.map_stock_price -> fetch_for_product
-        Prefetch("stockrecords"),
-        # ProducToResource.attributes -> get_attribute_values
-        Prefetch(
-            "attribute_values",
-            queryset=ProductAttributeValueModel.objects.select_related(
-                "attribute", "value_option"
-            ),
-        ),
-        Prefetch(
-            "parent__attribute_values",
-            queryset=ProductAttributeValueModel.objects.select_related(
-                "attribute", "value_option"
-            ),
-        ),
-        # ALL categories prefetching (this is used somewhere, find out where cause we dont really need it?)
-        Prefetch("categories"),
-        Prefetch("parent__categories"),
-        # Prefetching manager methods in Django does not work, as Django thinks this is a seperate query
-        # So instead, we prefetch it manually and save it as attribute on each instance (to_attr).
-        # This can then be accessed within oding by doing; self.source.<to_attr>
-        Prefetch(
-            "categories",
-            queryset=CategoryModel.objects.browsable(),
-            to_attr="browsable_categories",
-        ),
-        Prefetch(
-            "parent__categories",
-            queryset=CategoryModel.objects.browsable(),
-            to_attr="parent_browsable_categories",
-        ),
-        # ToDo: Figure out a way for children stockrecords (fetch_for_parent).
-        # This does a product.children.public(), and thus Django does not support that.
-        # ToDo: Try prefetching child get_attribute_values() , as this does the following;
-        #   parent_attribute_values = self.parent.attribute_values.exclude(
-        #       attribute__code__in=attribute_values.values("attribute__code")
-        #   )
-        #   return attribute_values | parent_attribute_values
-        #
-        # It would be nice to be able to prefetch this, especially when a shop has a lot of
-        # variants, cause of the n+1 queries. However, not sure how easy it would be.
-    )
+    queryset = prefetch_product_queryset(queryset, include_children)
 
     return product_to_resource(
         queryset,

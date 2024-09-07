@@ -1,9 +1,9 @@
 """Common code between mappings."""
 from typing import Any, Dict, Optional, Type
-
-import odin
 from django.db.models import QuerySet
 from django.db.models.manager import BaseManager
+
+import odin
 from odin.mapping import ImmediateResult, MappingBase, MappingMeta
 
 
@@ -15,8 +15,7 @@ def map_queryset(
 ) -> list:
     """Map a queryset to a list of resources.
 
-    This method will call ``QuerySet.all()`` to ensure that the queryset can
-    be directly iterated. Only when the queryset has not been evaluated yet.
+    This method will ensure that the queryset can be directly iterated.
 
     :param mapping: The mapping type to use.
     :param queryset: The queryset to map.
@@ -28,19 +27,11 @@ def map_queryset(
             f"Mapping {mapping} cannot map queryset of type {queryset.model}"
         )
 
-    # Avoid hitting the database if it already has been evaluated.
-    # pylint: disable=protected-access
-    if isinstance(queryset, QuerySet) and queryset._result_cache is None:
+    if isinstance(queryset, BaseManager):
         queryset = queryset.all()
-    elif isinstance(queryset, BaseManager) and not hasattr(
-        queryset, "_prefetched_objects_cache"
-    ):
-        queryset = queryset.all()
-    else:
-        queryset = list(queryset)
 
     return list(
-        mapping.apply(queryset, context=context, mapping_result=ImmediateResult)
+        mapping.apply(list(queryset), context=context, mapping_result=ImmediateResult)
     )
 
 

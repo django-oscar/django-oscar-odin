@@ -155,7 +155,8 @@
         "unit_price_incl_tax": "349.99",
         "unit_price_excl_tax": "289.25",
         "tax_code": "high",
-        "status": "paid"
+        "status": "paid",
+        "num_allocated": 0
     }
 },
 {
@@ -180,7 +181,8 @@
         "unit_price_incl_tax": "69.99",
         "unit_price_excl_tax": "57.84",
         "tax_code": "high",
-        "status": "paid"
+        "status": "paid",
+        "num_allocated": 0
     }
 },
 {
@@ -205,7 +207,8 @@
         "unit_price_incl_tax": "39.99",
         "unit_price_excl_tax": "36.69",
         "tax_code": "low",
-        "status": "paid"
+        "status": "paid",
+        "num_allocated": 0
     }
 },
 {
@@ -230,7 +233,8 @@
         "unit_price_incl_tax": "34.99",
         "unit_price_excl_tax": "28.92",
         "tax_code": "high",
-        "status": "paid"
+        "status": "paid",
+        "num_allocated": 0
     }
 },
 {
@@ -255,7 +259,8 @@
         "unit_price_incl_tax": "14.99",
         "unit_price_excl_tax": "13.75",
         "tax_code": "low",
-        "status": "paid"
+        "status": "paid",
+        "num_allocated": 0
     }
 },
 {
@@ -280,7 +285,8 @@
         "unit_price_incl_tax": "349.99",
         "unit_price_excl_tax": "289.25",
         "tax_code": "high",
-        "status": "paid"
+        "status": "paid",
+        "num_allocated": 0
     }
 },
 {
