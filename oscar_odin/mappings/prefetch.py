@@ -1,18 +1,11 @@
 from django.db.models import Prefetch
 
-from oscar.core.loading import get_model, get_class
+from oscar.core.loading import get_model
 from oscar.apps.catalogue.managers import ProductQuerySet
 
 ProductModel = get_model("catalogue", "Product")
 CategoryModel = get_model("catalogue", "Category")
 ProductAttributeValueModel = get_model("catalogue", "ProductAttributeValue")
-
-get_public_children_prefetch = get_class(
-    "oscar.apps.catalogue.prefetches", "get_public_children_prefetch"
-)
-get_browsable_categories_prefetch = get_class(
-    "oscar.apps.catalogue.prefetches", "get_browsable_categories_prefetch"
-)
 
 
 def prefetch_product_queryset(
@@ -29,6 +22,7 @@ def prefetch_product_queryset(
     queryset = queryset.select_related(
         # ProductToResource.product_class -> get_product_class
         "product_class",
+        "parent",
     ).prefetch_related(
         # ProductToResource.images -> get_all_images
         Prefetch("images"),
@@ -41,28 +35,23 @@ def prefetch_product_queryset(
                 "attribute", "value_option"
             ),
         ),
-        # ProductToResource.categories -> get_categories
+        # This gets prefetches somewhere (.categories.all()), it's not in get_categories as that does
+        # .browsable() and that's where the prefetch_browsable_categories is for. But if we remove this,
+        # the amount of queries will be more again. ToDo: Figure out where this is used and document it.
         Prefetch("categories"),
-        get_browsable_categories_prefetch(),
-        # ProductToResource.map_stock_price -> fetch_for_parent -> product.children.public() -> stockrecords
-        get_public_children_prefetch(
-            queryset=ProductModel.objects.public().prefetch_related("stockrecords")
-        ),
         # The parent and it's related fields are prefetched in numerous places in the resource.
         # ProductToResource.product_class -> get_product_class (takes parent product_class if itself has no product_class)
         # ProductToResource.images -> get_all_images (takes parent images if itself has no images)
-        # ProductToResource.categories -> get_categories (takes parent categories if itself has no categories)
-        Prefetch(
-            "parent",
-            queryset=ProductModel.objects.select_related(
-                "product_class"
-            ).prefetch_related(
-                # ProductToResource.images -> get_all_images (takes parent images if itself has no images)
-                Prefetch("images"),
-                # ProductToResource.categories -> get_categories (takes parent categories if itself has no categories)
-                get_browsable_categories_prefetch(),
-            ),
-        ),
+        Prefetch("parent__product_class"),
+        Prefetch("parent__images"),
+    )
+
+    # ProductToResource.categories -> get_categories
+    # ProductToResource.categories -> get_categories -> looks up the parent categories if child
+    queryset = queryset.prefetch_browsable_categories()
+    # ProductToResource.map_stock_price -> fetch_for_parent -> product.children.public() -> stockrecords
+    queryset = queryset.prefetch_public_children(
+        queryset=ProductModel.objects.public().prefetch_related("stockrecords")
     )
 
     if include_children:
