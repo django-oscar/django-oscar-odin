@@ -1,9 +1,8 @@
-"""Oscar App Config for Oscar Odin."""
+"""Django App Config for Oscar Odin."""
 
-from django.apps.config import AppConfig
+from django.apps import AppConfig
 from django.db.models import Model
 from django.utils.translation import gettext_lazy as _
-
 from odin import registration
 
 from .django_resolver import ModelFieldResolver
