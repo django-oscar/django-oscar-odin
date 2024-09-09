@@ -46,8 +46,23 @@ class OscarBaseMapping(MappingBase, metaclass=MappingMeta):
             for key, field_value in field_values.items():
                 setattr(new_obj, key, field_value)
 
+            self.pass_model_instance(new_obj)
+
             return new_obj
         except AttributeError:
-            return super().create_object(**field_value)
+            new_obj = super().create_object(**field_value)
+            self.pass_model_instance(new_obj)
+            return new_obj
+
+    def pass_model_instance(self, obj):
+        """
+        Passes the model instance (original source) into the extra_attrs method of the resource.
+        The resource can then use this to store the model instance as a property for later resources.
+        This is useful, as the base resource for each model, isn't saving every model field on the resource.
+        Though, later resources that gets mapped from the base resource, might need to access a certain fields
+        from the model instance, this way they can access it without doing a separate query, which is good for performance.
+        """
+        obj.extra_attrs({"model_instance": self.source})
+        return obj
 
     register_mapping = False
