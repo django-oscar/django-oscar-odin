@@ -1,6 +1,6 @@
 """Common code between mappings."""
 from typing import Any, Dict, Optional, Type
-from django.db.models import QuerySet
+from django.db.models import QuerySet, Model
 from django.db.models.manager import BaseManager
 
 import odin
@@ -62,7 +62,8 @@ class OscarBaseMapping(MappingBase, metaclass=MappingMeta):
         Though, later resources that gets mapped from the base resource, might need to access a certain fields
         from the model instance, this way they can access it without doing a separate query, which is good for performance.
         """
-        obj.extra_attrs({"model_instance": self.source})
+        if isinstance(self.source, Model):
+            obj.extra_attrs({"model_instance": self.source})
         return obj
 
     register_mapping = False

@@ -28,13 +28,6 @@ def prefetch_product_queryset(
         Prefetch("images"),
         # ProducToResource.map_stock_price -> fetch_for_product
         Prefetch("stockrecords"),
-        # ProducToResource.attributes -> get_attribute_values
-        Prefetch(
-            "attribute_values",
-            queryset=ProductAttributeValueModel.objects.select_related(
-                "attribute", "value_option"
-            ),
-        ),
         # This gets prefetches somewhere (.categories.all()), it's not in get_categories as that does
         # .browsable() and that's where the prefetch_browsable_categories is for. But if we remove this,
         # the amount of queries will be more again. ToDo: Figure out where this is used and document it.
@@ -46,6 +39,11 @@ def prefetch_product_queryset(
         Prefetch("parent__images"),
     )
 
+    # ProducToResource.attributes -> get_attribute_values
+    queryset = queryset.prefetch_attribute_values(
+        include_parent_children_attributes=include_children
+    )
+
     # ProductToResource.categories -> get_categories
     # ProductToResource.categories -> get_categories -> looks up the parent categories if child
     queryset = queryset.prefetch_browsable_categories()
@@ -54,7 +52,12 @@ def prefetch_product_queryset(
         queryset=ProductModel.objects.public().prefetch_related("stockrecords")
     )
 
+    # When children are included, the same mapping that's applied for browsable products is applied on the children.
+    # This means we'll have to prefetch (most) of the same fields for the children as well.
     if include_children:
-        queryset = queryset.prefetch_related("children")
+        queryset = queryset.prefetch_related(
+            "children__images",
+            "children__stockrecords",
+        )
 
     return queryset
