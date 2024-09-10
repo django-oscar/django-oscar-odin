@@ -50,21 +50,21 @@ def register_default_prefetches():
     prefetch_registry.register_select_related(["product_class", "parent"])
 
     # ProductToResource.images -> get_all_images
-    prefetch_registry.register_prefetch(Prefetch("images"))
+    prefetch_registry.register_prefetch("images")
 
     # ProducToResource.map_stock_price -> fetch_for_product
-    prefetch_registry.register_prefetch(Prefetch("stockrecords"))
+    prefetch_registry.register_prefetch("stockrecords")
 
     # This gets prefetches somewhere (.categories.all()), it's not in get_categories as that does
     # .browsable() and that's where the prefetch_browsable_categories is for. But if we remove this,
     # the amount of queries will be more again. ToDo: Figure out where this is used and document it.
-    prefetch_registry.register_prefetch(Prefetch("categories"))
+    prefetch_registry.register_prefetch("categories")
 
     # The parent and its related fields are prefetched in numerous places in the resource.
     # ProductToResource.product_class -> get_product_class (takes parent product_class if itself has no product_class)
     # ProductToResource.images -> get_all_images (takes parent images if itself has no images)
-    prefetch_registry.register_prefetch(Prefetch("parent__product_class"))
-    prefetch_registry.register_prefetch(Prefetch("parent__images"))
+    prefetch_registry.register_prefetch("parent__product_class")
+    prefetch_registry.register_prefetch("parent__images")
 
     # ProducToResource.attributes -> get_attribute_values
     def prefetch_attribute_values(queryset: ProductQuerySet, **kwargs):
