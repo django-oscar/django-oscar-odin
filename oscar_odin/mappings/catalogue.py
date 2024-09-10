@@ -19,7 +19,7 @@ from .. import resources
 from ._common import map_queryset, OscarBaseMapping
 from ._model_mapper import ModelMapping
 from ..utils import validate_resources
-from ..settings import get_prefetch_product_queryset
+from .prefetching.prefetch import prefetch_product_queryset
 
 from .context import ProductModelMapperContext
 from .constants import ALL_CATALOGUE_FIELDS, MODEL_IDENTIFIERS_MAPPING
@@ -32,8 +32,6 @@ __all__ = (
     "product_to_resource",
     "product_queryset_to_resources",
 )
-
-prefetch_product_queryset = get_prefetch_product_queryset()
 
 
 ProductImageModel = get_model("catalogue", "ProductImage")

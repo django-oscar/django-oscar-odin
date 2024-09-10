@@ -18,3 +18,8 @@ class OscarOdinAppConfig(AppConfig):
 
         # Register the Django model field resolver
         registration.register_field_resolver(ModelFieldResolver, Model)
+
+        # Register the default prefetches for the product queryset
+        from oscar_odin.mappings.prefetching.prefetch import register_default_prefetches
+
+        register_default_prefetches()
