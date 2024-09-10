@@ -59,7 +59,7 @@ class TestProduct(TestCase):
         # For future reference; It's fine if this test fails after some changes.
         # However, the query shouldn't increase too much, if it does, it means you got a
         # n+1 query problem and that should be fixed instead by prefetching, annotating etc.
-        with self.assertNumQueries(13):
+        with self.assertNumQueries(14):
             resources = catalogue.product_queryset_to_resources(
                 queryset, include_children=False
             )
@@ -70,7 +70,7 @@ class TestProduct(TestCase):
         self.assertEqual(queryset.count(), 210)
 
         # It should only go up by a few queries.
-        with self.assertNumQueries(19):
+        with self.assertNumQueries(20):
             resources = catalogue.product_queryset_to_resources(
                 queryset, include_children=True
             )
