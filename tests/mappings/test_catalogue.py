@@ -1,4 +1,7 @@
+from odin.codecs import dict_codec
+
 from django.test import TestCase
+
 from oscar.core.loading import get_model
 
 from oscar_odin.mappings import catalogue
@@ -41,3 +44,34 @@ class TestProduct(TestCase):
         self.assertEqual(product.title, actual.title)
         self.assertIsNotNone(actual.children)
         self.assertEqual(3, len(actual.children))
+
+    def test_queryset_to_resources(self):
+        queryset = Product.objects.all()
+        product_resources = catalogue.product_queryset_to_resources(queryset)
+
+        self.assertEqual(queryset.count(), len(product_resources))
+
+    def test_queryset_to_resources_num_queries(self):
+        queryset = Product.objects.all()
+        self.assertEqual(queryset.count(), 210)
+
+        # Without all the prefetching, the queries would be 1000+
+        # For future reference; It's fine if this test fails after some changes.
+        # However, the query shouldn't increase too much, if it does, it means you got a
+        # n+1 query problem and that should be fixed instead by prefetching, annotating etc.
+        with self.assertNumQueries(14):
+            resources = catalogue.product_queryset_to_resources(
+                queryset, include_children=False
+            )
+            dict_codec.dump(resources, include_type_field=False)
+
+    def test_queryset_to_resources_include_children_num_queries(self):
+        queryset = Product.objects.all()
+        self.assertEqual(queryset.count(), 210)
+
+        # It should only go up by a few queries.
+        with self.assertNumQueries(20):
+            resources = catalogue.product_queryset_to_resources(
+                queryset, include_children=True
+            )
+            dict_codec.dump(resources, include_type_field=False)

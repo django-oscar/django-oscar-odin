@@ -9,6 +9,7 @@ from django.contrib.auth.models import AbstractUser
 from django.db.models import QuerySet
 from django.db.models.fields.files import ImageFieldFile
 from django.http import HttpRequest
+from odin.mapping import ImmediateResult
 from oscar.apps.partner.strategy import Default as DefaultStrategy
 from oscar.core.loading import get_class, get_model
 
@@ -18,6 +19,7 @@ from .. import resources
 from ._common import map_queryset, OscarBaseMapping
 from ._model_mapper import ModelMapping
 from ..utils import validate_resources
+from .prefetching.prefetch import prefetch_product_queryset
 
 from .context import ProductModelMapperContext
 from .constants import ALL_CATALOGUE_FIELDS, MODEL_IDENTIFIERS_MAPPING
@@ -163,7 +165,12 @@ class ProductToResource(OscarBaseMapping):
     def categories(self):
         """Map related categories."""
         items = self.source.get_categories()
-        return map_queryset(CategoryToResource, items, context=self.context)
+        # Note: categories are prefetched with the 'to_attr' method, this means it's a list and not a queryset.
+        return list(
+            CategoryToResource.apply(
+                items, context=self.context, mapping_result=ImmediateResult
+            )
+        )
 
     @odin.assign_field
     def product_class(self) -> str:
@@ -333,7 +340,7 @@ def product_to_resource_with_strategy(
 ):
     """Map a product model to a resource.
 
-    This method will except either a single product or an iterable of product
+    This method will accept either a single product or an iterable of product
     models (eg a QuerySet), and will return the corresponding resource(s).
     The request and user are optional, but if provided they are supplied to the
     partner strategy selector.
@@ -361,7 +368,7 @@ def product_to_resource(
 ) -> Union[resources.catalogue.Product, Iterable[resources.catalogue.Product]]:
     """Map a product model to a resource.
 
-    This method will except either a single product or an iterable of product
+    This method will accept either a single product or an iterable of product
     models (eg a QuerySet), and will return the corresponding resource(s).
     The request and user are optional, but if provided they are supplied to the
     partner strategy selector.
@@ -400,12 +407,10 @@ def product_queryset_to_resources(
     :param kwargs: Additional keyword arguments to pass to the strategy selector.
     """
 
-    query_set = queryset.prefetch_related(
-        "images", "product_class", "product_class__options"
-    )
+    queryset = prefetch_product_queryset(queryset, include_children)
 
     return product_to_resource(
-        query_set,
+        queryset,
         request,
         user,
         include_children,
