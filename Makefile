@@ -15,7 +15,7 @@ endif
 
 
 dev: install
-	pip install .[dev] --upgrade --upgrade-strategy=eager
+	pip install .[dev]
 
 install: fail-if-no-virtualenv
 	pip install --pre .[test]  --upgrade --upgrade-strategy=eager
@@ -31,7 +31,7 @@ lint: fail-if-no-virtualenv
 	pylint oscar_odin/
 
 test: fail-if-no-virtualenv
-	pip install .[test]
+	pip install --pre .[test] --upgrade --upgrade-strategy=eager
 	@coverage run --source='oscar_odin' ./manage.py test tests/
 	@coverage report
 	@coverage xml
