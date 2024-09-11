@@ -106,6 +106,7 @@ class Product(OscarCatalogue):
     is_discountable: bool = True
     is_public: bool = True
     parent: Optional[ParentProduct]
+    priority: int
 
     # Price information
     price: Decimal = DecimalField(null=True)
