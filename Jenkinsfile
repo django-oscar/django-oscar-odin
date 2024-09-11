@@ -27,6 +27,7 @@ pipeline {
                     withEnv(['PIP_INDEX_URL=https://pypi.uwkm.nl/voxyan/oscar/+simple/']) {
                       pysh "make test"
                     }
+                }
             }
             post {
                 always {
