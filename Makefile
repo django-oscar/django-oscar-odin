@@ -15,10 +15,10 @@ endif
 
 
 dev: install
-	pip install .[dev]
+	pip install .[dev] --upgrade --upgrade-strategy=eager
 
 install: fail-if-no-virtualenv
-	pip install .[test]
+	pip install --pre .[test]  --upgrade --upgrade-strategy=eager
 
 migrate:
 	./manage.py migrate --no-input
