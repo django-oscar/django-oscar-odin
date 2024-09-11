@@ -24,8 +24,9 @@ pipeline {
         stage('Test') {
             steps {
                 withPythonEnv('System-CPython-3.10') {
-                    pysh "make test"
-                }
+                    withEnv(['PIP_INDEX_URL=https://pypi.uwkm.nl/voxyan/oscar/+simple/']) {
+                      pysh "make test"
+                    }
             }
             post {
                 always {

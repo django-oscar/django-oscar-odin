@@ -30,8 +30,7 @@ lint: fail-if-no-virtualenv
 	black --check oscar_odin/
 	pylint oscar_odin/
 
-test: fail-if-no-virtualenv
-	pip install --pre .[test] --upgrade --upgrade-strategy=eager
+test: fail-if-no-virtualenv install
 	@coverage run --source='oscar_odin' ./manage.py test tests/
 	@coverage report
 	@coverage xml
