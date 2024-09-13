@@ -51,4 +51,4 @@ package: clean
 	poetry build
 
 release: package ## Creates release
-	twine upload -s dist/*
+	twine upload dist/*
