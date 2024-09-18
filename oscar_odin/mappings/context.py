@@ -208,6 +208,8 @@ class ModelMapperContext(dict):
         e.g, instances contain two product classes, one with pk=2 and one with pk=None,
         both have same slug. This method will assign both pk=2 to both instances.
         """
+        if not instances:
+            return
         identifiers = self.identifier_mapping.get(instances[0].__class__)
         pk_identity_map = {
             self.get_identity(instance, identifiers): instance.pk
@@ -248,6 +250,9 @@ class ModelMapperContext(dict):
 
         validated_create_instances = self.validate_instances(instances_to_create)
         self.Model.objects.bulk_create(validated_create_instances)
+        self.assign_pk_to_duplicate_instances(
+            instances_to_create, validated_create_instances
+        )
         for instance in validated_create_instances:
             if instance.pk is None:
                 raise OscarOdinException(
