@@ -100,6 +100,7 @@ class Product(OscarCatalogue):
     title: str
     slug: Optional[str]
     description: Optional[str] = ""
+    long_description: Optional[str] = ""
     meta_title: Optional[str]
     images: List[Image] = odin.Options(empty=True)
     rating: Optional[float]
