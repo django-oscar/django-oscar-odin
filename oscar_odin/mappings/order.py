@@ -144,6 +144,7 @@ class LineToResource(OscarBaseMapping):
     @odin.assign_field
     def attributes(self) -> Dict[str, Any]:
         """Map attributes."""
+        return dict(self.source.attributes.values_list("type", "value"))
 
 
 class StatusChangeToResource(OscarBaseMapping):
