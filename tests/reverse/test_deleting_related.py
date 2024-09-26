@@ -29,6 +29,7 @@ Category = get_model("catalogue", "Category")
 ProductImage = get_model("catalogue", "ProductImage")
 Partner = get_model("partner", "Partner")
 Stockrecord = get_model("partner", "Stockrecord")
+ProductCategory = get_model("catalogue", "ProductCategory")
 
 
 class DeleteRelatedModelReverseTest(TestCase):
@@ -401,3 +402,118 @@ class DeleteRelatedModelReverseTest(TestCase):
         # Other products' related models of stay unaffected
         self.assertTrue(Stockrecord.objects.count(), 2)
         self.assertTrue(ProductImage.objects.count(), 2)
+    
+    def test_only_category_related(self):
+        partner = Partner.objects.get(name="klaas")
+        product_class = ProductClassResource(slug="klaas", name="Klaas")
+        Category.add_root(code="3", name="3")
+        
+        product_resources = [
+            ProductResource(
+                upc="harrie",
+                title="harrie",
+                slug="asdf-harrie",
+                structure=Product.STANDALONE,
+                product_class=product_class,
+                price=D("20"),
+                availability=2,
+                currency="EUR",
+                partner=partner,
+                categories=[
+                   CategoryResource(code="1"),
+                   CategoryResource(code="3"),
+                ],
+                images=[
+                    ImageResource(
+                        caption="gekke caption",
+                        display_order=0,
+                        code="harrie",
+                        original=File(self.image, name="harrie.jpg"),
+                    ),
+                ],
+            ),
+            ProductResource(
+                upc="bat",
+                title="bat",
+                slug="asdf-bat",
+                structure=Product.STANDALONE,
+                product_class=product_class,
+                price=D("10"),
+                availability=2,
+                currency="EUR",
+                partner=partner,
+                categories=[
+                   CategoryResource(code="2"),
+                   CategoryResource(code="1")
+                ],
+                images=[
+                    ImageResource(
+                        caption="gekke caption",
+                        display_order=0,
+                        code="bat",
+                        original=File(self.image, name="bat.jpg"),
+                    ),
+                ],
+            ),
+            ProductResource(
+                upc="hat",
+                title="hat",
+                slug="asdf-hat",
+                structure=Product.STANDALONE,
+                product_class=product_class,
+                price=D("30"),
+                availability=1,
+                currency="EUR",
+                partner=partner,
+                categories=[
+                   CategoryResource(code="3") 
+                ],
+                images=[
+                    ImageResource(
+                        caption="gekke caption",
+                        display_order=0,
+                        code="hat",
+                        original=File(self.image, name="hat.jpg"),
+                    ),
+                ],
+            ),
+        ]
+        _, errors = products_to_db(product_resources)
+        self.assertEqual(len(errors), 0)
+        self.assertEqual(Product.objects.count(), 3)
+        self.assertEqual(ProductCategory.objects.count(), 5)
+        self.assertEqual(ProductImage.objects.count(), 3)
+        
+        product_resources = [
+            ProductResource(
+                upc="harrie",
+                title="harrie",
+                structure=Product.STANDALONE,
+                categories=[
+                   CategoryResource(code="1"),
+                ],
+            ),
+            ProductResource(
+                upc="bat",
+                title="bat",
+                structure=Product.STANDALONE,
+                categories=[
+                   CategoryResource(code="2"),
+                ],
+            ),
+            ProductResource(
+                upc="hat",
+                title="hat",
+                structure=Product.STANDALONE,
+                categories=[
+                   CategoryResource(code="3") 
+                ],
+            ),
+        ]
+
+        _, errors = products_to_db(product_resources, fields_to_update=["Category.code"], delete_related=True)
+        self.assertEqual(len(errors), 0)
+        
+        self.assertEqual(ProductCategory.objects.count(), 3)
+        self.assertEqual(ProductImage.objects.count(), 3)
+        
