@@ -21,7 +21,7 @@ class OscarCatalogue(OscarResource, abstract=True):
         namespace = "oscar.catalogue"
 
 
-class Image(OscarCatalogue):
+class ProductImage(OscarCatalogue):
     """An image for a product."""
 
     class Meta:
@@ -42,6 +42,8 @@ class Image(OscarCatalogue):
     )
     date_created: Optional[datetime]
 
+
+Image = ProductImage
 
 class Category(OscarCatalogue):
     """A category within Django Oscar."""
@@ -101,7 +103,7 @@ class Product(OscarCatalogue):
     slug: Optional[str]
     description: Optional[str] = ""
     meta_title: Optional[str]
-    images: List[Image] = odin.Options(empty=True)
+    images: List[ProductImage] = odin.Options(empty=True)
     rating: Optional[float]
     is_discountable: bool = True
     is_public: bool = True
