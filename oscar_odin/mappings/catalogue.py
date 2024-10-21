@@ -236,14 +236,14 @@ class ProductToResource(OscarBaseMapping):
         stock_strategy: DefaultStrategy = self.context["stock_strategy"]
 
         if self.source.is_parent:
-            price, availability, _ = stock_strategy.fetch_for_parent(self.source)
+            price_info = stock_strategy.fetch_for_parent(self.source)
         else:
-            price, availability, _ = stock_strategy.fetch_for_product(self.source)
+            price_info = stock_strategy.fetch_for_product(self.source)
         return (
-            getattr(price, "excl_tax", Decimal(0)),
-            getattr(price, "currency", ""),
-            getattr(availability, "num_available", 0),
-            availability.is_available_to_buy,
+            getattr(price_info.price, "excl_tax", Decimal(0)),
+            getattr(price_info.price, "currency", ""),
+            getattr(price_info.availability, "num_available", 0),
+            price_info.availability.is_available_to_buy,
         )
 
 
