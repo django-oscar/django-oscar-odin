@@ -41,12 +41,19 @@ ProductModel = get_model("catalogue", "Product")
 StockRecordModel = get_model("partner", "StockRecord")
 ProductAttributeValueModel = get_model("catalogue", "ProductAttributeValue")
 
+# Base resources
+ProductImage = get_class("oscar_odin.resources.catalogue", "ProductImage")
+Category = get_class("oscar_odin.resources.catalogue", "Category")
+ProductClass = get_class("oscar_odin.resources.catalogue", "ProductClass")
+Product = get_class("oscar_odin.resources.catalogue", "Product")
+ProductRecommentation = get_class("oscar_odin.resources.catalogue", "ProductRecommentation")
+
 
 class ProductImageToResource(OscarBaseMapping):
     """Map from an image model to a resource."""
 
     from_obj = ProductImageModel
-    to_obj = resources.catalogue.Image
+    to_obj = ProductImage
 
     @odin.map_field
     def original(self, value: ImageFieldFile) -> str:
@@ -58,7 +65,7 @@ class ProductImageToResource(OscarBaseMapping):
 class ProductImageToModel(OscarBaseMapping):
     """Map from an image resource to a model."""
 
-    from_obj = resources.catalogue.Image
+    from_obj = ProductImage
     to_obj = ProductImageModel
 
     @odin.map_field
@@ -73,7 +80,7 @@ class CategoryToResource(OscarBaseMapping):
     """Map from a category model to a resource."""
 
     from_obj = CategoryModel
-    to_obj = resources.catalogue.Category
+    to_obj = Category
 
     @odin.assign_field
     def meta_title(self) -> str:
@@ -91,7 +98,7 @@ class CategoryToResource(OscarBaseMapping):
 class CategoryToModel(OscarBaseMapping):
     """Map from a category resource to a model."""
 
-    from_obj = resources.catalogue.Category
+    from_obj = Category
     to_obj = CategoryModel
 
     @odin.map_field
@@ -129,13 +136,13 @@ class ProductClassToResource(OscarBaseMapping):
     """Map from a product class model to a resource."""
 
     from_obj = ProductClassModel
-    to_obj = resources.catalogue.ProductClass
+    to_obj = ProductClass
 
 
 class ProductClassToModel(OscarBaseMapping):
     """Map from a product class resource to a model."""
 
-    from_obj = resources.catalogue.ProductClass
+    from_obj = ProductClass
     to_obj = ProductClassModel
 
 
@@ -143,7 +150,7 @@ class ProductToResource(OscarBaseMapping):
     """Map from a product model to a resource."""
 
     from_obj = ProductModel
-    to_obj = resources.catalogue.Product
+    to_obj = Product
 
     @odin.assign_field
     def title(self) -> str:
@@ -156,7 +163,7 @@ class ProductToResource(OscarBaseMapping):
         return self.source.get_meta_title()
 
     @odin.assign_field(to_list=True)
-    def images(self) -> List[resources.catalogue.Image]:
+    def images(self) -> List[ProductImage]:
         """Map related image."""
         items = self.source.get_all_images()
         return map_queryset(ProductImageToResource, items, context=self.context)
@@ -216,7 +223,7 @@ class ProductToResource(OscarBaseMapping):
         }
 
     @odin.assign_field
-    def children(self) -> Tuple[Optional[List[resources.catalogue.Product]]]:
+    def children(self) -> Tuple[Optional[List[Product]]]:
         """Children of parent products."""
 
         if self.context.get("include_children", False) and self.source.is_parent:
@@ -250,7 +257,7 @@ class ProductToResource(OscarBaseMapping):
 class ProductToModel(ModelMapping):
     """Map from a product resource to a model."""
 
-    from_obj = resources.catalogue.Product
+    from_obj = Product
     to_obj = ProductModel
 
     mappings = (odin.define(from_field="children", skip_if_none=True),)
@@ -319,7 +326,7 @@ class ProductToModel(ModelMapping):
 
 
 class RecommendedProductToModel(OscarBaseMapping):
-    from_obj = resources.catalogue.ProductRecommentation
+    from_obj = ProductRecommentation
     to_obj = ProductModel
 
 
@@ -365,7 +372,7 @@ def product_to_resource(
     include_children: bool = False,
     product_mapper: OscarBaseMapping = ProductToResource,
     **kwargs,
-) -> Union[resources.catalogue.Product, Iterable[resources.catalogue.Product]]:
+) -> Union[Product, Iterable[Product]]:
     """Map a product model to a resource.
 
     This method will accept either a single product or an iterable of product
@@ -394,7 +401,7 @@ def product_queryset_to_resources(
     include_children: bool = False,
     product_mapper=ProductToResource,
     **kwargs,
-) -> Iterable[resources.catalogue.Product]:
+) -> Iterable[Product]:
     """Map a queryset of product models to a list of resources.
 
     The request and user are optional, but if provided they are supplied to the
@@ -420,7 +427,7 @@ def product_queryset_to_resources(
 
 
 def products_to_model(
-    products: List[resources.catalogue.Product],
+    products: List[Product],
     product_mapper=ProductToModel,
     delete_related=False,
 ) -> Tuple[List[ProductModel], Dict]:
