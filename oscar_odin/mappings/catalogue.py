@@ -52,7 +52,10 @@ class ProductImageToResource(OscarBaseMapping):
     def original(self, value: ImageFieldFile) -> str:
         """Convert value into a pure URL."""
         # Need URL prefix here
-        return value.url
+        try:
+            return value.url
+        except ValueError:
+            return None
 
 
 class ProductImageToModel(OscarBaseMapping):
