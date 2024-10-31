@@ -21,7 +21,7 @@ class OscarCatalogue(OscarResource, abstract=True):
         namespace = "oscar.catalogue"
 
 
-class ProductImage(OscarCatalogue):
+class ProductImageResource(OscarCatalogue):
     """An image for a product."""
 
     class Meta:
@@ -43,9 +43,7 @@ class ProductImage(OscarCatalogue):
     date_created: Optional[datetime]
 
 
-Image = ProductImage
-
-class Category(OscarCatalogue):
+class CategoryResource(OscarCatalogue):
     """A category within Django Oscar."""
 
     id: Optional[int]
@@ -62,7 +60,7 @@ class Category(OscarCatalogue):
     path: Optional[str]
 
 
-class ProductClass(OscarCatalogue):
+class ProductClassResource(OscarCatalogue):
     """A product class within Django Oscar."""
 
     name: Optional[str]
@@ -71,7 +69,7 @@ class ProductClass(OscarCatalogue):
     track_stock: Optional[bool]
 
 
-class StockRecord(OscarCatalogue):
+class StockRecordResource(OscarCatalogue):
     id: Optional[int]
     partner_sku: str
     num_in_stock: Optional[int]
@@ -80,20 +78,20 @@ class StockRecord(OscarCatalogue):
     currency: Optional[str]
 
 
-class ProductAttributeValue(OscarCatalogue):
+class ProductAttributeValueResource(OscarCatalogue):
     code: str
     value: Any
 
 
-class ParentProduct(OscarCatalogue):
+class ParentProductResource(OscarCatalogue):
     upc: str
 
 
-class ProductRecommentation(OscarCatalogue):
+class ProductRecommentationResource(OscarCatalogue):
     upc: str
 
 
-class Product(OscarCatalogue):
+class ProductResource(OscarCatalogue):
     """A product within Django Oscar."""
 
     id: Optional[int]
@@ -103,11 +101,11 @@ class Product(OscarCatalogue):
     slug: Optional[str]
     description: Optional[str] = ""
     meta_title: Optional[str]
-    images: List[ProductImage] = odin.Options(empty=True)
+    images: List[ProductImageResource] = odin.Options(empty=True)
     rating: Optional[float]
     is_discountable: bool = True
     is_public: bool = True
-    parent: Optional[ParentProduct]
+    parent: Optional[ParentProductResource]
     priority: int = 0
 
     # Price information
@@ -117,15 +115,15 @@ class Product(OscarCatalogue):
     is_available_to_buy: Optional[bool]
     partner: Optional[Any]
 
-    product_class: Optional[ProductClass] = None
+    product_class: Optional[ProductClassResource] = None
     attributes: Dict[str, Union[Any, None]]
-    categories: List[Category]
+    categories: List[CategoryResource]
 
-    recommended_products: List[ProductRecommentation]
+    recommended_products: List[ProductRecommentationResource]
 
     date_created: Optional[datetime]
     date_updated: Optional[datetime]
 
-    children: Optional[List["Product"]] = odin.ListOf.delayed(
-        lambda: Product, null=True
+    children: Optional[List["ProductResource"]] = odin.ListOf.delayed(
+        lambda: ProductResource, null=True
     )

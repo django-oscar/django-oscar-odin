@@ -5,6 +5,6 @@ from oscar_odin import resources
 
 class TestProduct(TestCase):
     def test_init(self):
-        target = resources.catalogue.Product()
+        target = resources.catalogue.ProductResource()
 
         self.assertIsNotNone(target)

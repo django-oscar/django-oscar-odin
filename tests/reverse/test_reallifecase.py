@@ -19,10 +19,10 @@ from django.utils.text import slugify
 from oscar_odin.fields import DecimalField
 from oscar_odin.mappings.catalogue import products_to_db
 from oscar_odin.resources.catalogue import (
-    Product as ProductResource,
-    Image as ImageResource,
-    ProductClass as ProductClassResource,
-    Category as CategoryResource,
+    ProductResource,
+    ProductImageResource,
+    ProductClassResource,
+    CategoryResource,
 )
 
 Product = get_model("catalogue", "Product")
@@ -96,7 +96,7 @@ class CSVProductMapping(odin.Mapping):
             a = urlparse(image)
             img = File(io.BytesIO(response.content), name=path.basename(a.path))
             images.append(
-                ImageResource(
+                ProductImageResource(
                     display_order=0,
                     code="%s?upc=%s" % (self.source.number, image),
                     caption="",
@@ -109,7 +109,7 @@ class CSVProductMapping(odin.Mapping):
             a = urlparse(app_image)
             img = File(io.BytesIO(response.content), name=path.basename(a.path))
             images.append(
-                ImageResource(
+                ProductImageResource(
                     display_order=1,
                     caption="",
                     code="%s?upc=%s-2" % (self.source.number, image),

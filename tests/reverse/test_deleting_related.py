@@ -10,11 +10,11 @@ from oscar.core.loading import get_model
 
 from oscar_odin.mappings.catalogue import products_to_db
 from oscar_odin.resources.catalogue import (
-    Product as ProductResource,
-    Image as ImageResource,
-    ProductClass as ProductClassResource,
-    Category as CategoryResource,
-    ProductRecommentation as ProductRecommentationResource,
+    ProductResource,
+    ProductImageResource,
+    ProductClassResource,
+    CategoryResource,
+    ProductRecommentationResource,
 )
 from oscar_odin.mappings.constants import (
     CATEGORY_CODE,
@@ -84,13 +84,13 @@ class DeleteRelatedModelReverseTest(TestCase):
                 partner=partner,
                 product_class=product_class,
                 images=[
-                    ImageResource(
+                    ProductImageResource(
                         caption="gekke caption",
                         display_order=0,
                         code="harrie",
                         original=File(self.image, name="harrie.jpg"),
                     ),
-                    ImageResource(
+                    ProductImageResource(
                         caption="gekke caption 2",
                         display_order=1,
                         code="vats",
@@ -113,7 +113,7 @@ class DeleteRelatedModelReverseTest(TestCase):
                 partner=partner,
                 product_class=product_class,
                 images=[
-                    ImageResource(
+                    ProductImageResource(
                         caption="robin",
                         display_order=0,
                         code="robin",
@@ -173,7 +173,7 @@ class DeleteRelatedModelReverseTest(TestCase):
                 partner=partner,
                 product_class=product_class,
                 images=[
-                    ImageResource(
+                    ProductImageResource(
                         caption="gekke caption",
                         display_order=0,
                         code="harrie",
@@ -192,7 +192,7 @@ class DeleteRelatedModelReverseTest(TestCase):
                 partner=partner,
                 product_class=product_class,
                 images=[
-                    ImageResource(
+                    ProductImageResource(
                         caption="gekke caption",
                         display_order=0,
                         code="harrie",
@@ -271,13 +271,13 @@ class DeleteRelatedModelReverseTest(TestCase):
             partner=partner,
             product_class=ProductClassResource(slug="klaas"),
             images=[
-                ImageResource(
+                ProductImageResource(
                     caption="gekke caption",
                     display_order=0,
                     code="harrie",
                     original=File(self.image, name="harrie.jpg"),
                 ),
-                ImageResource(
+                ProductImageResource(
                     caption="gekke caption 2",
                     display_order=1,
                     code="vats",
@@ -334,7 +334,7 @@ class DeleteRelatedModelReverseTest(TestCase):
                 currency="EUR",
                 partner=partner,
                 images=[
-                    ImageResource(
+                    ProductImageResource(
                         caption="gekke caption",
                         display_order=0,
                         code="harrie",
@@ -353,7 +353,7 @@ class DeleteRelatedModelReverseTest(TestCase):
                 currency="EUR",
                 partner=partner,
                 images=[
-                    ImageResource(
+                    ProductImageResource(
                         caption="gekke caption",
                         display_order=0,
                         code="bat",
@@ -372,7 +372,7 @@ class DeleteRelatedModelReverseTest(TestCase):
                 currency="EUR",
                 partner=partner,
                 images=[
-                    ImageResource(
+                    ProductImageResource(
                         caption="gekke caption",
                         display_order=0,
                         code="hat",
@@ -402,12 +402,12 @@ class DeleteRelatedModelReverseTest(TestCase):
         # Other products' related models of stay unaffected
         self.assertTrue(Stockrecord.objects.count(), 2)
         self.assertTrue(ProductImage.objects.count(), 2)
-    
+
     def test_only_category_related(self):
         partner = Partner.objects.get(name="klaas")
         product_class = ProductClassResource(slug="klaas", name="Klaas")
         Category.add_root(code="3", name="3")
-        
+
         product_resources = [
             ProductResource(
                 upc="harrie",
@@ -420,11 +420,11 @@ class DeleteRelatedModelReverseTest(TestCase):
                 currency="EUR",
                 partner=partner,
                 categories=[
-                   CategoryResource(code="1"),
-                   CategoryResource(code="3"),
+                    CategoryResource(code="1"),
+                    CategoryResource(code="3"),
                 ],
                 images=[
-                    ImageResource(
+                    ProductImageResource(
                         caption="gekke caption",
                         display_order=0,
                         code="harrie",
@@ -442,12 +442,9 @@ class DeleteRelatedModelReverseTest(TestCase):
                 availability=2,
                 currency="EUR",
                 partner=partner,
-                categories=[
-                   CategoryResource(code="2"),
-                   CategoryResource(code="1")
-                ],
+                categories=[CategoryResource(code="2"), CategoryResource(code="1")],
                 images=[
-                    ImageResource(
+                    ProductImageResource(
                         caption="gekke caption",
                         display_order=0,
                         code="bat",
@@ -465,11 +462,9 @@ class DeleteRelatedModelReverseTest(TestCase):
                 availability=1,
                 currency="EUR",
                 partner=partner,
-                categories=[
-                   CategoryResource(code="3") 
-                ],
+                categories=[CategoryResource(code="3")],
                 images=[
-                    ImageResource(
+                    ProductImageResource(
                         caption="gekke caption",
                         display_order=0,
                         code="hat",
@@ -483,14 +478,14 @@ class DeleteRelatedModelReverseTest(TestCase):
         self.assertEqual(Product.objects.count(), 3)
         self.assertEqual(ProductCategory.objects.count(), 5)
         self.assertEqual(ProductImage.objects.count(), 3)
-        
+
         product_resources = [
             ProductResource(
                 upc="harrie",
                 title="harrie",
                 structure=Product.STANDALONE,
                 categories=[
-                   CategoryResource(code="1"),
+                    CategoryResource(code="1"),
                 ],
             ),
             ProductResource(
@@ -498,22 +493,21 @@ class DeleteRelatedModelReverseTest(TestCase):
                 title="bat",
                 structure=Product.STANDALONE,
                 categories=[
-                   CategoryResource(code="2"),
+                    CategoryResource(code="2"),
                 ],
             ),
             ProductResource(
                 upc="hat",
                 title="hat",
                 structure=Product.STANDALONE,
-                categories=[
-                   CategoryResource(code="3") 
-                ],
+                categories=[CategoryResource(code="3")],
             ),
         ]
 
-        _, errors = products_to_db(product_resources, fields_to_update=["Category.code"], delete_related=True)
+        _, errors = products_to_db(
+            product_resources, fields_to_update=["Category.code"], delete_related=True
+        )
         self.assertEqual(len(errors), 0)
-        
+
         self.assertEqual(ProductCategory.objects.count(), 3)
         self.assertEqual(ProductImage.objects.count(), 3)
-        
