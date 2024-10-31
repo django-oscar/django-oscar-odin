@@ -1521,7 +1521,7 @@ files = [
 
 [[package]]
 name = "pywin32-ctypes"
-version = "0.2.2"
+version = "1.0.0"
 description = "A (partial) reimplementation of pywin32 using ctypes/cffi"
 optional = true
 python-versions = ">=3.6"
