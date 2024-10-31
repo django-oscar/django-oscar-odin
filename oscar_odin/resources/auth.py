@@ -1,5 +1,7 @@
 """Resources for Oscar categories."""
-from ._base import OscarResource
+from oscar.core.loading import get_class
+
+OscarResource = get_class("oscar_odin.resources._base", "OscarResource")
 
 
 class _User(OscarResource, abstract=True):
@@ -10,7 +12,7 @@ class _User(OscarResource, abstract=True):
         namespace = "oscar.user"
 
 
-class User(_User):
+class UserResource(_User):
     """User resource."""
 
     id: int

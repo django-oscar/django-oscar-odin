@@ -36,14 +36,14 @@ class SurchargeToResource(OscarBaseMapping):
     """Mapping from a surcharge model to a resource."""
 
     from_obj = SurchargeModel
-    to_obj = resources.order.Surcharge
+    to_obj = resources.order.SurchargeResource
 
 
 class DiscountLineToResource(OscarBaseMapping):
     """Mapping from an order discount line model to a resource"""
 
     from_obj = OrderLineDiscountModel
-    to_obj = resources.order.DiscountLine
+    to_obj = resources.order.DiscountLineResource
 
     @odin.assign_field
     def line(self):
@@ -55,12 +55,12 @@ class DiscountToResource(OscarBaseMapping):
     """Mapping from an order discount model to a resource."""
 
     from_obj = OrderDiscountModel
-    to_obj = resources.order.Discount
+    to_obj = resources.order.DiscountResource
 
     @odin.map_field
     def category(self, value: str):
         """Map category."""
-        return resources.order.DiscountCategory(value)
+        return resources.order.DiscountCategoryResource(value)
 
     @odin.assign_field
     def is_basket_discount(self) -> bool:
@@ -112,14 +112,14 @@ class ShippingEventToResource(OscarBaseMapping):
     """Mapping from a shipping event model to a resource."""
 
     from_obj = ShippingEventModel
-    to_obj = resources.order.ShippingEvent
+    to_obj = resources.order.ShippingEventResource
 
 
 class PaymentEventToResource(OscarBaseMapping):
     """Mapping from a payment event model to a resource."""
 
     from_obj = PaymentEventModel
-    to_obj = resources.order.PaymentEvent
+    to_obj = resources.order.PaymentEventResource
 
 
 class LinePriceToResource(OscarBaseMapping):
@@ -133,7 +133,7 @@ class LineToResource(OscarBaseMapping):
     """Mapping from Line model to resource."""
 
     from_obj = LineModel
-    to_obj = resources.order.Line
+    to_obj = resources.order.LineResource
 
     @odin.assign_field(to_list=True)
     def prices(self) -> List[resources.order.LinePrice]:
@@ -151,21 +151,21 @@ class StatusChangeToResource(OscarBaseMapping):
     """Mapping from order status change model to resource."""
 
     from_obj = OrderStatusChangeModel
-    to_obj = resources.order.StatusChange
+    to_obj = resources.order.StatusChangeResource
 
 
 class NoteToResource(OscarBaseMapping):
     """Mapping from order note model to resource."""
 
     from_obj = OrderNoteModel
-    to_obj = resources.order.Note
+    to_obj = resources.order.NoteResource
 
 
 class OrderToResource(OscarBaseMapping):
     """Mapping from order model to resource."""
 
     from_obj = OrderModel
-    to_obj = resources.order.Order
+    to_obj = resources.order.OrderResource
 
     @odin.assign_field
     def email(self) -> str:
@@ -173,61 +173,61 @@ class OrderToResource(OscarBaseMapping):
         return self.source.email
 
     @odin.assign_field
-    def user(self) -> Optional[resources.auth.User]:
+    def user(self) -> Optional[resources.auth.UserResource]:
         """Map user."""
         if self.source.user:
             return UserToResource.apply(self.source.user)
 
     @odin.assign_field
-    def billing_address(self) -> Optional[resources.address.BillingAddress]:
+    def billing_address(self) -> Optional[resources.address.BillingAddressResource]:
         """Map billing address."""
         if self.source.billing_address:
             return BillingAddressToResource.apply(self.source.billing_address)
 
     @odin.assign_field
-    def shipping_address(self) -> Optional[resources.address.ShippingAddress]:
+    def shipping_address(self) -> Optional[resources.address.ShippingAddressResource]:
         """Map shipping address."""
         if self.source.shipping_address:
             return ShippingAddressToResource.apply(self.source.shipping_address)
 
     @odin.assign_field(to_list=True)
-    def lines(self) -> List[resources.order.Line]:
+    def lines(self) -> List[resources.order.LineResource]:
         """Map order lines."""
         items = self.source.lines
         return map_queryset(LineToResource, items, context=self.context)
 
     @odin.assign_field(to_list=True)
-    def notes(self) -> List[resources.order.Note]:
+    def notes(self) -> List[resources.order.NoteResource]:
         """Map order notes."""
         items = self.source.notes
         return map_queryset(NoteToResource, items, context=self.context)
 
     @odin.assign_field(to_list=True)
-    def status_changes(self) -> List[resources.order.StatusChange]:
+    def status_changes(self) -> List[resources.order.StatusChangeResource]:
         """Map order status changes."""
         items = self.source.status_changes
         return map_queryset(StatusChangeToResource, items, context=self.context)
 
     @odin.assign_field(to_list=True)
-    def discounts(self) -> List[resources.order.Discount]:
+    def discounts(self) -> List[resources.order.DiscountResource]:
         """Map order discounts."""
         items = self.source.discounts
         return map_queryset(DiscountToResource, items, context=self.context)
 
     @odin.assign_field(to_list=True)
-    def surcharges(self) -> List[resources.order.Surcharge]:
+    def surcharges(self) -> List[resources.order.SurchargeResource]:
         """Map order surcharges."""
         items = self.source.surcharges
         return map_queryset(SurchargeToResource, items, context=self.context)
 
     @odin.assign_field(to_list=True)
-    def shipping_events(self) -> List[resources.order.ShippingEvent]:
+    def shipping_events(self) -> List[resources.order.ShippingEventResource]:
         """Map order shipping events."""
         items = self.source.shipping_events
         return map_queryset(ShippingEventToResource, items, context=self.context)
 
     @odin.assign_field(to_list=True)
-    def payment_events(self) -> List[resources.order.PaymentEvent]:
+    def payment_events(self) -> List[resources.order.PaymentEventResource]:
         """Map order payment events."""
         items = self.source.payment_events
         return map_queryset(PaymentEventToResource, items, context=self.context)
@@ -236,7 +236,7 @@ class OrderToResource(OscarBaseMapping):
 def order_to_resource(
     order: Union[OrderModel, Iterable[OrderModel]],
     request: Optional[HttpRequest] = None,
-) -> Union[resources.order.Order, Iterable[resources.order.Order]]:
+) -> Union[resources.order.OrderResource, Iterable[resources.order.OrderResource]]:
     """Map an order model to a resource.
 
     This method will except either a single order or an iterable of order

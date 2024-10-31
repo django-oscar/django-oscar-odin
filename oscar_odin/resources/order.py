@@ -6,13 +6,21 @@ from typing import Any, Dict, List, Optional
 
 import odin
 
+from oscar.core.loading import get_class
+
 from ..fields import DecimalField
-from ._base import OscarResource
-from .address import BillingAddress, ShippingAddress
-from .auth import User
+
+OscarResource = get_class("oscar_odin.resources._base", "OscarResource")
+BillingAddressResource = get_class(
+    "oscar_odin.resources.address", "BillingAddressResource"
+)
+ShippingAddressResource = get_class(
+    "oscar_odin.resources.address", "ShippingAddressResource"
+)
+UserResource = get_class("oscar_odin.resources.auth", "UserResource")
 
 
-class OscarOrder(OscarResource, abstract=True):
+class OscarOrderResource(OscarResource, abstract=True):
     """Base resource for Oscar order application."""
 
     class Meta:
@@ -20,7 +28,7 @@ class OscarOrder(OscarResource, abstract=True):
         namespace = "oscar.order"
 
 
-class LinePrice(OscarOrder):
+class LinePrice(OscarOrderResource):
     """For tracking the prices paid for each unit within a line.
 
     This is necessary as offers can lead to units within a line
@@ -45,7 +53,7 @@ class LinePrice(OscarOrder):
     )
 
 
-class Line(OscarOrder):
+class LineResource(OscarOrderResource):
     """A line within an order."""
 
     partner_id: Optional[int]
@@ -90,7 +98,7 @@ class Line(OscarOrder):
     status: str = odin.Options(empty=True)
 
 
-class PaymentEvent(OscarOrder):
+class PaymentEventResource(OscarOrderResource):
     """A payment event for an order.
 
     For example:
@@ -106,7 +114,7 @@ class PaymentEvent(OscarOrder):
     # shipping_event
 
 
-class ShippingEvent(OscarOrder):
+class ShippingEventResource(OscarOrderResource):
     """An event is something which happens to a group of lines such as
     1 item being dispatched.
     """
@@ -117,7 +125,7 @@ class ShippingEvent(OscarOrder):
     date_created: datetime
 
 
-class DiscountCategory(str, Enum):
+class DiscountCategoryResource(str, Enum):
     """Category of discount."""
 
     BASKET = "Basket"
@@ -125,27 +133,27 @@ class DiscountCategory(str, Enum):
     DEFERRED = "Deferred"
 
 
-class DiscountLine(OscarOrder):
+class DiscountLineResource(OscarOrderResource):
     """Line of a discount"""
 
-    line: Line
+    line: LineResource
     order_discount_id: int
     is_incl_tax: bool
     amount: Decimal = DecimalField()
 
 
-class DiscountPerTaxCodeResource(OscarOrder):
+class DiscountPerTaxCodeResource(OscarOrderResource):
     """Total discount for each tax code in a discount"""
 
     amount: Decimal = DecimalField()
     tax_code: str
 
 
-class Discount(OscarOrder):
+class DiscountResource(OscarOrderResource):
     """A discount against an order."""
 
     id: int
-    category: DiscountCategory
+    category: DiscountCategoryResource
     offer_id: Optional[int]
     offer_name: Optional[str]
     voucher_id: Optional[int]
@@ -153,7 +161,7 @@ class Discount(OscarOrder):
     frequency: Optional[int]
     amount: Decimal = DecimalField()
     message: str = odin.Options(empty=True)
-    discount_lines: List[DiscountLine]
+    discount_lines: List[DiscountLineResource]
     is_basket_discount: bool
     is_shipping_discount: bool
     is_post_order_action: bool
@@ -161,7 +169,7 @@ class Discount(OscarOrder):
     discount_lines_per_tax_code: DiscountPerTaxCodeResource
 
 
-class Surcharge(OscarOrder):
+class SurchargeResource(OscarOrderResource):
     """A surcharge against an order."""
 
     name: str
@@ -177,7 +185,7 @@ class Surcharge(OscarOrder):
     )
 
 
-class NoteType(str, Enum):
+class NoteTypeResource(str, Enum):
     """Type of order note."""
 
     INFO = "Info"
@@ -186,17 +194,17 @@ class NoteType(str, Enum):
     SYSTEM = "System"
 
 
-class Note(OscarOrder):
+class NoteResource(OscarOrderResource):
     """A note against an order."""
 
     # user_id: int
-    note_type: Optional[NoteType]
+    note_type: Optional[NoteTypeResource]
     message: str
     date_created: datetime
     date_updated: datetime
 
 
-class StatusChange(OscarOrder):
+class StatusChangeResource(OscarOrderResource):
     """A status change for an order."""
 
     old_status: str = odin.Options(empty=True)
@@ -204,7 +212,7 @@ class StatusChange(OscarOrder):
     date_created: datetime
 
 
-class Order(OscarOrder):
+class OrderResource(OscarOrderResource):
     """An order within Django Oscar."""
 
     class Meta:
@@ -219,9 +227,9 @@ class Order(OscarOrder):
         verbose_name="Site ID",
         doc_text="Site that the order was made through.",
     )
-    user: Optional[User]
+    user: Optional[UserResource]
     email: str = odin.Options(empty=True)  # Map off the order property on model
-    billing_address: Optional[BillingAddress]
+    billing_address: Optional[BillingAddressResource]
     currency: str
     total_incl_tax: Decimal = DecimalField(
         verbose_name="Order total (inc. tax)",
@@ -238,16 +246,16 @@ class Order(OscarOrder):
     shipping_tax_code: Optional[str] = odin.Options(
         verbose_name="Shipping VAT rate code"
     )
-    shipping_address: Optional[ShippingAddress]
+    shipping_address: Optional[ShippingAddressResource]
     shipping_method: str = odin.Options(empty=True)
     shipping_code: str = odin.Options(empty=True)
-    lines: List[Line]
+    lines: List[LineResource]
     status: str = odin.Options(empty=True)
     date_placed: datetime
 
-    notes: List[Note]
-    status_changes: List[StatusChange]
-    discounts: List[Discount]
-    surcharges: List[Surcharge]
-    payment_events: List[PaymentEvent]
-    shipping_events: List[ShippingEvent]
+    notes: List[NoteResource]
+    status_changes: List[StatusChangeResource]
+    discounts: List[DiscountResource]
+    surcharges: List[SurchargeResource]
+    payment_events: List[PaymentEventResource]
+    shipping_events: List[ShippingEventResource]

@@ -13,4 +13,4 @@ class UserToResource(OscarBaseMapping):
     """Mapping from user model to resource."""
 
     from_obj = UserModel
-    to_obj = resources.auth.User
+    to_obj = resources.auth.UserResource

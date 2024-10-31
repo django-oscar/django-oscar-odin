@@ -19,17 +19,17 @@ class CountryToResource(OscarBaseMapping):
     """Mapping from country model to resource."""
 
     from_obj = CountryModel
-    to_obj = resources.address.Country
+    to_obj = resources.address.CountryResource
 
 
 class BillingAddressToResource(OscarBaseMapping):
     """Mapping from billing address model to resource."""
 
     from_obj = BillingAddressModel
-    to_obj = resources.address.BillingAddress
+    to_obj = resources.address.BillingAddressResource
 
     @odin.assign_field
-    def country(self) -> resources.address.Country:
+    def country(self) -> resources.address.CountryResource:
         """Map country."""
         return CountryToResource.apply(self.source.country)
 
@@ -38,9 +38,9 @@ class ShippingAddressToResource(OscarBaseMapping):
     """Mapping from shipping address model to resource."""
 
     from_obj = ShippingAddressModel
-    to_obj = resources.address.ShippingAddress
+    to_obj = resources.address.ShippingAddressResource
 
     @odin.assign_field
-    def country(self) -> resources.address.Country:
+    def country(self) -> resources.address.CountryResource:
         """Map country."""
         return CountryToResource.apply(self.source.country)

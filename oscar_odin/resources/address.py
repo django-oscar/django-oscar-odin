@@ -4,10 +4,12 @@ from typing import Final, Sequence
 import odin.validators
 from odin.utils import iter_to_choices
 
-from ._base import OscarResource
+from oscar.core.loading import get_class
+
+OscarResource = get_class("oscar_odin.resources._base", "OscarResource")
 
 
-class OscarAddress(OscarResource, abstract=True):
+class OscarAddressResource(OscarResource, abstract=True):
     """Base resource for Oscar order application."""
 
     class Meta:
@@ -15,7 +17,7 @@ class OscarAddress(OscarResource, abstract=True):
         namespace = "oscar.address"
 
 
-class Country(OscarAddress):
+class CountryResource(OscarAddressResource):
     """A country."""
 
     iso_3166_1_a2: str = odin.Options(
@@ -52,7 +54,7 @@ class Country(OscarAddress):
 TITLE_CHOICES: Final[Sequence[str]] = ("Mr", "Miss", "Mrs", "Ms", "Dr")
 
 
-class Address(OscarAddress, abstract=True):
+class AddressResource(OscarAddressResource, abstract=True):
     """Base address resource."""
 
     title: str = odin.Options(empty=True, choices=iter_to_choices(TITLE_CHOICES))
@@ -64,10 +66,10 @@ class Address(OscarAddress, abstract=True):
     line4: str = odin.Options(empty=True, verbose_name="City")
     state: str = odin.Options(empty=True, verbose_name="State/Country")
     postcode: str = odin.Options(empty=True, verbose_name="Post/Zip-code")
-    country: Country
+    country: CountryResource
 
 
-class BillingAddress(Address):
+class BillingAddressResource(AddressResource):
     """Address for billing."""
 
     class Meta:
@@ -76,7 +78,7 @@ class BillingAddress(Address):
         verbose_name_plural = "Billing addresses"
 
 
-class ShippingAddress(Address):
+class ShippingAddressResource(AddressResource):
     """Address for shipping."""
 
     class Meta:

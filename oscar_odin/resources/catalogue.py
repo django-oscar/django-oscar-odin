@@ -3,17 +3,18 @@ from datetime import datetime
 from decimal import Decimal
 from typing import Any, Dict, List, Optional, Union
 
-from oscar.core.loading import get_model
+from oscar.core.loading import get_model, get_class
 import odin
 from odin.fields import StringField
 
 from ..fields import DecimalField
-from ._base import OscarResource
+
+OscarResource = get_class("oscar_odin.resources._base", "OscarResource")
 
 ProductModel = get_model("catalogue", "Product")
 
 
-class OscarCatalogue(OscarResource, abstract=True):
+class OscarCatalogueResource(OscarResource, abstract=True):
     """Base resource for Oscar catalogue application."""
 
     class Meta:
@@ -21,7 +22,7 @@ class OscarCatalogue(OscarResource, abstract=True):
         namespace = "oscar.catalogue"
 
 
-class ProductImageResource(OscarCatalogue):
+class ProductImageResource(OscarCatalogueResource):
     """An image for a product."""
 
     class Meta:
@@ -43,7 +44,7 @@ class ProductImageResource(OscarCatalogue):
     date_created: Optional[datetime]
 
 
-class CategoryResource(OscarCatalogue):
+class CategoryResource(OscarCatalogueResource):
     """A category within Django Oscar."""
 
     id: Optional[int]
@@ -60,7 +61,7 @@ class CategoryResource(OscarCatalogue):
     path: Optional[str]
 
 
-class ProductClassResource(OscarCatalogue):
+class ProductClassResource(OscarCatalogueResource):
     """A product class within Django Oscar."""
 
     name: Optional[str]
@@ -69,7 +70,7 @@ class ProductClassResource(OscarCatalogue):
     track_stock: Optional[bool]
 
 
-class StockRecordResource(OscarCatalogue):
+class StockRecordResource(OscarCatalogueResource):
     id: Optional[int]
     partner_sku: str
     num_in_stock: Optional[int]
@@ -78,20 +79,20 @@ class StockRecordResource(OscarCatalogue):
     currency: Optional[str]
 
 
-class ProductAttributeValueResource(OscarCatalogue):
+class ProductAttributeValueResource(OscarCatalogueResource):
     code: str
     value: Any
 
 
-class ParentProductResource(OscarCatalogue):
+class ParentProductResource(OscarCatalogueResource):
     upc: str
 
 
-class ProductRecommentationResource(OscarCatalogue):
+class ProductRecommentationResource(OscarCatalogueResource):
     upc: str
 
 
-class ProductResource(OscarCatalogue):
+class ProductResource(OscarCatalogueResource):
     """A product within Django Oscar."""
 
     id: Optional[int]
