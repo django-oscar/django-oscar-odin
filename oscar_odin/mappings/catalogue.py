@@ -15,8 +15,6 @@ from oscar.core.loading import get_class, get_classes, get_model
 
 from datetime import datetime
 
-from .. import resources
-from .model_mapper import ModelMapping
 from ..utils import validate_resources
 from .prefetching.prefetch import prefetch_product_queryset
 
@@ -41,8 +39,9 @@ StockRecordModel = get_model("partner", "StockRecord")
 ProductAttributeValueModel = get_model("catalogue", "ProductAttributeValue")
 
 # mappings
-map_queryset = get_class("oscar_odin.mappings.common", "map_queryset")
-OscarBaseMapping = get_class("oscar_odin.mappings.common", "OscarBaseMapping")
+map_queryset, OscarBaseMapping, ModelMapping = get_classes(
+    "oscar_odin.mappings.common", ["map_queryset", "OscarBaseMapping", "ModelMapping"]
+)
 
 # resources
 (
@@ -50,6 +49,7 @@ OscarBaseMapping = get_class("oscar_odin.mappings.common", "OscarBaseMapping")
     CategoryResource,
     ProductClassResource,
     ProductResource,
+    ParentProductResource,
     ProductRecommentationResource,
 ) = get_classes(
     "oscar_odin.resources.catalogue",
@@ -58,6 +58,7 @@ OscarBaseMapping = get_class("oscar_odin.mappings.common", "OscarBaseMapping")
         "CategoryResource",
         "ProductClassResource",
         "ProductResource",
+        "ParentProductResource",
         "ProductRecommentationResource",
     ],
 )
@@ -345,7 +346,7 @@ class RecommendedProductToModel(OscarBaseMapping):
 
 
 class ParentToModel(OscarBaseMapping):
-    from_obj = resources.catalogue.ParentProductResource
+    from_obj = ParentProductResource
     to_obj = ProductModel
 
     @odin.assign_field
