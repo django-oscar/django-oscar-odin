@@ -26,13 +26,12 @@ OrderLineDiscountModel = get_model("order", "OrderLineDiscount")
 SurchargeModel = get_model("order", "Surcharge")
 
 # mappings
-map_queryset = get_class("oscar_odin.mappings._common", "map_queryset")
-OscarBaseMapping = get_class("oscar_odin.mappings._common", "OscarBaseMapping")
-BillingAddressToResource = get_class(
-    "oscar_odin.mappings.address", "BillingAddressToResource"
+map_queryset, OscarBaseMapping = get_classes(
+    "oscar_odin.mappings.common", ["map_queryset", "OscarBaseMapping"]
 )
-ShippingAddressToResource = get_class(
-    "oscar_odin.mappings.address", "ShippingAddressToResource"
+BillingAddressToResource, ShippingAddressToResource = get_classes(
+    "oscar_odin.mappings.address",
+    ["BillingAddressToResource", "ShippingAddressToResource"],
 )
 UserToResource = get_class("oscar_odin.mappings.auth", "UserToResource")
 

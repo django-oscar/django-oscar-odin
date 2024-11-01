@@ -44,19 +44,21 @@ class InheritableAnnotatedResourceType(AnnotatedResourceType):
         return super().__new__(mcs, name, bases, attrs, meta_options_type, abstract)
 
 
-class InheritableResource(ResourceBase, metaclass=InheritableResourceType):
+class Resource(ResourceBase, metaclass=InheritableResourceType):
     """
-    class MyResource(InheritableResource):
+    from oscar_odin.resources.inheritable import Resource
+    class MyResource(Resource):
         pass
     """
 
 
-class InheritableAnnotatedResource(
+class AnnotatedResource(
     ResourceBase,
     metaclass=InheritableAnnotatedResourceType,
     meta_options_type=InheritableResourceOptions,
 ):
     """
-    class MyAnnotatedResource(InheritableAnnotatedResource):
+    from oscar_odin.resources.inheritable import AnnotatedResource
+    class MyAnnotatedResource(AnnotatedResource):
         pass
     """

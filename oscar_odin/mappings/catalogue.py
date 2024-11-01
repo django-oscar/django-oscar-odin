@@ -16,7 +16,7 @@ from oscar.core.loading import get_class, get_classes, get_model
 from datetime import datetime
 
 from .. import resources
-from ._model_mapper import ModelMapping
+from .model_mapper import ModelMapping
 from ..utils import validate_resources
 from .prefetching.prefetch import prefetch_product_queryset
 
@@ -41,8 +41,8 @@ StockRecordModel = get_model("partner", "StockRecord")
 ProductAttributeValueModel = get_model("catalogue", "ProductAttributeValue")
 
 # mappings
-map_queryset = get_class("oscar_odin.mappings._common", "map_queryset")
-OscarBaseMapping = get_class("oscar_odin.mappings._common", "OscarBaseMapping")
+map_queryset = get_class("oscar_odin.mappings.common", "map_queryset")
+OscarBaseMapping = get_class("oscar_odin.mappings.common", "OscarBaseMapping")
 
 # resources
 (

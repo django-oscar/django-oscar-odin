@@ -12,7 +12,7 @@ ShippingAddressModel = get_model("order", "ShippingAddress")
 CountryModel = get_model("address", "Country")
 
 # mappings
-OscarBaseMapping = get_class("oscar_odin.mappings._common", "OscarBaseMapping")
+OscarBaseMapping = get_class("oscar_odin.mappings.common", "OscarBaseMapping")
 
 # resources
 CountryResource, BillingAddressResource, ShippingAddressResource = get_classes(

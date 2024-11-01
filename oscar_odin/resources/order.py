@@ -6,16 +6,14 @@ from typing import Any, Dict, List, Optional
 
 import odin
 
-from oscar.core.loading import get_class
+from oscar.core.loading import get_class, get_classes
 
 from ..fields import DecimalField
 
-OscarResource = get_class("oscar_odin.resources._base", "OscarResource")
-BillingAddressResource = get_class(
-    "oscar_odin.resources.address", "BillingAddressResource"
-)
-ShippingAddressResource = get_class(
-    "oscar_odin.resources.address", "ShippingAddressResource"
+OscarResource = get_class("oscar_odin.resources.base", "OscarResource")
+BillingAddressResource, ShippingAddressResource = get_classes(
+    "oscar_odin.resources.address",
+    ["BillingAddressResource", "ShippingAddressResource"],
 )
 UserResource = get_class("oscar_odin.resources.auth", "UserResource")
 

@@ -6,7 +6,7 @@ __all__ = ("UserToResource",)
 UserModel = get_model("auth", "User")
 
 # mappings
-OscarBaseMapping = get_class("oscar_odin.mappings._common", "OscarBaseMapping")
+OscarBaseMapping = get_class("oscar_odin.mappings.common", "OscarBaseMapping")
 
 # resources
 UserResource = get_class("oscar_odin.resources.auth", "UserResource")

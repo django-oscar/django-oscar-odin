@@ -9,7 +9,7 @@ from odin.fields import StringField
 
 from ..fields import DecimalField
 
-OscarResource = get_class("oscar_odin.resources._base", "OscarResource")
+OscarResource = get_class("oscar_odin.resources.base", "OscarResource")
 
 ProductModel = get_model("catalogue", "Product")
 

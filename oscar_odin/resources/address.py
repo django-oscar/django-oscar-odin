@@ -6,7 +6,7 @@ from odin.utils import iter_to_choices
 
 from oscar.core.loading import get_class
 
-OscarResource = get_class("oscar_odin.resources._base", "OscarResource")
+OscarResource = get_class("oscar_odin.resources.base", "OscarResource")
 
 
 class OscarAddressResource(OscarResource, abstract=True):
