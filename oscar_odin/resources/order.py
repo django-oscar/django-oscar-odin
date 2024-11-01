@@ -28,7 +28,7 @@ class OscarOrderResource(OscarResource, abstract=True):
         namespace = "oscar.order"
 
 
-class LinePrice(OscarOrderResource):
+class LinePriceResource(OscarOrderResource):
     """For tracking the prices paid for each unit within a line.
 
     This is necessary as offers can lead to units within a line
@@ -73,7 +73,7 @@ class LineResource(OscarOrderResource):
     upc: Optional[str]
     quantity: int = 1
     attributes: Dict[str, Any]
-    prices: List[LinePrice]
+    prices: List[LinePriceResource]
 
     # Price information before discounts are applied
     price_before_discounts_incl_tax: Decimal = DecimalField(

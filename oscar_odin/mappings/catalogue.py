@@ -11,12 +11,11 @@ from django.db.models.fields.files import ImageFieldFile
 from django.http import HttpRequest
 from odin.mapping import ImmediateResult
 from oscar.apps.partner.strategy import Default as DefaultStrategy
-from oscar.core.loading import get_class, get_model
+from oscar.core.loading import get_class, get_classes, get_model
 
 from datetime import datetime
 
 from .. import resources
-from ._common import map_queryset, OscarBaseMapping
 from ._model_mapper import ModelMapping
 from ..utils import validate_resources
 from .prefetching.prefetch import prefetch_product_queryset
@@ -41,17 +40,26 @@ ProductModel = get_model("catalogue", "Product")
 StockRecordModel = get_model("partner", "StockRecord")
 ProductAttributeValueModel = get_model("catalogue", "ProductAttributeValue")
 
-# Base resources
-ProductImageResource = get_class(
-    "oscar_odin.resources.catalogue", "ProductImageResource"
-)
-CategoryResource = get_class("oscar_odin.resources.catalogue", "CategoryResource")
-ProductClassResource = get_class(
-    "oscar_odin.resources.catalogue", "ProductClassResource"
-)
-ProductResource = get_class("oscar_odin.resources.catalogue", "ProductResource")
-ProductRecommentationResource = get_class(
-    "oscar_odin.resources.catalogue", "ProductRecommentationResource"
+# mappings
+map_queryset = get_class("oscar_odin.mappings._common", "map_queryset")
+OscarBaseMapping = get_class("oscar_odin.mappings._common", "OscarBaseMapping")
+
+# resources
+(
+    ProductImageResource,
+    CategoryResource,
+    ProductClassResource,
+    ProductResource,
+    ProductRecommentationResource,
+) = get_classes(
+    "oscar_odin.resources.catalogue",
+    [
+        "ProductImageResource",
+        "CategoryResource",
+        "ProductClassResource",
+        "ProductResource",
+        "ProductRecommentationResource",
+    ],
 )
 
 
