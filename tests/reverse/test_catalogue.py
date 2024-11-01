@@ -10,12 +10,12 @@ from oscar.core.loading import get_model
 
 from oscar_odin.mappings.catalogue import products_to_db
 from oscar_odin.resources.catalogue import (
-    Product as ProductResource,
-    Image as ImageResource,
-    ProductClass as ProductClassResource,
-    Category as CategoryResource,
-    ParentProduct as ParentProductResource,
-    ProductRecommentation as ProductRecommentationResource,
+    ProductResource,
+    ProductImageResource,
+    ProductClassResource,
+    CategoryResource,
+    ParentProductResource,
+    ProductRecommentationResource,
 )
 from oscar_odin.exceptions import OscarOdinException
 from oscar_odin.mappings.constants import (
@@ -84,13 +84,13 @@ class SingleProductReverseTest(TestCase):
             partner=partner,
             product_class=ProductClassResource(slug="klaas"),
             images=[
-                ImageResource(
+                ProductImageResource(
                     caption="gekke caption",
                     display_order=0,
                     code="harrie",
                     original=File(self.image, name="harrie.jpg"),
                 ),
-                ImageResource(
+                ProductImageResource(
                     caption="gekke caption 2",
                     display_order=1,
                     code="vats",
@@ -131,13 +131,13 @@ class SingleProductReverseTest(TestCase):
             partner=partner,
             product_class=ProductClassResource(slug="klaas"),
             images=[
-                ImageResource(
+                ProductImageResource(
                     caption="gekke caption",
                     display_order=0,
                     code="harriebatsie",
                     original=File(self.image, name="harriebatsie.jpg"),
                 ),
-                ImageResource(
+                ProductImageResource(
                     caption="gekke caption 2",
                     display_order=1,
                     code="vatsie",
@@ -184,13 +184,13 @@ class SingleProductReverseTest(TestCase):
             partner=partner,
             product_class=product_class,
             images=[
-                ImageResource(
+                ProductImageResource(
                     caption="gekke caption",
                     display_order=0,
                     code="harrie",
                     original=File(self.image, name="harrie.jpg"),
                 ),
-                ImageResource(
+                ProductImageResource(
                     caption="gekke caption 2",
                     display_order=1,
                     code="vats",
@@ -264,13 +264,13 @@ class SingleProductReverseTest(TestCase):
             partner=partner,
             product_class=product_class,
             images=[
-                ImageResource(
+                ProductImageResource(
                     caption="gekke caption",
                     display_order=0,
                     original=File(self.image, name="harrie.jpg"),
                     code="12",
                 ),
-                ImageResource(
+                ProductImageResource(
                     caption="gekke caption 2",
                     display_order=1,
                     original=File(self.image, name="vats.jpg"),
@@ -314,13 +314,13 @@ class SingleProductReverseTest(TestCase):
             partner=partner,
             product_class=product_class,
             images=[
-                ImageResource(
+                ProductImageResource(
                     caption="gekke caption",
                     display_order=0,
                     original=File(self.image, name="harrie.jpg"),
                     code="12",
                 ),
-                ImageResource(
+                ProductImageResource(
                     caption="gekke caption 2",
                     display_order=1,
                     original=File(self.image, name="vats.jpg"),
@@ -420,13 +420,13 @@ class MultipleProductReverseTest(TestCase):
                 currency="EUR",
                 product_class=ProductClassResource(slug="klaas"),
                 images=[
-                    ImageResource(
+                    ProductImageResource(
                         caption="gekke caption",
                         display_order=0,
                         code="klaas",
                         original=File(self.image, name="klaas.jpg"),
                     ),
-                    ImageResource(
+                    ProductImageResource(
                         caption="gekke caption 2",
                         display_order=1,
                         code="harrie",
@@ -448,13 +448,13 @@ class MultipleProductReverseTest(TestCase):
                 partner=Partner.objects.create(name="klaas"),
                 product_class=ProductClassResource(slug="klaas"),
                 images=[
-                    ImageResource(
+                    ProductImageResource(
                         caption="gekke caption",
                         display_order=0,
                         code="klass-2",
                         original=File(self.image, name="klaas.jpg"),
                     ),
-                    ImageResource(
+                    ProductImageResource(
                         caption="gekke caption 2",
                         display_order=1,
                         code="harrie-2",
@@ -695,13 +695,13 @@ class SingleProductErrorHandlingTest(TestCase):
             partner=partner,
             product_class=product_class,
             images=[
-                ImageResource(
+                ProductImageResource(
                     caption="gekke caption",
                     display_order="top",
                     code="harrie",
                     original=File(self.image, name="harrie.jpg"),
                 ),
-                ImageResource(
+                ProductImageResource(
                     caption="gekke caption 2",
                     display_order=1,
                     code="vats",
@@ -731,13 +731,13 @@ class SingleProductErrorHandlingTest(TestCase):
             partner=partner,
             product_class=product_class,
             images=[
-                ImageResource(
+                ProductImageResource(
                     caption="gekke caption",
                     display_order=0,
                     code="harrie",
                     original=File(self.image, name="harrie.jpg"),
                 ),
-                ImageResource(
+                ProductImageResource(
                     caption="gekke caption 2",
                     display_order=1,
                     code="vats",
@@ -763,8 +763,8 @@ class SingleProductErrorHandlingTest(TestCase):
             partner=partner,
             product_class=product_class,
             images=[
-                ImageResource(code="harrie"),
-                ImageResource(
+                ProductImageResource(code="harrie"),
+                ProductImageResource(
                     caption="gekke caption 2",
                     display_order="Alphabet",
                     code="vats",
@@ -827,13 +827,13 @@ class ProductFieldsToUpdateTest(TestCase):
             partner=partner,
             product_class=product_class,
             images=[
-                ImageResource(
+                ProductImageResource(
                     caption="gekke caption",
                     display_order=0,
                     code="harrie",
                     original=File(self.image, name="harrie.jpg"),
                 ),
-                ImageResource(
+                ProductImageResource(
                     caption="gekke caption 2",
                     display_order=1,
                     code="vats",
