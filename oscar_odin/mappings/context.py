@@ -274,9 +274,9 @@ class ModelMapperContext(dict):
             self.Model.objects.bulk_update(validated_instances_to_update, fields=fields)
 
     def bulk_update_or_create_one_to_many(self):
-        for relation, product, instances in self.get_all_o2m_instances:
+        for relation, parent, instances in self.get_all_o2m_instances:
             for instance in instances:
-                setattr(instance, relation.field.name, product)
+                setattr(instance, relation.field.name, parent)
 
         instances_to_create, instances_to_update, identities = self.get_o2m_relations
 
@@ -315,14 +315,12 @@ class ModelMapperContext(dict):
                 if fields is not None:
                     conditions = Q()
                     identifiers = self.identifier_mapping[relation.related_model]
-                    for key in keys:
+                    for key in set(keys):
                         if isinstance(key, (list, tuple)):
                             conditions |= Q(**dict(list(zip(identifiers, key))))
                         else:
                             conditions |= Q(**{f"{identifiers[0]}": key})
-                    field_name = relation.remote_field.attname.replace(
-                        "_", "__"
-                    ).replace("id", instance_identifier)
+                    field_name = f"{relation.remote_field.name}__{instance_identifier}"
                     # Delete all related one_to_many instances where product is in the
                     # given list of resources and excluding any instances present in
                     # those resources
