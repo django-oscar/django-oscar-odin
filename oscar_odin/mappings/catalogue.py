@@ -15,7 +15,6 @@ from oscar.core.loading import get_class, get_classes, get_model
 
 from datetime import datetime
 
-from ..utils import validate_resources
 from .prefetching.prefetch import prefetch_product_queryset
 
 from .context import ProductModelMapperContext
@@ -37,6 +36,8 @@ ProductClassModel = get_model("catalogue", "ProductClass")
 ProductModel = get_model("catalogue", "Product")
 StockRecordModel = get_model("partner", "StockRecord")
 ProductAttributeValueModel = get_model("catalogue", "ProductAttributeValue")
+
+resources_to_db = get_class("oscar_odin.mappings.resources", "resources_to_db")
 
 # mappings
 ModelMapping = get_class("oscar_odin.mappings.model_mapper", "ModelMapping")
@@ -445,21 +446,6 @@ def product_queryset_to_resources(
     )
 
 
-def products_to_model(
-    products: List[ProductResource],
-    product_mapper=ProductToModel,
-    delete_related=False,
-) -> Tuple[List[ProductModel], Dict]:
-    context = ProductModelMapperContext(ProductModel, delete_related=delete_related)
-
-    result = product_mapper.apply(products, context=context)
-
-    try:
-        return (list(result), context)
-    except TypeError:  # it is not a list
-        return ([result], context)
-
-
 def products_to_db(
     products,
     fields_to_update=ALL_CATALOGUE_FIELDS,
@@ -474,20 +460,12 @@ def products_to_db(
     After that all the products will be bulk saved.
     At last all related models like images, stockrecords, and related_products can will be saved and set on the product.
     """
-    _, errors = validate_resources(products)
-    if errors:
-        return [], errors
-    instances, context = products_to_model(
+    return resources_to_db(
         products,
-        product_mapper=product_mapper,
-        delete_related=delete_related,
-    )
-
-    products, errors = context.bulk_save(
-        instances,
         fields_to_update,
         identifier_mapping,
-        clean_instances,
+        model_mapper=product_mapper,
+        context_mapper=ProductModelMapperContext,
+        delete_related=delete_related,
+        clean_instances=clean_instances,
     )
-
-    return products, errors

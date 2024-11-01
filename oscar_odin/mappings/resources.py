@@ -1,5 +1,7 @@
-from oscar_odin.mappings.context import ModelMapperContext
-from oscar_odin.utils import validate_resources
+from oscar.core.loading import get_class
+
+ModelMapperContext = get_class("oscar_odin.mappings.context", "ModelMapperContext")
+validate_resources = get_class("oscar_odin.utils", "validate_resources")
 
 
 def resources_to_db(
@@ -7,6 +9,7 @@ def resources_to_db(
     fields_to_update,
     identifier_mapping,
     model_mapper,
+    context_mapper=ModelMapperContext,
     delete_related=False,
     clean_instances=True,
     skip_invalid_resources=False,
@@ -23,7 +26,7 @@ def resources_to_db(
     if not skip_invalid_resources and resource_errors:
         return [], resource_errors
 
-    context = ModelMapperContext(
+    context = context_mapper(
         model_mapper.to_obj,
         delete_related=delete_related,
         error_identifiers=error_identifiers,
