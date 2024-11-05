@@ -59,6 +59,9 @@ class CategoryResource(OscarCatalogueResource):
     ancestors_are_public: Optional[bool]
     depth: Optional[int]
     path: Optional[str]
+    children: Optional[List["CategoryResource"]] = odin.ListOf.delayed(
+        lambda: CategoryResource
+    )
 
 
 class ProductClassResource(OscarCatalogueResource):
