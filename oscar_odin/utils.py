@@ -10,6 +10,8 @@ from django.conf import settings
 from odin.exceptions import ValidationError
 from odin.mapping import MappingResult
 
+from .settings import RESOURCES_TO_DB_CHUNK_SIZE
+
 
 def get_filters(instances, field_names):
     for ui in instances:
@@ -105,3 +107,22 @@ def validate_resources(resources, error_identifiers=None):
         except ValidationError as error:
             errors.add_error(error, resource)
     return valid_resources, errors
+
+
+def chunked(iterable, size=RESOURCES_TO_DB_CHUNK_SIZE, startindex=0):
+    """
+    Divide an interable into chunks of ``size``
+
+    >>> list(chunked("hahahaha", 2))
+    ['ha', 'ha', 'ha', 'ha']
+    >>> list(chunked([1,2,3,4,5,6,7], 3))
+    [[1, 2, 3], [4, 5, 6], [7]]
+    """
+    while True:
+        chunk = iterable[startindex : startindex + size]
+        chunklen = len(chunk)
+        if chunklen:
+            yield chunk
+        if chunklen < size:
+            break
+        startindex += size

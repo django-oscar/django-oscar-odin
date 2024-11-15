@@ -11,6 +11,9 @@ from ..fields import DecimalField
 
 OscarResource = get_class("oscar_odin.resources.base", "OscarResource")
 
+PartnerResource = get_class("oscar_odin.resources.partner", "PartnerResource")
+StockRecordResource = get_class("oscar_odin.resources.partner", "StockRecordResource")
+
 ProductModel = get_model("catalogue", "Product")
 
 
@@ -73,15 +76,6 @@ class ProductClassResource(OscarCatalogueResource):
     track_stock: Optional[bool]
 
 
-class StockRecordResource(OscarCatalogueResource):
-    id: Optional[int]
-    partner_sku: str
-    num_in_stock: Optional[int]
-    num_allocated: Optional[int]
-    price: Decimal = DecimalField()
-    currency: Optional[str]
-
-
 class ProductAttributeValueResource(OscarCatalogueResource):
     code: str
     value: Any
@@ -105,6 +99,7 @@ class ProductResource(OscarCatalogueResource):
     slug: Optional[str]
     description: Optional[str] = ""
     meta_title: Optional[str]
+    meta_description: Optional[str]
     images: List[ProductImageResource] = odin.Options(empty=True)
     rating: Optional[float]
     is_discountable: bool = True
@@ -118,6 +113,9 @@ class ProductResource(OscarCatalogueResource):
     availability: Optional[int]
     is_available_to_buy: Optional[bool]
     partner: Optional[Any]
+
+    # optionally, you can add a list of stockrecords instead of the above.
+    stockrecords: Optional[List[StockRecordResource]] = odin.Options(empty=True)
 
     product_class: Optional[ProductClassResource] = None
     attributes: Dict[str, Union[Any, None]]

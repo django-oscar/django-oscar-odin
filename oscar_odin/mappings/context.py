@@ -371,12 +371,23 @@ class ModelMapperContext(dict):
                         # Delete throughs if no instances are passed for the field
                         to_delete_throughs_product_ids.append(product.id)
                     for instance in instances:
-                        throughs[(product.pk, instance.pk)] = Through(
-                            **{
-                                relation.m2m_field_name(): product,
-                                relation.m2m_reverse_field_name(): instance,
-                            }
-                        )
+                        if instance.pk is not None:
+                            throughs[(product.pk, instance.pk)] = Through(
+                                **{
+                                    relation.m2m_field_name(): product,
+                                    relation.m2m_reverse_field_name(): instance,
+                                }
+                            )
+                        else:
+                            # Instead of failing bulk_create here below, we will add an error.
+                            self.errors.add_error(
+                                OscarOdinException(
+                                    f"Cannot create relationship in {Through.__name__} - "
+                                    f"related {relation.related_model.__name__} for product {product.id} "
+                                    f"is missing a primary key"
+                                ),
+                                instance,
+                            )
 
                 # Delete throughs if no instances are passed for the field
                 if self.delete_related:
@@ -414,14 +425,8 @@ class ModelMapperContext(dict):
                             }
                         ).exclude(id__in=bulk_troughs.values()).delete()
 
-                    try:
-                        # Save only new through models
-                        Through.objects.bulk_create(throughs.values())
-                    except ValueError as e:
-                        raise OscarOdinException(
-                            "Failed creating Trough models for %s. Maybe the related model does NOT exist?"
-                            % relation.name
-                        ) from e
+                    # Save only new through models
+                    Through.objects.bulk_create(throughs.values())
 
     def bulk_save(
         self, instances, fields_to_update, identifier_mapping, clean_instances
