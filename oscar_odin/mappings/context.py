@@ -382,9 +382,7 @@ class ModelMapperContext(dict):
                             # Instead of failing bulk_create here below, we will add an error.
                             self.errors.add_error(
                                 OscarOdinException(
-                                    f"Cannot create relationship in {Through.__name__} - "
-                                    f"related {relation.related_model.__name__} for product {product.id} "
-                                    f"is missing a primary key"
+                                    f"Cannot create m2m relationship {Through.__name__} - related model '{relation.related_model.__name__}' is missing a primary key"
                                 ),
                                 instance,
                             )

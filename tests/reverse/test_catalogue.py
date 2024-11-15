@@ -569,8 +569,12 @@ class ProductRecommendationTest(TestCase):
             ],
         )
 
-        with self.assertRaises(OscarOdinException):
-            products_to_db(product_resource)
+        _, errors = products_to_db(product_resource)
+        self.assertEqual(len(errors), 1)
+        self.assertEqual(
+            str(errors[0]),
+            "Cannot create m2m relationship ProductRecommendation - related model 'Product' is missing a primary key",
+        )
 
 
 class ParentChildTest(TestCase):
