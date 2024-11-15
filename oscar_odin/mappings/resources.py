@@ -13,6 +13,7 @@ def resources_to_db(
     identifier_mapping,
     model_mapper,
     context_mapper=ModelMapperContext,
+    extra_context=None,
     delete_related=False,
     clean_instances=True,
     skip_invalid_resources=False,
@@ -39,6 +40,9 @@ def resources_to_db(
             delete_related=delete_related,
             error_identifiers=error_identifiers,
         )
+
+        if extra_context:
+            context.update(extra_context)
 
         result = model_mapper.apply(chunk, context=context)
 
