@@ -44,10 +44,7 @@ ModelMapping = get_class("oscar_odin.mappings.model_mapper", "ModelMapping")
 map_queryset, OscarBaseMapping = get_classes(
     "oscar_odin.mappings.common", ["map_queryset", "OscarBaseMapping"]
 )
-PartnerToModel, StockRecordToModel = get_classes(
-    "oscar_odin.mappings.partner",
-    ["PartnerToModel", "StockRecordToModel"],
-)
+StockRecordToModel = get_class("oscar_odin.mappings.partner", "StockRecordToModel")
 
 # resources
 (
@@ -330,7 +327,7 @@ class ProductToModel(ModelMapping):
     ) -> List[StockRecordModel]:
         # This means to use explicitly set stockrecords, rather than the price related fields.
         if stockrecords:
-            return StockRecordToModel.apply(stockrecords)
+            return StockRecordToModel.apply(stockrecords, context=self.context)
 
         if upc and currency and partner:
             return [

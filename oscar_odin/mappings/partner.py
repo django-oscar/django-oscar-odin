@@ -18,7 +18,7 @@ class PartnerModelToResource(OscarBaseMapping):
     to_obj = PartnerResource
 
 
-class PartnerToModel(OscarBaseMapping):
+class PartnerToModel(ModelMapping):
     from_obj = PartnerResource
     to_obj = Partner
 
@@ -32,7 +32,7 @@ class StockRecordModelToResource(OscarBaseMapping):
         return PartnerModelToResource.apply(partner)
 
 
-class StockRecordToModel(OscarBaseMapping):
+class StockRecordToModel(ModelMapping):
     from_obj = StockRecordResource
     to_obj = StockRecord
 

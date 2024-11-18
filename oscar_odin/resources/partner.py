@@ -1,7 +1,7 @@
 from typing import Optional
 from decimal import Decimal
 
-from oscar.core.loading import get_model, get_class
+from oscar.core.loading import get_class
 
 from ..fields import DecimalField
 

@@ -17,6 +17,7 @@ from oscar_odin.resources.catalogue import (
     ParentProductResource,
     ProductRecommentationResource,
 )
+from oscar_odin.resources.partner import StockRecordResource, PartnerResource
 from oscar_odin.exceptions import OscarOdinException
 from oscar_odin.mappings.constants import (
     STOCKRECORD_PRICE,
@@ -28,6 +29,7 @@ from oscar_odin.mappings.constants import (
     PRODUCT_DESCRIPTION,
     PRODUCTCLASS_REQUIRESSHIPPING,
 )
+from oscar_odin.mappings.partner import PartnerModelToResource
 
 Product = get_model("catalogue", "Product")
 ProductClass = get_model("catalogue", "ProductClass")
@@ -350,6 +352,64 @@ class SingleProductReverseTest(TestCase):
         self.assertEqual(prd.attr.harrie, 1)
 
         self.assertEqual(prd.images.count(), 2)
+
+    def test_create_product_with_multiple_stockrecords(self):
+        partner = Partner.objects.get(name="klaas")
+
+        product_resource = ProductResource(
+            upc="1234323-2",
+            title="asdf2",
+            slug="asdf-asdfasdf2",
+            description="description",
+            structure=Product.STANDALONE,
+            is_discountable=True,
+            stockrecords=[
+                StockRecordResource(
+                    partner=PartnerModelToResource.apply(partner),
+                    partner_sku="123",
+                    price=D("20"),
+                    num_in_stock=2,
+                    currency="EUR",
+                ),
+                StockRecordResource(
+                    partner=PartnerModelToResource.apply(partner),
+                    partner_sku="124",
+                    price=D("30"),
+                    num_in_stock=3,
+                    currency="EUR",
+                ),
+            ],
+            product_class=ProductClassResource(slug="klaas"),
+            images=[
+                ProductImageResource(
+                    caption="gekke caption",
+                    display_order=0,
+                    code="harrie",
+                    original=File(self.image, name="harrie.jpg"),
+                ),
+                ProductImageResource(
+                    caption="gekke caption 2",
+                    display_order=1,
+                    code="vats",
+                    original=File(self.image, name="vats.jpg"),
+                ),
+            ],
+            categories=[CategoryResource(code="2")],
+            attributes={"henk": "Klaas", "harrie": 1},
+        )
+
+        _, errors = products_to_db(product_resource)
+        self.assertEqual(len(errors), 0)
+
+        prd = Product.objects.get(upc="1234323-2")
+
+        self.assertEqual(prd.stockrecords.count(), 2)
+        stockrecord = prd.stockrecords.first()
+        self.assertEqual(stockrecord.price, D("20"))
+        self.assertEqual(stockrecord.num_in_stock, 2)
+        stockrecord = prd.stockrecords.last()
+        self.assertEqual(stockrecord.price, D("30"))
+        self.assertEqual(stockrecord.num_in_stock, 3)
 
 
 class MultipleProductReverseTest(TestCase):
