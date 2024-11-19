@@ -19,6 +19,7 @@ from .prefetching.prefetch import prefetch_product_queryset
 
 from .context import ProductModelMapperContext
 from .constants import ALL_CATALOGUE_FIELDS, MODEL_IDENTIFIERS_MAPPING
+from ..settings import RESOURCES_TO_DB_CHUNK_SIZE
 
 __all__ = (
     "ProductImageToResource",
@@ -44,6 +45,7 @@ ModelMapping = get_class("oscar_odin.mappings.model_mapper", "ModelMapping")
 map_queryset, OscarBaseMapping = get_classes(
     "oscar_odin.mappings.common", ["map_queryset", "OscarBaseMapping"]
 )
+StockRecordToModel = get_class("oscar_odin.mappings.partner", "StockRecordToModel")
 
 # resources
 (
@@ -312,11 +314,22 @@ class ProductToModel(ModelMapping):
         return CategoryToModel.apply(values)
 
     @odin.map_list_field(
-        from_field=["price", "availability", "currency", "upc", "partner"]
+        from_field=[
+            "stockrecords",
+            "price",
+            "availability",
+            "currency",
+            "upc",
+            "partner",
+        ]
     )
     def stockrecords(
-        self, price, availability, currency, upc, partner
+        self, stockrecords, price, availability, currency, upc, partner
     ) -> List[StockRecordModel]:
+        # This means to use explicitly set stockrecords, rather than the price related fields.
+        if stockrecords:
+            return StockRecordToModel.apply(stockrecords, context=self.context)
+
         if upc and currency and partner:
             return [
                 StockRecordModel(
@@ -453,6 +466,7 @@ def products_to_db(
     product_mapper=ProductToModel,
     delete_related=False,
     clean_instances=True,
+    chunk_size=RESOURCES_TO_DB_CHUNK_SIZE,
 ) -> Tuple[List[ProductModel], Dict]:
     """Map mulitple products to a model and store them in the database.
 
@@ -468,4 +482,5 @@ def products_to_db(
         context_mapper=ProductModelMapperContext,
         delete_related=delete_related,
         clean_instances=clean_instances,
+        chunk_size=chunk_size,
     )

@@ -16,7 +16,6 @@ PRODUCT_SLUG = "Product.slug"
 PRODUCT_DESCRIPTION = "Product.description"
 PRODUCT_META_TITLE = "Product.meta_title"
 PRODUCT_META_DESCRIPTION = "Product.meta_description"
-PRODUCT_PARENT = "Product.parent"
 PRODUCT_IS_DISCOUNTABLE = "Product.is_discountable"
 
 PRODUCTCLASS_SLUG = "ProductClass.slug"
@@ -107,5 +106,5 @@ MODEL_IDENTIFIERS_MAPPING = {
     StockRecord: ("partner_id", "partner_sku"),
     ProductClass: ("slug",),
     ProductImage: ("code",),
-    Partner: ("slug",),
+    Partner: ("code",),
 }
