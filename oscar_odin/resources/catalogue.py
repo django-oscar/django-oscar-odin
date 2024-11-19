@@ -46,6 +46,8 @@ class ProductImageResource(OscarCatalogueResource):
     )
     date_created: Optional[datetime]
 
+    product: Optional["ProductResource"] = odin.DictOf.delayed(lambda: ProductResource)
+
 
 class CategoryResource(OscarCatalogueResource):
     """A category within Django Oscar."""
