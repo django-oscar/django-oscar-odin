@@ -19,6 +19,7 @@ from .prefetching.prefetch import prefetch_product_queryset
 
 from .context import ProductModelMapperContext
 from .constants import ALL_CATALOGUE_FIELDS, MODEL_IDENTIFIERS_MAPPING
+from ..settings import RESOURCES_TO_DB_CHUNK_SIZE
 
 __all__ = (
     "ProductImageToResource",
@@ -465,6 +466,7 @@ def products_to_db(
     product_mapper=ProductToModel,
     delete_related=False,
     clean_instances=True,
+    chunk_size=RESOURCES_TO_DB_CHUNK_SIZE,
 ) -> Tuple[List[ProductModel], Dict]:
     """Map mulitple products to a model and store them in the database.
 
@@ -480,4 +482,5 @@ def products_to_db(
         context_mapper=ProductModelMapperContext,
         delete_related=delete_related,
         clean_instances=clean_instances,
+        chunk_size=chunk_size,
     )
