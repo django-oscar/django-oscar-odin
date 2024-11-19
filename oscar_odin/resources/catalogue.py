@@ -46,7 +46,7 @@ class ProductImageResource(OscarCatalogueResource):
     )
     date_created: Optional[datetime]
 
-    product: Optional["ProductResource"] = odin.DictOf.delayed(lambda: ProductResource)
+    product: Optional["ProductResource"] = odin.DictAs.delayed(lambda: ProductResource, null=True)
 
 
 class CategoryResource(OscarCatalogueResource):
