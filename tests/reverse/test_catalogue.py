@@ -467,10 +467,13 @@ class MultipleProductReverseTest(TestCase):
         self.assertEqual(Product.objects.count(), 2)
 
     def test_create_product_with_related_fields(self):
+        partner = Partner.objects.create(name="klaas")
+
         product_resources = [
             ProductResource(
                 upc="1234323",
                 title="asdf1",
+                partner=partner,
                 slug="asdf-asdfasdf",
                 description="description",
                 structure=Product.STANDALONE,

@@ -17,6 +17,7 @@ PRODUCT_DESCRIPTION = "Product.description"
 PRODUCT_META_TITLE = "Product.meta_title"
 PRODUCT_META_DESCRIPTION = "Product.meta_description"
 PRODUCT_IS_DISCOUNTABLE = "Product.is_discountable"
+PRODUCT_PRIORITY = "Product.priority"
 
 PRODUCTCLASS_SLUG = "ProductClass.slug"
 PRODUCTCLASS_REQUIRESSHIPPING = "ProductClass.requires_shipping"
@@ -55,7 +56,7 @@ ALL_PRODUCT_FIELDS = [
     PRODUCT_META_TITLE,
     PRODUCT_META_DESCRIPTION,
     PRODUCT_IS_DISCOUNTABLE,
-    PRODUCT_PARENT,
+    PRODUCT_PRIORITY,
 ]
 
 ALL_PRODUCTCLASS_FIELDS = [

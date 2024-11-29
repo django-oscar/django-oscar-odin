@@ -1,4 +1,6 @@
 from collections import defaultdict
+from functools import reduce
+from operator import itemgetter, or_
 import contextlib
 import time
 import math
@@ -126,3 +128,21 @@ def chunked(iterable, size=RESOURCES_TO_DB_CHUNK_SIZE, startindex=0):
         if chunklen < size:
             break
         startindex += size
+
+
+def get_mapped_fields(mapping, *from_field_names):
+    keyed_mapping = defaultdict(set)
+    exclude_fields = getattr(mapping, "exclude_fields", set())
+    # pylint: disable=protected-access
+    for mapping_rule in mapping._mapping_rules:
+        if mapping_rule.from_field:
+            for field_name in mapping_rule.from_field:
+                if field_name not in exclude_fields:
+                    keyed_mapping[field_name] |= set(mapping_rule.to_field)
+        else:
+            keyed_mapping[None] |= set(mapping_rule.to_field)
+
+    if from_field_names:
+        return reduce(or_, itemgetter(*from_field_names)(keyed_mapping))
+
+    return reduce(or_, keyed_mapping.values())

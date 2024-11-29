@@ -17,8 +17,8 @@ from datetime import datetime
 
 from .prefetching.prefetch import prefetch_product_queryset
 
+from . import constants
 from .context import ProductModelMapperContext
-from .constants import ALL_CATALOGUE_FIELDS, MODEL_IDENTIFIERS_MAPPING
 from ..settings import RESOURCES_TO_DB_CHUNK_SIZE
 
 __all__ = (
@@ -357,6 +357,61 @@ class ProductToModel(ModelMapping):
 
         return ProductClassToModel.apply(value)
 
+    IMPACTED_FIELDS = {
+        "images": set(constants.ALL_PRODUCTIMAGE_FIELDS),
+        "parent": {constants.PRODUCT_PARENT},
+        "categories": {constants.CATEGORY_CODE},
+        "stockrecords": set(constants.ALL_STOCKRECORD_FIELDS),
+        "recommended_products": {constants.PRODUCT_UPC},
+        "product_class": {constants.PRODUCTCLASS_SLUG},
+        "price": {
+            constants.STOCKRECORD_PARTNER,
+            constants.STOCKRECORD_PARTNER_SKU,
+            constants.STOCKRECORD_PRICE_CURRENCY,
+            constants.STOCKRECORD_PRICE,
+        },
+        "currency": {
+            constants.STOCKRECORD_PARTNER,
+            constants.STOCKRECORD_PARTNER_SKU,
+            constants.STOCKRECORD_PRICE_CURRENCY,
+        },
+        "availability": {
+            constants.STOCKRECORD_PARTNER,
+            constants.STOCKRECORD_PARTNER_SKU,
+            constants.STOCKRECORD_PRICE_CURRENCY,
+            constants.STOCKRECORD_NUM_IN_STOCK,
+        },
+        "partner": {constants.STOCKRECORD_PARTNER, constants.STOCKRECORD_PARTNER_SKU},
+        "attributes": set(),
+        "children": set(),
+        "structure": {constants.PRODUCT_STRUCTURE},
+        "title": {constants.PRODUCT_TITLE},
+        "upc": {constants.PRODUCT_UPC},
+        "slug": {constants.PRODUCT_SLUG},
+        "meta_title": {constants.PRODUCT_META_TITLE},
+        "meta_description": {constants.PRODUCT_META_DESCRIPTION},
+        "is_public": {constants.PRODUCT_IS_PUBLIC},
+        "description": {constants.PRODUCT_DESCRIPTION},
+        "is_discountable": {constants.PRODUCT_IS_DISCOUNTABLE},
+        "priority": {constants.PRODUCT_PRIORITY},
+    }
+
+    @classmethod
+    def get_fields_impacted_by_mapping(cls, *from_obj_field_names):
+        model_field_names = set()
+        # remove the excluded fields from consideration and then determine the
+        # impacted model field names.
+        for field_name in from_obj_field_names:
+            if field_name in cls.exclude_fields:
+                continue
+            # if there is no registration in IMPACTED_FIELDS, we
+            # just take the original fieldname
+            fields = cls.IMPACTED_FIELDS.get(field_name)
+            if fields is not None:
+                model_field_names.update(fields)
+
+        return list(model_field_names)
+
 
 class RecommendedProductToModel(OscarBaseMapping):
     from_obj = ProductRecommentationResource
@@ -461,8 +516,8 @@ def product_queryset_to_resources(
 
 def products_to_db(
     products,
-    fields_to_update=ALL_CATALOGUE_FIELDS,
-    identifier_mapping=MODEL_IDENTIFIERS_MAPPING,
+    fields_to_update=constants.ALL_CATALOGUE_FIELDS,
+    identifier_mapping=constants.MODEL_IDENTIFIERS_MAPPING,
     product_mapper=ProductToModel,
     delete_related=False,
     clean_instances=True,
