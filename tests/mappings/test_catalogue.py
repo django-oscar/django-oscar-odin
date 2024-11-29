@@ -6,6 +6,8 @@ from oscar.core.loading import get_model
 
 from oscar_odin.mappings import catalogue
 
+from oscar_odin.utils import get_mapped_fields
+
 Product = get_model("catalogue", "Product")
 
 
@@ -75,3 +77,127 @@ class TestProduct(TestCase):
                 queryset, include_children=True
             )
             dict_codec.dump(resources, include_type_field=False)
+
+    def test_get_mapped_fields(self):
+        product_to_model_fields = get_mapped_fields(catalogue.ProductToModel)
+        self.assertListEqual(
+            sorted(product_to_model_fields),
+            [
+                "attributes",
+                "categories",
+                "children",
+                "date_created",
+                "date_updated",
+                "description",
+                "id",
+                "images",
+                "is_discountable",
+                "is_public",
+                "meta_description",
+                "meta_title",
+                "parent",
+                "priority",
+                "product_class",
+                "rating",
+                "recommended_products",
+                "slug",
+                "stockrecords",
+                "structure",
+                "title",
+                "upc",
+            ],
+        )
+
+        model_to_product_fields = get_mapped_fields(catalogue.ProductToResource)
+        self.assertListEqual(
+            sorted(model_to_product_fields),
+            [
+                "attributes",
+                "availability",
+                "categories",
+                "children",
+                "currency",
+                "date_created",
+                "date_updated",
+                "description",
+                "id",
+                "images",
+                "is_available_to_buy",
+                "is_discountable",
+                "is_public",
+                "meta_description",
+                "meta_title",
+                "parent",
+                "price",
+                "priority",
+                "product_class",
+                "rating",
+                "recommended_products",
+                "slug",
+                "stockrecords",
+                "structure",
+                "title",
+                "upc",
+            ],
+        )
+
+        fieldz = get_mapped_fields(catalogue.ProductToModel, *model_to_product_fields)
+        self.assertListEqual(
+            sorted(fieldz),
+            [
+                "attributes",
+                "categories",
+                "children",
+                "date_created",
+                "date_updated",
+                "description",
+                "id",
+                "images",
+                "is_discountable",
+                "is_public",
+                "meta_description",
+                "meta_title",
+                "parent",
+                "priority",
+                "product_class",
+                "rating",
+                "recommended_products",
+                "slug",
+                "stockrecords",
+                "structure",
+                "title",
+                "upc",
+            ],
+        )
+
+        demfields = catalogue.ProductToModel.get_fields_impacted_by_mapping(
+            *model_to_product_fields
+        )
+        self.assertListEqual(
+            sorted(demfields),
+            [
+                "Category.code",
+                "Product.description",
+                "Product.is_discountable",
+                "Product.is_public",
+                "Product.meta_description",
+                "Product.meta_title",
+                "Product.parent",
+                "Product.priority",
+                "Product.slug",
+                "Product.structure",
+                "Product.title",
+                "Product.upc",
+                "ProductClass.slug",
+                "ProductImage.caption",
+                "ProductImage.code",
+                "ProductImage.display_order",
+                "ProductImage.original",
+                "StockRecord.num_allocated",
+                "StockRecord.num_in_stock",
+                "StockRecord.partner",
+                "StockRecord.partner_sku",
+                "StockRecord.price",
+                "StockRecord.price_currency",
+            ],
+        )

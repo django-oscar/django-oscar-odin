@@ -3,9 +3,12 @@ from datetime import datetime
 from decimal import Decimal
 from typing import Any, Dict, List, Optional, Union
 
+from django.conf import settings
 from oscar.core.loading import get_model, get_class
+
 import odin
 from odin.fields import StringField
+from odin.exceptions import ValidationError as OdinValidationError, NON_FIELD_ERRORS
 
 from ..fields import DecimalField
 
@@ -113,7 +116,7 @@ class ProductResource(OscarCatalogueResource):
 
     # Price information
     price: Decimal = DecimalField(null=True)
-    currency: Optional[str]
+    currency: Optional[str] = odin.Options(default=settings.OSCAR_DEFAULT_CURRENCY)
     availability: Optional[int]
     is_available_to_buy: Optional[bool]
     partner: Optional[Any]
@@ -133,3 +136,28 @@ class ProductResource(OscarCatalogueResource):
     children: Optional[List["ProductResource"]] = odin.ListOf.delayed(
         lambda: ProductResource, null=True
     )
+
+    def clean(self):
+        if (
+            not self.stockrecords
+            and (self.price is not None or self.availability is not None)
+            and not (
+                self.upc is not None
+                and self.currency is not None
+                and self.partner is not None
+            )
+        ):
+            errors = {
+                NON_FIELD_ERRORS: [
+                    "upc, currency and partner are required when specifying price or availability"
+                ]
+            }
+            # upc is allready required so we don't need to check for it here
+            if (
+                self.currency is None
+            ):  # currency has a default but it can be set to null by accident
+                errors["currency"] = ["Currency can not be empty."]
+            if self.partner is None:
+                errors["partner"] = ["Partner can not be empty."]
+
+            raise OdinValidationError(errors, code="simpleprice")
