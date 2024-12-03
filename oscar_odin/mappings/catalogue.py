@@ -269,7 +269,7 @@ class ProductToResource(OscarBaseMapping):
         else:
             price_info = stock_strategy.fetch_for_product(self.source)
         return (
-            getattr(price_info.price, "excl_tax", Decimal(0)),
+            getattr(price_info.price, "incl_tax", Decimal(0)),
             getattr(price_info.price, "currency", ""),
             getattr(price_info.availability, "num_available", 0),
             price_info.availability.is_available_to_buy,
