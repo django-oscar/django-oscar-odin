@@ -100,6 +100,7 @@ class ProductResource(OscarCatalogueResource):
     """A product within Django Oscar."""
 
     id: Optional[int]
+    code: Optional[str]
     upc: Optional[str]
     structure: str = StringField(choices=ProductModel.STRUCTURE_CHOICES)
     title: str
