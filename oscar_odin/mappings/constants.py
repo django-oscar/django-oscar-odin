@@ -10,6 +10,7 @@ Partner = get_model("partner", "Partner")
 PRODUCT_STRUCTURE = "Product.structure"
 PRODUCT_IS_PUBLIC = "Product.is_public"
 PRODUCT_UPC = "Product.upc"
+PRODUCT_CODE = "Product.code"
 PRODUCT_PARENT = "Product.parent"
 PRODUCT_TITLE = "Product.title"
 PRODUCT_SLUG = "Product.slug"
