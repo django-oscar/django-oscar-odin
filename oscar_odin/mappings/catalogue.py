@@ -394,6 +394,7 @@ class ProductToModel(ModelMapping):
         "description": {constants.PRODUCT_DESCRIPTION},
         "is_discountable": {constants.PRODUCT_IS_DISCOUNTABLE},
         "priority": {constants.PRODUCT_PRIORITY},
+        "code": {constants.PRODUCT_CODE},
     }
 
     @classmethod

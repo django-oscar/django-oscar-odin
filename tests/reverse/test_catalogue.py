@@ -75,6 +75,7 @@ class SingleProductReverseTest(TestCase):
 
         product_resource = ProductResource(
             upc="1234323-2",
+            code="semek-mumtaz",
             title="asdf2",
             slug="asdf-asdfasdf2",
             description="description",
@@ -125,6 +126,7 @@ class SingleProductReverseTest(TestCase):
 
         product_resource = ProductResource(
             upc="1234323-2",
+            code="haind-berrit",
             title="asdf2",
             structure=Product.STANDALONE,
             price=D("21.50"),
