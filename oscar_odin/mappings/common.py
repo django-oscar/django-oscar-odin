@@ -35,7 +35,13 @@ def map_queryset(
     )
 
 
-class OscarBaseMapping(MappingBase, metaclass=MappingMeta):
+class NonRegisterableMappingMeta(MappingMeta):
+    def __new__(mcs, name, bases, attrs):
+        attrs["register_mapping"] = attrs.get("register_mapping", False)
+        return super().__new__(mcs, name, bases, attrs)
+
+
+class OscarBaseMapping(MappingBase, metaclass=NonRegisterableMappingMeta):
     def create_object(self, **field_values):
         """
         When subclassing a mapping and resource sometimes the overidden map will somehow result in the values being None
