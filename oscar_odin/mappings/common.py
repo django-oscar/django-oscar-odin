@@ -1,10 +1,20 @@
 """Common code between mappings."""
-from typing import Any, Dict, Optional, Type
+from typing import Any, Dict, Optional, Type, Iterable
+from operator import attrgetter
+
 from django.db.models import QuerySet, Model
 from django.db.models.manager import BaseManager
 
 import odin
-from odin.mapping import ImmediateResult, MappingBase, MappingMeta
+from odin.exceptions import MappingExecutionError
+from odin.fields import NotProvided
+from odin.mapping import (
+    ImmediateResult,
+    MappingBase,
+    MappingMeta,
+    force_tuple,
+    EMPTY_LIST,
+)
 
 
 def map_queryset(
@@ -42,6 +52,8 @@ class NonRegisterableMappingMeta(MappingMeta):
 
 
 class OscarBaseMapping(MappingBase, metaclass=NonRegisterableMappingMeta):
+    register_mapping = False
+
     def create_object(self, **field_values):
         """
         When subclassing a mapping and resource sometimes the overidden map will somehow result in the values being None
@@ -72,4 +84,56 @@ class OscarBaseMapping(MappingBase, metaclass=NonRegisterableMappingMeta):
             obj.extra_attrs({"model_instance": self.source})
         return obj
 
-    register_mapping = False
+    def _apply_rule(self, mapping_rule):
+        from_fields, action, to_fields, to_list, bind, skip_if_none = mapping_rule
+
+        if from_fields is None:
+            from_values = EMPTY_LIST
+        else:
+            # THIS IS THE ONLY CODE CHANGED COMPARED TO THE ORIGINAL METHOD.
+            # IT REPLACES GETATTR WITH ATTRGETTER TO ALLOW NESTED FIELD ACCESS (eg; from_field=("shipping_address.line4"))
+            from_values = tuple(attrgetter(f)(self.source) for f in from_fields)
+
+        if action is None:
+            to_values = from_values
+        else:
+            if isinstance(action, str):
+                action = getattr(self, action)
+
+            try:
+                if bind:
+                    to_values = action(self, *from_values)
+                else:
+                    to_values = action(*from_values)
+            except TypeError as ex:
+                raise MappingExecutionError(
+                    f"{ex} applying rule {mapping_rule}"
+                ) from ex
+
+        if to_list:
+            if isinstance(to_values, Iterable):
+                to_values = (list(to_values),)
+            else:
+                to_values = (to_values,)
+        else:
+            to_values = force_tuple(to_values)
+
+        if len(to_fields) != len(to_values):
+            raise MappingExecutionError(
+                f"Rule expects {len(to_fields)} fields ({len(to_values)} returned) "
+                f"applying rule {mapping_rule}. The `to_list` option might need to be specified"
+            )
+
+        if skip_if_none:
+            result = {
+                f: to_values[i]
+                for i, f in enumerate(to_fields)
+                if to_values[i] is not None
+            }
+        else:
+            result = {f: to_values[i] for i, f in enumerate(to_fields)}
+
+        if self.ignore_not_provided:
+            return {k: v for k, v in result.items() if v is not NotProvided}
+        else:
+            return result
