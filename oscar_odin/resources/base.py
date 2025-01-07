@@ -1,5 +1,5 @@
 """Common base resource for all Oscar resources."""
-from .inheritable import AnnotatedResource
+from ..inheritable import AnnotatedResource
 
 
 class OscarResource(AnnotatedResource, abstract=True):

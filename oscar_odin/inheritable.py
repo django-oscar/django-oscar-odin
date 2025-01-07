@@ -31,6 +31,10 @@ class InheritableResourceType(ResourceType):
     meta_options = InheritableResourceOptions
 
 
+class InheritableResourceBase(ResourceBase):
+    pass
+
+
 class InheritableAnnotatedResourceType(AnnotatedResourceType):
     def __new__(
         mcs,
@@ -44,7 +48,7 @@ class InheritableAnnotatedResourceType(AnnotatedResourceType):
         return super().__new__(mcs, name, bases, attrs, meta_options_type, abstract)
 
 
-class Resource(ResourceBase, metaclass=InheritableResourceType):
+class Resource(InheritableResourceBase, metaclass=InheritableResourceType):
     """
     from oscar_odin.resources.inheritable import Resource
     class MyResource(Resource):
@@ -53,7 +57,7 @@ class Resource(ResourceBase, metaclass=InheritableResourceType):
 
 
 class AnnotatedResource(
-    ResourceBase,
+    InheritableResourceBase,
     metaclass=InheritableAnnotatedResourceType,
     meta_options_type=InheritableResourceOptions,
 ):
