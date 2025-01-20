@@ -667,19 +667,18 @@ factory-boy = ">=3.3.1,<4.0.0"
 phonenumbers = "*"
 pillow = ">=6.0"
 purl = ">=0.7"
-setuptools = ">=62.4.0"
 
 [package.extras]
 docs = ["Sphinx (>=5.0)", "easy-thumbnails (>=2.9,<2.10)", "sorl-thumbnail (>=12.10.0,<13.0.0)", "sphinx-issues (==3.0.1)", "sphinx_rtd_theme (==1.0.0)", "sphinxcontrib-spelling (==7.5.1)"]
 easy-thumbnails = ["easy-thumbnails (>=2.9,<2.10)"]
 sorl-thumbnail = ["sorl-thumbnail (>=12.10.0,<13.0.0)"]
-test = ["WebTest (>=3.0.0,<4.0.0)", "Whoosh (>=2.7,<2.8)", "coverage (>=7.6.1,<8.0.0)", "django-webtest (>=1.9,<1.10)", "easy-thumbnails (>=2.9,<2.10)", "freezegun (>=1.5.1,<2.0.0)", "psycopg2-binary (>=2.8,<2.10)", "pytest-django (>=4.9.0,<5.0)", "pytest-xdist (>=3.6.1,<4.0.0)", "pytz", "sorl-thumbnail (>=12.10.0,<13.0.0)", "tox (>=4.18.0,<5.0.0)", "vdt.versionplugin.wheel"]
+test = ["WebTest (>=3.0.0,<4.0.0)", "Whoosh (>=2.7,<2.8)", "black (>=24.4.2)", "coverage (>=7.6.1,<8.0.0)", "django-environ (>=0.4,<0.12)", "django-webtest (>=1.9,<1.10)", "easy-thumbnails (>=2.9,<2.10)", "freezegun (>=1.5.1,<2.0.0)", "psycopg2-binary (>=2.8,<2.10)", "psycopg2-binary (>=2.8,<2.10)", "pycountry", "pylint (>=3.2.4)", "pylint-django (>=2.5.5)", "pytest-django (>=4.9.0,<5.0)", "pytest-xdist (>=3.6.1,<4.0.0)", "pytz", "sorl-thumbnail (>=12.10.0,<13.0.0)", "tox (>=4.18.0,<5.0.0)", "vdt.versionplugin.wheel", "whitenoise (>=6.7.0,<6.9)"]
 
 [package.source]
 type = "git"
 url = "https://github.com/django-oscar/django-oscar.git"
 reference = "HEAD"
-resolved_reference = "2d5a27cbb2eaf88e8fc9c75d6525bef60bb857e1"
+resolved_reference = "d0e715d1c43bef9cedb39a92ffcfda642b59f3ab"
 
 [[package]]
 name = "django-phonenumber-field"
@@ -2253,4 +2252,4 @@ test = ["black", "coverage", "poetry", "pylint", "pylint-django", "responses", "
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.8"
-content-hash = "51b0c5f91b076349d375eecaa5f6002e7f1b27b447bfcf20f486c243dfe0d747"
+content-hash = "6c4e6c5850e595d37f6c7ec363c2222143eb80c02eeada9837b499114d1ef5d6"
