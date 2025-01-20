@@ -27,7 +27,7 @@ classifiers = [
 
 [tool.poetry.dependencies]
 python = "^3.8"
-django-oscar = {git = "https://github.com/django-oscar/django-oscar.git", allow-prereleases = true}
+django-oscar = {version = "^4.0a1", allow-prereleases = true}
 coverage = { version = "^7.3", optional = true }
 pylint = { version = "^3.0.2", optional = true }
 black = { version = "^23.11.0", optional = true }
@@ -48,6 +48,9 @@ test = [
     "sorl-thumbnail", "vdt.versionplugin.wheel", "setuptools"
 ]
 dev = ["ruff", "isort", "pre-commit"]
+
+[tool.poetry.group.extras.dependencies]
+django-oscar = {git = "https://github.com/django-oscar/django-oscar.git", allow-prereleases = true}
 
 [build-system]
 requires = ["poetry-core"]
