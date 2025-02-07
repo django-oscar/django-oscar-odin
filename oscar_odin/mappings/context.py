@@ -93,7 +93,7 @@ class ModelMapperContext(dict):
         return attrgetter(*identifiers)(instance)
 
     def validate_instances(self, instances, validate_unique=True, fields=None):
-        if not self.clean_instances or not instances:
+        if not instances:
             return instances
         validated_instances = []
         identities = []
@@ -109,13 +109,15 @@ class ModelMapperContext(dict):
             if identifiers is None or identity not in identities:
                 if identifiers is not None:
                     identities.append(identity)
-                try:
-                    instance = self.prepare_instance_for_validation(instance)
-                    instance.full_clean(
-                        validate_unique=validate_unique, exclude=exclude
-                    )
-                except ValidationError as e:
-                    self.errors.add_error(e, instance)
+                if self.clean_instances:
+                    try:
+                        instance = self.prepare_instance_for_validation(instance)
+                        instance.full_clean(
+                            validate_unique=validate_unique, exclude=exclude
+                        )
+                        validated_instances.append(instance)
+                    except ValidationError as e:
+                        self.errors.add_error(e, instance)
                 else:
                     validated_instances.append(instance)
 

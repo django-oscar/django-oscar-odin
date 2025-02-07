@@ -468,6 +468,36 @@ class MultipleProductReverseTest(TestCase):
 
         self.assertEqual(Product.objects.count(), 2)
 
+    def test_creating_product_class_without_instance_full_clean(self):
+        ProductClass.objects.all().delete()
+        product_class = ProductClassResource(
+            slug="klaas", name="Klaas", requires_shipping=True, track_stock=True
+        )
+        product_resources = [
+            ProductResource(
+                upc="1234323asd",
+                title="asdf1",
+                slug="asdf-asdfasdf",
+                description="description",
+                structure=Product.STANDALONE,
+                is_discountable=True,
+                product_class=product_class,
+            ),
+            ProductResource(
+                upc="1234323-2",
+                title="asdf2",
+                slug="asdf-asdfasdf-2",
+                description="description",
+                structure=Product.STANDALONE,
+                is_discountable=True,
+                product_class=product_class,
+            ),
+        ]
+
+        _, errors = products_to_db(product_resources, clean_instances=False)
+        self.assertEqual(len(errors), 0)
+        self.assertEqual(Product.objects.count(), 2)
+
     def test_create_product_with_related_fields(self):
         partner = Partner.objects.create(name="klaas")
 
