@@ -28,7 +28,7 @@ ProductClassModel = get_model("catalogue", "ProductClass")
 ProductModel = get_model("catalogue", "Product")
 StockRecordModel = get_model("partner", "StockRecord")
 
-# # mappings
+# mappings
 ModelMapping = get_class("oscar_odin.mappings.model_mapper", "ModelMapping")
 map_queryset, OscarBaseMapping = get_classes(
     "oscar_odin.mappings.common", ["map_queryset", "OscarBaseMapping"]
