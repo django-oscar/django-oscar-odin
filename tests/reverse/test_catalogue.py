@@ -8,7 +8,7 @@ from django.test import TestCase
 
 from oscar.core.loading import get_model
 
-from oscar_odin.mappings.catalogue import products_to_db
+from oscar_odin.mappings.helpers import products_to_db
 from oscar_odin.resources.catalogue import (
     ProductResource,
     ProductImageResource,

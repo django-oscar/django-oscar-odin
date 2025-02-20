@@ -5,6 +5,10 @@ from django.test import TestCase
 from oscar.core.loading import get_model
 
 from oscar_odin.mappings import catalogue
+from oscar_odin.mappings.helpers import (
+    product_queryset_to_resources,
+    product_to_resource,
+)
 
 from oscar_odin.utils import get_mapped_fields
 
@@ -17,14 +21,14 @@ class TestProduct(TestCase):
     def test_product_to_resource__basic_model_to_resource(self):
         product = Product.objects.first()
 
-        actual = catalogue.product_to_resource(product)
+        actual = product_to_resource(product)
 
         self.assertEqual(product.title, actual.title)
 
     def test_product_to_resource__basic_product_with_out_of_stock_children(self):
         product = Product.objects.get(id=1)
 
-        actual = catalogue.product_to_resource(product)
+        actual = product_to_resource(product)
 
         self.assertEqual(product.title, actual.title)
 
@@ -33,7 +37,7 @@ class TestProduct(TestCase):
     ):
         product = Product.objects.get(id=8)
 
-        actual = catalogue.product_to_resource(product)
+        actual = product_to_resource(product)
 
         self.assertEqual(product.title, actual.title)
         self.assertIsNone(actual.children)
@@ -41,7 +45,7 @@ class TestProduct(TestCase):
     def test_mapping__where_is_a_parent_product_include_children(self):
         product = Product.objects.get(id=8)
 
-        actual = catalogue.product_to_resource(product, include_children=True)
+        actual = product_to_resource(product, include_children=True)
 
         self.assertEqual(product.title, actual.title)
         self.assertIsNotNone(actual.children)
@@ -49,7 +53,7 @@ class TestProduct(TestCase):
 
     def test_queryset_to_resources(self):
         queryset = Product.objects.all()
-        product_resources = catalogue.product_queryset_to_resources(queryset)
+        product_resources = product_queryset_to_resources(queryset)
 
         self.assertEqual(queryset.count(), len(product_resources))
 
@@ -62,9 +66,7 @@ class TestProduct(TestCase):
         # However, the query shouldn't increase too much, if it does, it means you got a
         # n+1 query problem and that should be fixed instead by prefetching, annotating etc.
         with self.assertNumQueries(14):
-            resources = catalogue.product_queryset_to_resources(
-                queryset, include_children=False
-            )
+            resources = product_queryset_to_resources(queryset, include_children=False)
             dict_codec.dump(resources, include_type_field=False)
 
     def test_queryset_to_resources_include_children_num_queries(self):
@@ -73,9 +75,7 @@ class TestProduct(TestCase):
 
         # It should only go up by a few queries.
         with self.assertNumQueries(20):
-            resources = catalogue.product_queryset_to_resources(
-                queryset, include_children=True
-            )
+            resources = product_queryset_to_resources(queryset, include_children=True)
             dict_codec.dump(resources, include_type_field=False)
 
     def test_get_mapped_fields(self):
