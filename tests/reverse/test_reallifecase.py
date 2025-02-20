@@ -17,7 +17,7 @@ from oscar.core.loading import get_model, get_class
 from django.utils.text import slugify
 
 from oscar_odin.fields import DecimalField
-from oscar_odin.mappings.catalogue import products_to_db
+from oscar_odin.mappings.helpers import products_to_db
 from oscar_odin.resources.catalogue import (
     ProductResource,
     ProductImageResource,
