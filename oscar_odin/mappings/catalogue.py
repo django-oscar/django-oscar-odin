@@ -1,6 +1,7 @@
 # pylint: disable=W0613
 """Mappings between odin and django-oscar models."""
 import odin
+import logging
 
 from decimal import Decimal
 from typing import Any, Dict, List, Optional, Tuple
@@ -13,6 +14,8 @@ from oscar.core.loading import get_class, get_classes, get_model
 from datetime import datetime
 
 from . import constants
+
+logger = logging.getLogger(__name__)
 
 __all__ = (
     "ProductImageToResource",
@@ -216,7 +219,11 @@ class ProductToResource(OscarBaseMapping):
                 if hasattr(item.value, "json"):
                     return item.value.json()
                 else:
-                    return f"{repr(item.value)} has no json method, can not convert to json"
+                    logger.error(
+                        "%s has no json method, can not convert to json",
+                        repr(item.value),
+                    )
+                    return None
 
             # return the value as stored on ProductAttributeValue in the correct type
             return item.value
