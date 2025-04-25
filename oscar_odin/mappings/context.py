@@ -369,9 +369,16 @@ class ModelMapperContext(dict):
                 throughs = defaultdict(Through)
                 to_delete_throughs_product_ids = []
                 for product, instances in values:
+                    # This means that bulk_update_or_create_instances failed to create this instance.
+                    # This is added to the errors, but self.get_all_m2m_relations is not aware of it.
+                    # So that's why we need to explicitly handle this here to prevent bulk_create from failing.
+                    if not product.pk:
+                        continue
+
                     if not instances:
                         # Delete throughs if no instances are passed for the field
                         to_delete_throughs_product_ids.append(product.id)
+
                     for instance in instances:
                         if instance.pk is not None:
                             throughs[(product.pk, instance.pk)] = Through(
