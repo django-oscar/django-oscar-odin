@@ -28,6 +28,7 @@ from oscar_odin.mappings.constants import (
     PRODUCT_UPC,
     PRODUCT_DESCRIPTION,
     PRODUCTCLASS_REQUIRESSHIPPING,
+    MODEL_IDENTIFIERS_MAPPING,
 )
 from oscar_odin.mappings.partner import PartnerModelToResource
 
@@ -285,7 +286,12 @@ class SingleProductReverseTest(TestCase):
             attributes={"henk": "Klaas", "harrie": 1},
         )
 
-        _, errors = products_to_db(product_resource)
+        identifier_mapping = MODEL_IDENTIFIERS_MAPPING.copy()
+        # Test related fields in identifier mapping
+        identifier_mapping[Product] = ("upc", "product_class.slug")
+        _, errors = products_to_db(
+            product_resource, identifier_mapping=identifier_mapping
+        )
         self.assertEqual(len(errors), 0)
 
         prd = Product.objects.get(upc="1234323-2")
