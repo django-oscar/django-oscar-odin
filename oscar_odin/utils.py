@@ -150,7 +150,7 @@ def get_mapped_fields(mapping, *from_field_names):
 
 def get_category_ancestors():
     """
-    Get a mapping of all child categories with all of its ancestor categories.  
+    Get a mapping of all child categories with all of its ancestor categories.
     {child_id: [ancestor1_id, ancestor2_id]}}
     """
     query = """
@@ -169,5 +169,5 @@ def get_category_ancestors():
     category_ancestors = defaultdict(list)
     for child_id, ancestor_id in rows:
         category_ancestors[child_id].append(ancestor_id)
-        
+
     return category_ancestors

@@ -103,13 +103,13 @@ class CategoryToResource(OscarBaseMapping):
     @odin.assign_field
     def ancestor_names(self) -> str:
         """Map names of all of the category ancestors."""
-        names = ""
+        names = []
         if self.source.id in self.context["category_ancestors"]:
-            names = " | ".join([
+            names = [
                 self.context["category_titles"][ancestor_id]
                 for ancestor_id in self.context["category_ancestors"][self.source.id]
-            ])
-        return names
+            ]
+        return " | ".join(names)
 
     @odin.map_field
     def image(self, value: ImageFieldFile) -> Optional[str]:
