@@ -96,14 +96,20 @@ class CategoryToResource(OscarBaseMapping):
     to_obj = CategoryResource
 
     @odin.assign_field
-    def full_name(self) -> str:
-        """Map full name along with ancestors."""
-        return self.source.full_name
-
-    @odin.assign_field
     def meta_title(self) -> str:
         """Map meta title field."""
         return self.source.get_meta_title()
+
+    @odin.assign_field
+    def ancestor_names(self) -> str:
+        """Map names of all of the category ancestors."""
+        names = ""
+        if self.source.id in self.context["category_ancestors"]:
+            names = " | ".join([
+                self.context["category_titles"][ancestor_id]
+                for ancestor_id in self.context["category_ancestors"][self.source.id]
+            ])
+        return names
 
     @odin.map_field
     def image(self, value: ImageFieldFile) -> Optional[str]:

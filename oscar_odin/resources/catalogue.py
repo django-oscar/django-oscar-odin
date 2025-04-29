@@ -60,7 +60,7 @@ class CategoryResource(OscarCatalogueResource):
     id: Optional[int]
     code: str
     name: Optional[str]
-    full_name: Optional[str]
+    ancestor_names: Optional[str]
     slug: Optional[str]
     description: Optional[str]
     meta_title: Optional[str]
