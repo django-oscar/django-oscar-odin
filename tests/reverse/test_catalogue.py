@@ -111,6 +111,7 @@ class SingleProductReverseTest(TestCase):
         prd = Product.objects.get(upc="1234323-2")
 
         self.assertEqual(prd.title, "asdf2")
+        self.assertEqual(prd.code, "semek-mumtaz")
         self.assertEqual(prd.images.count(), 2)
         self.assertEqual(Category.objects.count(), 2)
         self.assertEqual(prd.categories.count(), 1)
@@ -258,6 +259,7 @@ class SingleProductReverseTest(TestCase):
 
         product_resource = ProductResource(
             upc="1234323-2",
+            code="semek-mumtaz",
             title="asdf2",
             slug="asdf-asdfasdf2",
             description="description",
@@ -297,6 +299,7 @@ class SingleProductReverseTest(TestCase):
         prd = Product.objects.get(upc="1234323-2")
 
         self.assertEqual(prd.title, "asdf2")
+        self.assertEqual(prd.code, "semek-mumtaz")
         self.assertEqual(prd.images.count(), 2)
         self.assertEqual(Category.objects.count(), 2)
         self.assertEqual(prd.categories.count(), 1)
@@ -313,6 +316,7 @@ class SingleProductReverseTest(TestCase):
 
         product_resource = ProductResource(
             upc="1234323-2",
+            code="semek",
             title="asdf2",
             slug="asdf-asdfasdf2",
             description="description",
@@ -347,6 +351,7 @@ class SingleProductReverseTest(TestCase):
         prd = Product.objects.get(upc="1234323-2")
 
         self.assertEqual(prd.title, "asdf2")
+        self.assertEqual(prd.code, "semek")
         self.assertEqual(prd.images.count(), 2)
         self.assertEqual(Category.objects.count(), 2)
         self.assertEqual(prd.categories.count(), 1)
