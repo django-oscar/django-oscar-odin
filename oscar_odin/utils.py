@@ -159,8 +159,8 @@ def get_category_ancestors():
             parent.id AS up_id
         FROM catalogue_category AS child
         JOIN catalogue_category AS parent
-        ON child.path LIKE parent.path || '%'
-        WHERE child.id != parent.id;
+        ON child.path LIKE (parent.path || '%')
+        WHERE child.id > parent.id;
     """
     with connection.cursor() as cursor:
         cursor.execute(query)
