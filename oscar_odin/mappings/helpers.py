@@ -11,8 +11,10 @@ from . import constants
 from .context import ProductModelMapperContext
 from ..settings import RESOURCES_TO_DB_CHUNK_SIZE
 from .prefetching.prefetch import prefetch_product_queryset
+from ..utils import get_category_ancestors
 
 ProductModel = get_model("catalogue", "Product")
+Category = get_model("catalogue", "Category")
 
 ProductResource = get_class("oscar_odin.resources.catalogue", "ProductResource")
 resources_to_db = get_class("oscar_odin.mappings.resources", "resources_to_db")
@@ -47,6 +49,8 @@ def product_to_resource_with_strategy(
         context={
             "stock_strategy": stock_strategy,
             "include_children": include_children,
+            "category_ancestors": get_category_ancestors(),
+            "category_titles": dict(Category.objects.values_list("id", "name")),
         },
     )
 
