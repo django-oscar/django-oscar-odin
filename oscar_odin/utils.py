@@ -1,6 +1,6 @@
 from collections import defaultdict
 from functools import reduce
-from operator import itemgetter, or_
+from operator import attrgetter, itemgetter, or_
 import contextlib
 import time
 import math
@@ -19,8 +19,8 @@ def get_filters(instances, field_names):
     for ui in instances:
         klaas = {}
         for field_name in field_names:
-            field_value = getattr(ui, field_name)
-            klaas[field_name] = field_value
+            field_value = attrgetter(field_name)(ui)
+            klaas[field_name.replace(".", "__")] = field_value
 
         yield Q(**klaas)
 
@@ -56,7 +56,8 @@ def in_bulk(self, instances, field_names):
             qs += tuple(self.filter(query).order_by().values("pk", *field_names))
     else:
         query = get_query(instances, field_names)
-        qs = self.filter(query).order_by().values("pk", *field_names)
+        field_names_for_query = [name.replace(".", "__") for name in field_names]
+        qs = self.filter(query).order_by().values("pk", *field_names_for_query)
 
     object_mapping = defaultdict(tuple)
     for obj in qs:
