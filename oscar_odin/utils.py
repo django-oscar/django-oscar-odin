@@ -147,27 +147,3 @@ def get_mapped_fields(mapping, *from_field_names):
         return reduce(or_, itemgetter(*from_field_names)(keyed_mapping))
 
     return reduce(or_, keyed_mapping.values())
-
-
-def get_category_ancestors():
-    """
-    Get a mapping of all child categories with all of its ancestor categories.
-    {child_id: [ancestor1_id, ancestor2_id]}}
-    """
-    query = """
-        SELECT 
-            child.id AS child_id,
-            parent.id AS up_id
-        FROM catalogue_category AS child
-        JOIN catalogue_category AS parent
-        ON child.path LIKE (parent.path || '%') AND child.id > parent.id;
-    """
-    with connection.cursor() as cursor:
-        cursor.execute(query)
-        rows = cursor.fetchall()
-
-    category_ancestors = defaultdict(list)
-    for child_id, ancestor_id in rows:
-        category_ancestors[child_id].append(ancestor_id)
-
-    return category_ancestors
