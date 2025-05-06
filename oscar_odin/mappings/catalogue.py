@@ -100,17 +100,6 @@ class CategoryToResource(OscarBaseMapping):
         """Map meta title field."""
         return self.source.get_meta_title()
 
-    @odin.assign_field
-    def ancestor_names(self) -> str:
-        """Map names of all of the category ancestors."""
-        names = []
-        if self.source.id in self.context["category_ancestors"]:
-            names = [
-                self.context["category_titles"][ancestor_id]
-                for ancestor_id in self.context["category_ancestors"][self.source.id]
-            ]
-        return " | ".join(names)
-
     @odin.map_field
     def image(self, value: ImageFieldFile) -> Optional[str]:
         """Convert value into a pure URL."""
