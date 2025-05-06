@@ -15,6 +15,8 @@ from datetime import datetime
 
 from . import constants
 
+from ..utils import get_category_ancestors
+
 logger = logging.getLogger(__name__)
 
 __all__ = (
@@ -91,6 +93,15 @@ class ProductImageToModel(OscarBaseMapping):
 
 class CategoryToResource(OscarBaseMapping):
     """Map from a category model to a resource."""
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        if "category_titles" not in self.context:
+            self.context["category_titles"] = dict(
+                CategoryModel.objects.values_list("id", "name")
+            )
+        if "category_ancestors" not in self.context:
+            self.context["category_ancestors"] = get_category_ancestors()
 
     from_obj = CategoryModel
     to_obj = CategoryResource
