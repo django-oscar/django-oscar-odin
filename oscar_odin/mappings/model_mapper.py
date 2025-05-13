@@ -8,11 +8,13 @@ from django.db.models.fields.reverse_related import (
 )
 from django.db.models.options import Options
 
-from odin.mapping import MappingBase, MappingMeta
+from odin.mapping import MappingBase
 from odin.utils import getmeta
 
+from .common import NonRegisterableMappingMeta
 
-class ModelMappingMeta(MappingMeta):
+
+class ModelMappingMeta(NonRegisterableMappingMeta):
     """Extended type of mapping meta."""
 
     def __new__(cls, name, bases, attrs):
