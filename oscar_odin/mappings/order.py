@@ -3,6 +3,7 @@ from typing import Any, Dict, Iterable, List, Optional, Union
 
 import odin
 from django.http import HttpRequest
+
 from oscar.core.loading import get_model, get_class, get_classes
 
 from decimal import Decimal
@@ -13,6 +14,8 @@ __all__ = (
     "OrderToResource",
     "order_to_resource",
 )
+
+Selector = get_class("partner.strategy", "Selector")
 
 OrderModel = get_model("order", "Order")
 OrderNoteModel = get_model("order", "OrderNote")
@@ -29,6 +32,9 @@ SurchargeModel = get_model("order", "Surcharge")
 map_queryset, OscarBaseMapping = get_classes(
     "oscar_odin.mappings.common", ["map_queryset", "OscarBaseMapping"]
 )
+product_to_resource_with_strategy = get_class(
+    "oscar_odin.mappings.helpers", "product_to_resource_with_strategy"
+)
 BillingAddressToResource, ShippingAddressToResource = get_classes(
     "oscar_odin.mappings.address",
     ["BillingAddressToResource", "ShippingAddressToResource"],
@@ -37,6 +43,7 @@ UserToResource = get_class("oscar_odin.mappings.auth", "UserToResource")
 
 # resources
 UserResource = get_class("oscar_odin.resources.auth", "UserResource")
+ProductResource = get_class("oscar_odin.resources.catalogue", "ProductResource")
 
 (
     SurchargeResource,
@@ -183,6 +190,13 @@ class LineToResource(OscarBaseMapping):
         """Map price resources."""
         items = self.source.prices.all()
         return map_queryset(LinePriceToResource, items, context=self.context)
+
+    @odin.assign_field(to_list=True)
+    def product(self) -> ProductResource:
+        if self.source.product:
+            return product_to_resource_with_strategy(
+                product=self.source.product, stock_strategy=Selector().strategy()
+            )
 
     @odin.assign_field
     def attributes(self) -> Dict[str, Any]:

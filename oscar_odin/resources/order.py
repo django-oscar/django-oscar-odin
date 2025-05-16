@@ -16,6 +16,7 @@ BillingAddressResource, ShippingAddressResource = get_classes(
     ["BillingAddressResource", "ShippingAddressResource"],
 )
 UserResource = get_class("oscar_odin.resources.auth", "UserResource")
+ProductResource = get_class("oscar_odin.resources.catalogue", "ProductResource")
 
 
 class OscarOrderResource(OscarResource, abstract=True):
@@ -66,7 +67,7 @@ class LineResource(OscarOrderResource):
         verbose_name="Partner notes",
     )
     stock_record_id: int
-    product_id: int  # (expand this to full product resource)
+    product: ProductResource
     title: str
     upc: Optional[str]
     quantity: int = 1

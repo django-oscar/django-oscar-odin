@@ -22,3 +22,4 @@ class TestOrder(TestCase):
         actual = order.order_to_resource(order_model)
 
         self.assertEqual(order_model.number, actual.number)
+        self.assertEqual(order_model.lines.first().product.upc, actual.lines[0].upc)
