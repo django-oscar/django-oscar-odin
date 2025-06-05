@@ -92,7 +92,17 @@ class OscarBaseMapping(MappingBase, metaclass=NonRegisterableMappingMeta):
         else:
             # THIS IS THE ONLY CODE CHANGED COMPARED TO THE ORIGINAL METHOD.
             # IT REPLACES GETATTR WITH ATTRGETTER TO ALLOW NESTED FIELD ACCESS (eg; from_field=("shipping_address.line4"))
-            from_values = tuple(attrgetter(f)(self.source) for f in from_fields)
+            # IT ALSO RETURNS NONE FOR ONE TO ONE FIELDS THAT RAISE RelatedObjectDoesNotExist ERRORS
+            from_values = []
+            for f in from_fields:
+                try:
+                    from_values.append(attrgetter(f)(self.source))
+                except Exception as e:  # pylint: disable=broad-exception-caught
+                    if "RelatedObjectDoesNotExist" in str(type(e)):
+                        from_values.append(None)
+                    else:
+                        raise
+            from_values = tuple(from_values)
 
         if action is None:
             to_values = from_values
