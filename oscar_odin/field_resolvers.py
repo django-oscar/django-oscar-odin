@@ -18,7 +18,7 @@ class ModelFieldResolver(FieldResolverBase):
         fields = deepcopy(meta._forward_fields_map)
 
         fields.update(
-            (r.related_name, r.field)
+            (r.get_accessor_name(), r.field)
             for r in meta.related_objects
             if r.related_name != "+"
         )

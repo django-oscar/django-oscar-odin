@@ -36,7 +36,7 @@ class ModelMappingMeta(NonRegisterableMappingMeta):
 
         # Break out related objects by their type
         for relation in meta.related_objects:
-            if relation.related_name:
+            if relation.related_name != "+":
                 if relation.many_to_one:
                     many_to_one_fields.append(relation)
                 elif relation.one_to_many:
@@ -77,15 +77,15 @@ class ModelMapping(MappingBase, metaclass=ModelMappingMeta):
         }
 
         m2o_related_values = {
-            relation: field_values.pop(relation.related_name)
+            relation: field_values.pop(relation.get_accessor_name())
             for relation in self.many_to_one_fields
-            if relation.related_name in field_values
+            if relation.get_accessor_name() in field_values
         }
 
         o2m_related_values = {
-            relation: field_values.pop(relation.related_name)
+            relation: field_values.pop(relation.get_accessor_name())
             for relation in self.one_to_many_fields
-            if relation.related_name in field_values
+            if relation.get_accessor_name() in field_values
         }
 
         foreign_key_related_values = {
