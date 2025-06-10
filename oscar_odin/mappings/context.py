@@ -8,7 +8,7 @@ from django.core.exceptions import ValidationError
 from oscar.core.loading import get_model
 from oscar.apps.catalogue.product_attributes import QuerysetCache
 
-from ..utils import ErrorLog, in_bulk
+from ..utils import ErrorLog, in_bulk, chunked
 from ..exceptions import OscarOdinException
 from .constants import MODEL_IDENTIFIERS_MAPPING
 
@@ -315,20 +315,37 @@ class ModelMapperContext(dict):
                 )[0]
                 fields = self.get_fields_to_update(relation.related_model)
                 if fields is not None:
-                    conditions = Q()
                     identifiers = self.identifier_mapping[relation.related_model]
-                    for key in set(keys):
-                        if isinstance(key, (list, tuple)):
-                            conditions |= Q(**dict(list(zip(identifiers, key))))
-                        else:
-                            conditions |= Q(**{f"{identifiers[0]}": key})
                     field_name = f"{relation.remote_field.name}__{instance_identifier}"
+
+                    ids_to_keep = set()
+                    unique_keys = list(set(keys))
+
+                    for key_chunk in chunked(unique_keys):
+                        conditions = Q()
+
+                        for key in key_chunk:
+                            if isinstance(key, (list, tuple)):
+                                conditions |= Q(**dict(list(zip(identifiers, key))))
+                            else:
+                                conditions |= Q(**{f"{identifiers[0]}": key})
+
+                        chunk_ids = (
+                            relation.related_model.objects.filter(
+                                **{f"{field_name}__in": self.instance_keys}
+                            )
+                            .filter(conditions)
+                            .values_list("id", flat=True)
+                        )
+
+                        ids_to_keep.update(chunk_ids)
+
                     # Delete all related one_to_many instances where product is in the
                     # given list of resources and excluding any instances present in
                     # those resources
                     relation.related_model.objects.filter(
                         **{f"{field_name}__in": self.instance_keys}
-                    ).exclude(conditions).delete()
+                    ).exclude(id__in=ids_to_keep).delete()
 
     def bulk_update_or_create_many_to_many(self):
         m2m_to_create, m2m_to_update, _ = self.get_all_m2m_relations
