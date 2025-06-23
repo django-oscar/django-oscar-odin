@@ -243,7 +243,9 @@ class SingleProductReverseTest(TestCase):
 
         product_resource = ProductResource(upc="1234", is_discountable=True)
         _, errors = products_to_db(
-            product_resource, fields_to_update=[PRODUCT_IS_DISCOUNTABLE]
+            product_resource,
+            fields_to_update=[PRODUCT_IS_DISCOUNTABLE],
+            clean_instances=False,
         )
         self.assertEqual(len(errors), 0)
         prd.refresh_from_db()
