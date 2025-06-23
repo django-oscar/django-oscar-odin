@@ -89,11 +89,11 @@ class ProductAttributeValueResource(OscarCatalogueResource):
 
 
 class ParentProductResource(OscarCatalogueResource):
-    upc: str
+    upc: Optional[str]
 
 
 class ProductRecommentationResource(OscarCatalogueResource):
-    upc: str
+    upc: Optional[str]
 
 
 class ProductResource(OscarCatalogueResource):

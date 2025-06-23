@@ -677,7 +677,7 @@ class ProductRecommendationTest(TestCase):
         _, errors = products_to_db(product_resource)
         self.assertEqual(len(errors), 1)
         self.assertEqual(
-            str(errors[0]),
+            str(errors[0].args[0]["ProductRecommendation"]),
             "Cannot create m2m relationship ProductRecommendation - related model 'Product' is missing a primary key",
         )
 
