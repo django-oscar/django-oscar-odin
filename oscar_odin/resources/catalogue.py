@@ -102,7 +102,9 @@ class ProductResource(OscarCatalogueResource):
     id: Optional[int]
     code: Optional[str]
     upc: Optional[str]
-    structure: Optional[str] = StringField(choices=ProductModel.STRUCTURE_CHOICES)
+    structure: Optional[str] = StringField(
+        choices=ProductModel.STRUCTURE_CHOICES, null=True
+    )
     title: Optional[str]
     slug: Optional[str]
     description: Optional[str] = ""

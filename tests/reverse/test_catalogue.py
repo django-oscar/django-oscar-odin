@@ -27,6 +27,7 @@ from oscar_odin.mappings.constants import (
     PRODUCT_TITLE,
     PRODUCT_UPC,
     PRODUCT_DESCRIPTION,
+    PRODUCT_IS_DISCOUNTABLE,
     PRODUCTCLASS_REQUIRESSHIPPING,
     MODEL_IDENTIFIERS_MAPPING,
 )
@@ -240,14 +241,10 @@ class SingleProductReverseTest(TestCase):
         prd = Product.objects.get(upc="1234")
         self.assertEqual(prd.is_discountable, False)
 
-        product_resource = ProductResource(
-            upc="1234",
-            title="bat",
-            slug="asdf",
-            structure=Product.STANDALONE,
-            product_class=product_class,
+        product_resource = ProductResource(upc="1234", is_discountable=True)
+        _, errors = products_to_db(
+            product_resource, fields_to_update=[PRODUCT_IS_DISCOUNTABLE]
         )
-        _, errors = products_to_db(product_resource)
         self.assertEqual(len(errors), 0)
         prd.refresh_from_db()
         # Default value of is_discountable is considered from the ProductResource
