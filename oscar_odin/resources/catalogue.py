@@ -70,7 +70,7 @@ class CategoryResource(OscarCatalogueResource):
     depth: Optional[int]
     path: Optional[str]
     children: Optional[List["CategoryResource"]] = odin.ListOf.delayed(
-        lambda: CategoryResource
+        lambda: CategoryResource, null=True
     )
 
 
@@ -89,11 +89,11 @@ class ProductAttributeValueResource(OscarCatalogueResource):
 
 
 class ParentProductResource(OscarCatalogueResource):
-    upc: str
+    upc: Optional[str]
 
 
 class ProductRecommentationResource(OscarCatalogueResource):
-    upc: str
+    upc: Optional[str]
 
 
 class ProductResource(OscarCatalogueResource):
@@ -102,8 +102,10 @@ class ProductResource(OscarCatalogueResource):
     id: Optional[int]
     code: Optional[str]
     upc: Optional[str]
-    structure: str = StringField(choices=ProductModel.STRUCTURE_CHOICES)
-    title: str
+    structure: Optional[str] = StringField(
+        choices=ProductModel.STRUCTURE_CHOICES, null=True
+    )
+    title: Optional[str]
     slug: Optional[str]
     description: Optional[str] = ""
     meta_title: Optional[str]
