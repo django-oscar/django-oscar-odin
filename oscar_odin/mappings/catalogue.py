@@ -207,7 +207,7 @@ class ProductToResource(OscarBaseMapping):
                 return item.value.option
 
             elif obj_type == item.attribute.MULTI_OPTION:
-                return item.value.values_list("option", flat=True)
+                return [value.option for value in item.value]
 
             elif obj_type == item.attribute.FILE:
                 return item.value.url
