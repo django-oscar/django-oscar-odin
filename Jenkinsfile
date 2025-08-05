@@ -34,10 +34,7 @@ pipeline {
                     junit allowEmptyResults: true, testResults: '**/nosetests.xml'
                 }
                 success {
-                    step([
-                        $class: 'CoberturaPublisher',
-                        coberturaReportFile: '**/coverage.xml',
-                    ])
+                    recordCoverage(tools: [[parser: 'COBERTURA', pattern: '**/coverage.xml']])
                 }
             }
         }
