@@ -215,7 +215,7 @@ class ProductToResource(OscarBaseMapping):
             elif obj_type == item.attribute.IMAGE:
                 return item.value.url
 
-            elif obj_type == item.attribute.ENTITY:
+            elif obj_type == item.attribute.ENTITY and item.value is not None:
                 if hasattr(item.value, "json"):
                     return item.value.json()
                 else:
