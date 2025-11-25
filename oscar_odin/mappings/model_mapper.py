@@ -12,6 +12,7 @@ from odin.mapping import MappingBase
 from odin.utils import getmeta
 
 from .common import NonRegisterableMappingMeta
+from ..utils import is_mapping_rule_excluded
 
 
 class ModelMappingMeta(NonRegisterableMappingMeta):
@@ -41,6 +42,16 @@ class ModelMappingMeta(NonRegisterableMappingMeta):
                     many_to_one_fields.append(relation)
                 elif relation.one_to_many:
                     one_to_many_fields.append(relation)
+
+        # Filter out any mapping rules that target excluded fields.
+        existing_rules = getattr(mapping_type, "_mapping_rules", ())
+        exclude_fields = attrs.get("exclude_fields") or ()
+
+        mapping_type._mapping_rules = [
+            rule
+            for rule in existing_rules
+            if not is_mapping_rule_excluded(rule, exclude_fields)
+        ]
 
         return mapping_type
 
