@@ -44,14 +44,15 @@ class ModelMappingMeta(NonRegisterableMappingMeta):
                     one_to_many_fields.append(relation)
 
         # Filter out any mapping rules that target excluded fields.
-        existing_rules = getattr(mapping_type, "_mapping_rules", ())
         exclude_fields = attrs.get("exclude_fields") or ()
+        if exclude_fields:
+            existing_rules = getattr(mapping_type, "_mapping_rules", ())
 
-        mapping_type._mapping_rules = [
-            rule
-            for rule in existing_rules
-            if not is_mapping_rule_excluded(rule, exclude_fields)
-        ]
+            mapping_type._mapping_rules = [
+                rule
+                for rule in existing_rules
+                if not is_mapping_rule_excluded(rule, exclude_fields)
+            ]
 
         return mapping_type
 
