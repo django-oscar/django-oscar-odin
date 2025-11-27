@@ -147,3 +147,11 @@ def get_mapped_fields(mapping, *from_field_names):
         return reduce(or_, itemgetter(*from_field_names)(keyed_mapping))
 
     return reduce(or_, keyed_mapping.values())
+
+
+def is_mapping_rule_excluded(rule, exclude_fields):
+    """Return true if the mapping rule's field is present in excluded fields."""
+    map_to = rule[2]
+    if len(map_to) == 1 and map_to[0] in exclude_fields:
+        return True
+    return False
