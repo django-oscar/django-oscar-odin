@@ -2252,4 +2252,4 @@ test = ["black", "coverage", "poetry", "pylint", "pylint-django", "responses", "
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.8"
-content-hash = "49ed9606b472cd636a91d913b204dbb3494411cb3d83b4fd53750efb2b195f8e"
+content-hash = "6c4e6c5850e595d37f6c7ec363c2222143eb80c02eeada9837b499114d1ef5d6"
