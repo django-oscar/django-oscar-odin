@@ -95,6 +95,7 @@ class ParentProductResource(OscarCatalogueResource):
 
 class ProductRecommentationResource(OscarCatalogueResource):
     upc: Optional[str]
+    code: Optional[str]
 
 
 class ProductResource(OscarCatalogueResource):
