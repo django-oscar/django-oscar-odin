@@ -62,6 +62,7 @@ class CategoryResource(OscarCatalogueResource):
     name: Optional[str]
     slug: Optional[str]
     description: Optional[str]
+    long_description: Optional[str]
     meta_title: Optional[str]
     meta_description: Optional[str]
     image: Optional[str]
