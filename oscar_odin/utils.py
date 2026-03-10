@@ -42,6 +42,7 @@ def in_bulk(self, instances, field_names):
     """
 
     max_query_params = connections[self.db].features.max_query_params
+    query_field_names = [name.replace(".", "__") for name in field_names]
 
     if max_query_params is not None:
         batch_size = math.floor(max_query_params / len(field_names)) - 1
@@ -53,11 +54,10 @@ def in_bulk(self, instances, field_names):
         for offset in range(0, len(instances), batch_size):
             batch = instances[offset : offset + batch_size]
             query = get_query(batch, field_names)
-            qs += tuple(self.filter(query).order_by().values("pk", *field_names))
+            qs += tuple(self.filter(query).order_by().values("pk", *query_field_names))
     else:
         query = get_query(instances, field_names)
-        field_names_for_query = [name.replace(".", "__") for name in field_names]
-        qs = self.filter(query).order_by().values("pk", *field_names_for_query)
+        qs = self.filter(query).order_by().values("pk", *query_field_names)
 
     object_mapping = defaultdict(tuple)
     for obj in qs:
