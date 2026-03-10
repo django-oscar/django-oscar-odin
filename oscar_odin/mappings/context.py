@@ -358,8 +358,13 @@ class ModelMapperContext(dict):
             ):
                 fields = self.get_fields_to_update(relation.related_model)
                 if fields is not None:
+                    all_instances = instances_to_create
                     instances_to_create = self.validate_instances(instances_to_create)
                     relation.related_model.objects.bulk_create(instances_to_create)
+                    if len(all_instances) != len(instances_to_create):
+                        self.assign_pk_to_duplicate_instances(
+                            all_instances, instances_to_create
+                        )
 
         # Update many to many's
         for relation, instances_to_update in m2m_to_update.items():
