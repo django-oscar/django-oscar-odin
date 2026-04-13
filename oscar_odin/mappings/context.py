@@ -102,6 +102,8 @@ class ModelMapperContext(dict):
         if field_name is not None:
             identifiers = [f"{field_name}__{identifier}" for identifier in identifiers]
 
+        identifiers = [identifier.replace(".", "__") for identifier in identifiers]
+
         for key in keys:
             if isinstance(key, (list, tuple)):
                 conditions |= Q(**dict(list(zip(identifiers, key))))
