@@ -92,6 +92,26 @@ class ModelMapperContext(dict):
             return
         return attrgetter(*identifiers)(instance)
 
+    def build_filter_conditions(self, keys, model, field_name=None):
+        """
+        Build Django Q conditions for filtering based on model identifiers and keys.
+        """
+        conditions = Q()
+        identifiers = self.identifier_mapping.get(model)
+
+        if field_name is not None:
+            identifiers = [f"{field_name}__{identifier}" for identifier in identifiers]
+
+        identifiers = [identifier.replace(".", "__") for identifier in identifiers]
+
+        for key in keys:
+            if isinstance(key, (list, tuple)):
+                conditions |= Q(**dict(list(zip(identifiers, key))))
+            else:
+                conditions |= Q(**{f"{identifiers[0]}": key})
+
+        return conditions
+
     def validate_instances(self, instances, validate_unique=True, fields=None):
         if not instances:
             return instances
@@ -308,44 +328,27 @@ class ModelMapperContext(dict):
 
         if self.delete_related:
             for relation, keys in identities.items():
-                # instance_identifier here is product upc, if multiple identifiers for
-                # a product are used, then the following code must be updated.
-                instance_identifier = self.identifier_mapping.get(
-                    relation.remote_field.related_model
-                )[0]
-                fields = self.get_fields_to_update(relation.related_model)
+                Model = relation.related_model
+                fields = self.get_fields_to_update(Model)
                 if fields is not None:
-                    identifiers = self.identifier_mapping[relation.related_model]
-                    field_name = f"{relation.remote_field.name}__{instance_identifier}"
-
+                    base_filters = self.build_filter_conditions(
+                        self.instance_keys,
+                        relation.remote_field.related_model,
+                        relation.remote_field.name,
+                    )
+                    base_queryset = Model.objects.filter(base_filters)
                     ids_to_keep = set()
                     unique_keys = list(set(keys))
 
                     for key_chunk in chunked(unique_keys):
-                        conditions = Q()
-
-                        for key in key_chunk:
-                            if isinstance(key, (list, tuple)):
-                                conditions |= Q(**dict(list(zip(identifiers, key))))
-                            else:
-                                conditions |= Q(**{f"{identifiers[0]}": key})
-
-                        chunk_ids = (
-                            relation.related_model.objects.filter(
-                                **{f"{field_name}__in": self.instance_keys}
-                            )
-                            .filter(conditions)
-                            .values_list("id", flat=True)
+                        conditions = self.build_filter_conditions(key_chunk, Model)
+                        chunk_ids = base_queryset.filter(conditions).values_list(
+                            "id", flat=True
                         )
 
                         ids_to_keep.update(chunk_ids)
 
-                    # Delete all related one_to_many instances where product is in the
-                    # given list of resources and excluding any instances present in
-                    # those resources
-                    relation.related_model.objects.filter(
-                        **{f"{field_name}__in": self.instance_keys}
-                    ).exclude(id__in=ids_to_keep).delete()
+                    base_queryset.exclude(id__in=ids_to_keep).delete()
 
     def bulk_update_or_create_many_to_many(self):
         m2m_to_create, m2m_to_update, _ = self.get_all_m2m_relations
